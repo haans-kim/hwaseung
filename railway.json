@@ -1,0 +1,49 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "services": [
+    {
+      "name": "frontend",
+      "source": {
+        "repo": "frontend"
+      },
+      "build": {
+        "buildCommand": "npm install && npm run build"
+      },
+      "deploy": {
+        "startCommand": "npm start",
+        "environmentVariables": {
+          "REACT_APP_API_URL": "${{BACKEND_URL}}"
+        }
+      }
+    },
+    {
+      "name": "backend",
+      "source": {
+        "repo": "backend"
+      },
+      "build": {
+        "buildCommand": "pip install -r requirements.txt"
+      },
+      "deploy": {
+        "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+        "environmentVariables": {
+          "RAILWAY_VOLUME_MOUNT_PATH": "/data"
+        }
+      },
+      "volumes": [
+        {
+          "mount": "/data",
+          "name": "ml-models-storage"
+        }
+      ]
+    }
+  ]
+}
