@@ -22,6 +22,11 @@ COPY --from=build /app/build /usr/share/nginx/html
 # Add nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+# Create a script to replace PORT at runtime
+RUN echo '#!/bin/sh\n\
+sed -i "s/listen 80;/listen ${PORT:-80};/g" /etc/nginx/conf.d/default.conf\n\
+nginx -g "daemon off;"' > /start.sh && chmod +x /start.sh
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE ${PORT:-80}
+
+CMD ["/start.sh"]
