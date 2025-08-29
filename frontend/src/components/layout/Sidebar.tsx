@@ -30,8 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) 
     <div className="w-64 bg-background border-r border-border h-screen flex flex-col flex-shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-border">
-        <h1 className="text-xl font-bold text-foreground">WagePrediction</h1>
-        <p className="text-sm text-muted-foreground">임금인상률 예측</p>
+        <h1 className="text-xl font-bold text-foreground">Salary Increase Forecast</h1>
+        <p className="text-sm text-muted-foreground">임금인상률 예측 시스템</p>
       </div>
 
       {/* Navigation */}
