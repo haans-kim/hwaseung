@@ -27,6 +27,7 @@ class ModelingService:
         self.current_model = None
         self.model_results = None
         self.is_setup_complete = False
+        self.feature_names = None  # Store feature names for prediction
         
         # 데이터 크기에 따른 모델 선택
         self.small_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt']
@@ -254,11 +255,19 @@ class ModelingService:
             # 결과 정보 추출
             comparison_results = pull()
             
+            # feature names 저장
+            from pycaret.regression import get_config
+            X_train = get_config('X_train')
+            if X_train is not None:
+                self.feature_names = list(X_train.columns)
+                print(f"📊 Stored feature names: {len(self.feature_names)} features")
+            
             self.model_results = {
                 'best_models': best_models,
                 'comparison_df': comparison_results,
                 'recommended_model': best_models[0] if best_models else None
             }
+            self.current_model = best_models[0] if best_models else None
             
         except Exception as e:
             # 실패 시 기본 선형 회귀 사용
