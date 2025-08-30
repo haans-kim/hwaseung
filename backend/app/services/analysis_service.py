@@ -38,6 +38,7 @@ class AnalysisService:
         self.shap_explainer = None
         self.lime_explainer = None
         self.feature_names = None
+        self.feature_display_names = {}  # 한글 표시명
         self.train_data = None
         self.test_data = None
         
@@ -55,6 +56,9 @@ class AnalysisService:
             self.train_data = (X_train, y_train)
             self.test_data = (X_test, y_test)
             self.feature_names = list(X_train.columns)
+            
+            # 한글 컬럼명 매핑 가져오기
+            self.feature_display_names = data_service.get_display_names(self.feature_names)
             
             return X_train, y_train, X_test, y_test
             
@@ -86,10 +90,12 @@ class AnalysisService:
                 if X_train is None:
                     raise ValueError("No training data available")
                 
-                # 데이터프레임을 numpy로 변환하여 속성 충돌 방지
+                # 데이터프레임을 numpy로 변협하여 속성 충돌 방지
                 if hasattr(X_train, 'values'):
                     X_train_array = X_train.values
                     self.feature_names = X_train.columns.tolist()
+                    # 한글 컬럼명 매핑 가져오기
+                    self.feature_display_names = data_service.get_display_names(self.feature_names)
                 else:
                     X_train_array = X_train
                     self.feature_names = [f"feature_{i}" for i in range(X_train.shape[1])]
@@ -203,8 +209,11 @@ class AnalysisService:
             if len(importance_scores) > 0 and self.feature_names:
                 for i, score in enumerate(importance_scores):
                     if i < len(self.feature_names):
+                        english_name = self.feature_names[i]
+                        korean_name = self.feature_display_names.get(english_name, english_name)
                         feature_importance.append({
-                            "feature": self.feature_names[i],
+                            "feature": english_name,
+                            "feature_korean": korean_name,
                             "importance": float(score)
                         })
                 
@@ -266,8 +275,11 @@ class AnalysisService:
                 
                 for i, importance in enumerate(perm_importance.importances_mean):
                     if i < len(self.feature_names):
+                        english_name = self.feature_names[i]
+                        korean_name = self.feature_display_names.get(english_name, english_name)
                         feature_importance.append({
-                            "feature": self.feature_names[i],
+                            "feature": english_name,
+                            "feature_korean": korean_name,
                             "importance": float(importance),
                             "std": float(perm_importance.importances_std[i])
                         })
@@ -281,8 +293,11 @@ class AnalysisService:
                     importances = model.feature_importances_
                     for i, importance in enumerate(importances):
                         if i < len(self.feature_names):
+                            english_name = self.feature_names[i]
+                            korean_name = self.feature_display_names.get(english_name, english_name)
                             feature_importance.append({
-                                "feature": self.feature_names[i],
+                                "feature": english_name,
+                                "feature_korean": korean_name,
                                 "importance": float(importance)
                             })
                     
@@ -335,6 +350,8 @@ class AnalysisService:
             if hasattr(X_train, 'values'):
                 train_data = X_train.values
                 feature_names = X_train.columns.tolist()
+                # 한글 컬럼명 매핑 가져오기
+                self.feature_display_names = data_service.get_display_names(feature_names)
                 print(f"📊 LIME using features: {feature_names[:5]}... (총 {len(feature_names)}개)")
             else:
                 train_data = X_train
@@ -504,11 +521,13 @@ class AnalysisService:
                     explanation = MockExplanation(feature_names, instance)
                     print(f"📊 Using mock LIME explanation as fallback")
             
-            # 설명 결과 파싱
+            # 설명 결과 파싱 (한글명 포함)
             lime_values = []
             for feature, value in explanation.as_list():
+                korean_name = self.feature_display_names.get(feature, feature)
                 lime_values.append({
                     "feature": feature,
+                    "feature_korean": korean_name,
                     "value": float(value)
                 })
             

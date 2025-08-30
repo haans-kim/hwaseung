@@ -411,6 +411,11 @@ export const DataUpload: React.FC = () => {
               <span className="flex items-center">
                 <Eye className="mr-1.5 h-4 w-4" />
                 데이터 미리보기
+                {(uploadResult?.data_analysis.sample_data || sampleData?.data) && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({(uploadResult?.data_analysis.sample_data || sampleData?.data || []).length}행)
+                  </span>
+                )}
               </span>
               <Button 
                 variant="outline" 
@@ -424,7 +429,7 @@ export const DataUpload: React.FC = () => {
           </CardHeader>
           {showDataPreview && (
             <CardContent className="pb-3">
-              <div className="overflow-x-auto">
+              <div className="overflow-auto max-h-96">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b">
@@ -442,7 +447,6 @@ export const DataUpload: React.FC = () => {
                   </thead>
                   <tbody>
                     {(uploadResult?.data_analysis.sample_data || sampleData?.data || [])
-                      .slice(0, 5)
                       .map((row, index) => (
                         <tr key={index} className="border-b">
                           {Object.values(row).map((cell, cellIndex) => (

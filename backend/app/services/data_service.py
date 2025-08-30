@@ -17,6 +17,8 @@ class DataService:
         self.pickle_file = self.data_dir / "current_data.pkl"
         self.current_data: Optional[pd.DataFrame] = None
         self.data_info: Optional[Dict[str, Any]] = None
+        self.column_mapping: Dict[str, str] = {}  # 영문 -> 한글 매핑
+        self.reverse_column_mapping: Dict[str, str] = {}  # 한글 -> 영문 매핑
         
         # 시작시 기본 데이터 로드 시도
         self._load_default_data()
@@ -29,6 +31,12 @@ class DataService:
                     data_package = pickle.load(f)
                     self.current_data = data_package['data']
                     self.data_info = data_package['info']
+                    self.column_mapping = data_package.get('column_mapping', {})
+                    self.reverse_column_mapping = data_package.get('reverse_column_mapping', {})
+                    if 'target_column' in data_package:
+                        self.target_column = data_package['target_column']
+                    if 'year_column' in data_package:
+                        self.year_column = data_package['year_column']
                     logging.info(f"Loaded default data from pickle: {self.current_data.shape}")
                     return True
         except Exception as e:
@@ -42,6 +50,10 @@ class DataService:
                 data_package = {
                     'data': self.current_data,
                     'info': self.data_info,
+                    'column_mapping': self.column_mapping,
+                    'reverse_column_mapping': self.reverse_column_mapping,
+                    'target_column': getattr(self, 'target_column', None),
+                    'year_column': getattr(self, 'year_column', None),
                     'timestamp': datetime.now().isoformat()
                 }
                 with open(self.pickle_file, 'wb') as f:
@@ -82,6 +94,9 @@ class DataService:
                 df = pd.read_csv(file_path)
             else:
                 raise ValueError(f"Unsupported file format: {file_path}")
+            
+            # 데이터 전처리
+            df = self._preprocess_data(df)
             
             # 데이터 저장
             self.current_data = df
@@ -137,8 +152,8 @@ class DataService:
                 "top_values": {k: int(v) for k, v in value_counts.to_dict().items()}
             }
         
-        # 샘플 데이터
-        sample_data = df.head(10).fillna("").to_dict(orient="records")
+        # 샘플 데이터 (전체 데이터 반환)
+        sample_data = df.fillna("").to_dict(orient="records")
         
         return {
             "basic_stats": basic_stats,
@@ -212,6 +227,73 @@ class DataService:
             "recommendations": self._get_data_recommendations(df)
         }
     
+    def _preprocess_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """데이터 전처리: 한글/영문 Feature 처리, 연도 컬럼 제외, 타겟 설정"""
+        # 컬럼명 정리
+        columns = df.columns.tolist()
+        
+        # 첫 번째 행이 영문 Feature명인지 확인
+        first_row = df.iloc[0] if len(df) > 0 else None
+        if first_row is not None and all(isinstance(val, str) for val in first_row.values):
+            # 첫 번째 행을 영문 컬럼명으로 사용
+            english_columns = first_row.tolist()
+            korean_columns = columns
+            
+            # 영문 컬럼명으로 변경
+            df.columns = english_columns
+            # 첫 번째 행 제거
+            df = df.iloc[1:].reset_index(drop=True)
+            
+            # 컬럼 매핑 정보 저장 (양방향)
+            self.column_mapping = dict(zip(english_columns, korean_columns))  # 영문 -> 한글
+            self.reverse_column_mapping = dict(zip(korean_columns, english_columns))  # 한글 -> 영문
+            logging.info(f"Column mapping created: {len(self.column_mapping)} columns")
+        
+        # 데이터 타입 변환 (숫자형으로 변환 가능한 컬럼은 변환)
+        for col in df.columns:
+            try:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            except:
+                pass
+        
+        # 타겟 컬럼 식별
+        target_column = None
+        wage_increase_keywords = ['임금인상율', '임금인상률', 'wage_increase', 'wage increase rate', 'salary increase']
+        
+        for col in df.columns:
+            col_lower = str(col).lower()
+            if any(keyword in col_lower for keyword in ['임금인상', 'wage_increase', 'salary_increase']):
+                target_column = col
+                self.target_column = col
+                logging.info(f"Target column identified: {target_column}")
+                break
+        
+        # 연도 컬럼 식별 및 메타데이터로 저장 (Feature에서는 제외)
+        year_column = None
+        year_keywords = ['year', 'Year', 'YEAR', '년도', '연도']
+        
+        for col in df.columns:
+            if str(col) in year_keywords or str(col).lower() == 'year':
+                year_column = col
+                self.year_column = col
+                logging.info(f"Year column identified: {year_column}")
+                break
+        
+        # Base-up과 성과인상률 컬럼 식별
+        baseup_column = None
+        performance_column = None
+        
+        for col in df.columns:
+            col_lower = str(col).lower()
+            if 'base' in col_lower or 'base-up' in col_lower or 'baseup' in col_lower:
+                baseup_column = col
+                logging.info(f"Base-up column identified: {baseup_column}")
+            elif 'performance' in col_lower or '성과' in col_lower:
+                performance_column = col
+                logging.info(f"Performance column identified: {performance_column}")
+        
+        return df
+    
     def _get_data_recommendations(self, df: pd.DataFrame) -> list:
         """데이터 개선 권고사항"""
         recommendations = []
@@ -232,6 +314,45 @@ class DataService:
                 recommendations.append(f"{col} 컬럼에 이상치 검토 필요")
         
         return recommendations
+    
+    def get_model_config(self) -> Dict[str, Any]:
+        """모델링을 위한 설정 정보 반환"""
+        config = {
+            "target_column": getattr(self, 'target_column', None),
+            "year_column": getattr(self, 'year_column', None),
+            "column_mapping": self.column_mapping,  # 영문 -> 한글
+            "reverse_column_mapping": self.reverse_column_mapping,  # 한글 -> 영문
+            "feature_columns": []
+        }
+        
+        if self.current_data is not None:
+            # Feature 컬럼 = 전체 컬럼 - 타겟 컬럼 - 연도 컬럼
+            all_columns = self.current_data.columns.tolist()
+            exclude_columns = []
+            
+            if config["target_column"]:
+                exclude_columns.append(config["target_column"])
+            if config["year_column"]:
+                exclude_columns.append(config["year_column"])
+            
+            config["feature_columns"] = [col for col in all_columns if col not in exclude_columns]
+        
+        return config
+    
+    def get_korean_column_name(self, english_name: str) -> str:
+        """영문 컬럼명을 한글 컬럼명으로 변환"""
+        return self.column_mapping.get(english_name, english_name)
+    
+    def get_english_column_name(self, korean_name: str) -> str:
+        """한글 컬럼명을 영문 컬럼명으로 변환"""
+        return self.reverse_column_mapping.get(korean_name, korean_name)
+    
+    def get_display_names(self, column_list: list) -> Dict[str, str]:
+        """컬럼 리스트에 대한 표시용 이름(한글) 반환"""
+        display_names = {}
+        for col in column_list:
+            display_names[col] = self.get_korean_column_name(col)
+        return display_names
     
     def augment_data_with_noise(self, target_size: int = 120, noise_factor: float = 0.01) -> Dict[str, Any]:
         """Target 컬럼을 제외하고 나머지 데이터에 대해서 10배수로 증강"""

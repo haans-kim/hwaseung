@@ -58,13 +58,17 @@ async def upload_data(file: UploadFile = File(...)) -> Dict[str, Any]:
         summary = data_service.get_data_summary()
         print(f"📋 Summary generated: {summary['shape']}")
         
+        # 모델 설정 정보 추가
+        model_config = data_service.get_model_config()
+        
         return {
             "message": "File uploaded and processed successfully",
             "filename": file.filename,
             "file_path": saved_path,
             "data_analysis": data_info,
             "validation": validation_result,
-            "summary": summary
+            "summary": summary,
+            "model_config": model_config
         }
         
     except Exception as e:

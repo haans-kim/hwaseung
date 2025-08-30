@@ -74,12 +74,23 @@ class ModelingService:
                 'n_features_to_select': 0.6
             }
     
-    def prepare_data_for_modeling(self, target_column: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    def prepare_data_for_modeling(self, target_column: Optional[str] = None) -> Tuple[pd.DataFrame, Dict[str, Any]]:
         """모델링을 위한 데이터 준비"""
         if data_service.current_data is None:
             raise ValueError("No data loaded for modeling")
         
         df = data_service.current_data.copy()
+        
+        # data_service에서 설정된 컬럼 정보 가져오기
+        model_config = data_service.get_model_config()
+        
+        # 타겟 컬럼 결정 (인자로 받은 것 우선, 없으면 자동 감지된 것 사용)
+        if target_column is None:
+            target_column = model_config.get('target_column')
+            if target_column is None:
+                # 마지막 컬럼을 타겟으로 가정
+                target_column = df.columns[-1]
+                logging.info(f"No target column specified, using last column: {target_column}")
         
         # 기본 데이터 정리
         info = {
@@ -87,7 +98,9 @@ class ModelingService:
             'target_column': target_column,
             'numeric_columns': [],
             'categorical_columns': [],
-            'dropped_columns': []
+            'dropped_columns': [],
+            'year_column': model_config.get('year_column'),
+            'feature_columns': model_config.get('feature_columns', [])
         }
         
         # 타겟 컬럼 존재 확인
@@ -111,13 +124,20 @@ class ModelingService:
         # '-' 값을 NaN으로 변환 (PyCaret이 인식할 수 있도록)
         df = df.replace(['-', ''], np.nan)
         
-        # 년도 컬럼 제거 (시계열 인덱스이므로 피처에서 제외)
-        year_columns = ['year', 'Year', 'YEAR', '년도', '연도']
-        for year_col in year_columns:
-            if year_col in df.columns and year_col != target_column:
-                df = df.drop(columns=[year_col])
-                info['dropped_columns'].append(year_col)
-                print(f"📊 Removed year column: {year_col}")
+        # 연도 컬럼 제거 (data_service에서 식별된 것 사용)
+        if info['year_column'] and info['year_column'] in df.columns:
+            if info['year_column'] != target_column:
+                df = df.drop(columns=[info['year_column']])
+                info['dropped_columns'].append(info['year_column'])
+                print(f"📊 Removed year column: {info['year_column']}")
+        else:
+            # 백업: 수동으로 연도 컬럼 찾기
+            year_columns = ['year', 'Year', 'YEAR', '년도', '연도']
+            for year_col in year_columns:
+                if year_col in df.columns and year_col != target_column:
+                    df = df.drop(columns=[year_col])
+                    info['dropped_columns'].append(year_col)
+                    print(f"📊 Removed year column: {year_col}")
         
         # 타겟 컬럼이 숫자형인지 확인
         try:
@@ -143,7 +163,7 @@ class ModelingService:
     
     def setup_pycaret_environment(
         self, 
-        target_column: str, 
+        target_column: Optional[str] = None, 
         train_size: Optional[float] = None,
         session_id: int = 123
     ) -> Dict[str, Any]:

@@ -6,7 +6,7 @@ from app.services.modeling_service import modeling_service
 router = APIRouter()
 
 class ModelingSetupRequest(BaseModel):
-    target_column: str
+    target_column: Optional[str] = None  # 자동 감지 가능
     train_size: Optional[float] = None
     session_id: int = 123
 
@@ -27,9 +27,20 @@ async def setup_modeling(request: ModelingSetupRequest) -> Dict[str, Any]:
                 detail="PyCaret is not installed. Please install it with: pip install pycaret"
             )
         
+        # target_column이 없으면 자동 감지
+        target_column = request.target_column
+        if target_column is None:
+            from app.services.data_service import data_service
+            model_config = data_service.get_model_config()
+            target_column = model_config.get('target_column')
+            if target_column is None:
+                # 마지막 컬럼 사용
+                if data_service.current_data is not None:
+                    target_column = data_service.current_data.columns[-1]
+        
         # 환경 설정 실행
         result = modeling_service.setup_pycaret_environment(
-            target_column=request.target_column,
+            target_column=target_column,
             train_size=request.train_size,
             session_id=request.session_id
         )
@@ -37,7 +48,7 @@ async def setup_modeling(request: ModelingSetupRequest) -> Dict[str, Any]:
         return {
             **result,
             "setup_request": {
-                "target_column": request.target_column,
+                "target_column": target_column,
                 "train_size": request.train_size,
                 "session_id": request.session_id
             }
