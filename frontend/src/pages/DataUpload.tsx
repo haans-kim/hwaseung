@@ -238,52 +238,67 @@ export const DataUpload: React.FC = () => {
         </Alert>
       )}
 
-      {/* Data Status Information */}
-      {dataStatus && dataStatus.status.has_default_data && (
-        <Card className="py-2">
-          <CardContent className="pt-3 pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex-1">
-                <span className="text-xs text-muted-foreground">기본 데이터: </span>
-                <span className="text-xs font-medium text-green-600">사용 가능</span>
-                {dataStatus.status.data_shape && (
-                  <span className="text-xs text-muted-foreground ml-2">
-                    ({dataStatus.status.data_shape[0]} × {dataStatus.status.data_shape[1]})
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-1">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={loadDefaultData}
-                  disabled={loadingDefault}
-                >
-                  {loadingDefault ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Database className="h-3 w-3" />
+      {/* 저장된 데이터 섹션 */}
+      <Card>
+        <CardHeader className="pb-2 pt-3">
+          <CardTitle className="text-sm flex items-center">
+            <Database className="mr-1.5 h-4 w-4" />
+            저장된 데이터
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pb-3">
+          {dataStatus && dataStatus.status.has_default_data ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                <div>
+                  <p className="text-sm font-medium">기본 데이터 사용 가능</p>
+                  {dataStatus.status.data_shape && (
+                    <p className="text-xs text-muted-foreground">
+                      {dataStatus.status.data_shape[0]}개 행 × {dataStatus.status.data_shape[1]}개 열
+                    </p>
                   )}
-                  <span className="ml-1 text-xs">로드</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={augmentData}
-                  disabled={augmenting || !dataStatus.status.data_shape}
-                >
-                  {augmenting ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Zap className="h-3 w-3" />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={loadDefaultData}
+                    disabled={loadingDefault}
+                  >
+                    {loadingDefault ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Database className="h-3 w-3" />
+                    )}
+                    <span className="ml-1">불러오기</span>
+                  </Button>
+                  {dataStatus.status.data_shape && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={augmentData}
+                      disabled={augmenting}
+                    >
+                      {augmenting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Zap className="h-3 w-3" />
+                      )}
+                      <span className="ml-1">데이터 증강</span>
+                    </Button>
                   )}
-                  <span className="ml-1 text-xs">증강</span>
-                </Button>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div className="text-center py-4">
+              <Info className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">저장된 데이터가 없습니다</p>
+              <p className="text-xs text-muted-foreground mt-1">새 파일을 업로드하거나 기본 데이터를 로드하세요</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* File Upload Card */}
       <Card>
@@ -295,7 +310,7 @@ export const DataUpload: React.FC = () => {
         </CardHeader>
         <CardContent className="pb-3">
           <div 
-            className={`border-2 border-dashed rounded-lg p-4 text-center relative transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-6 text-center relative transition-colors ${
               dragActive 
                 ? 'border-primary bg-primary/10' 
                 : 'border-border hover:border-primary/50'
@@ -306,18 +321,21 @@ export const DataUpload: React.FC = () => {
             onDrop={handleDrop}
           >
             {file ? (
-              <div className="space-y-0.5">
-                <FileSpreadsheet className="mx-auto h-8 w-8 text-primary" />
-                <p className="text-xs font-medium">{file.name}</p>
+              <div className="space-y-1">
+                <FileSpreadsheet className="mx-auto h-10 w-10 text-primary" />
+                <p className="text-sm font-medium">{file.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {(file.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
             ) : (
-              <div className="space-y-0.5">
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">
+              <div className="space-y-1">
+                <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
                   파일을 드래그하거나 클릭하여 선택
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  지원 형식: .xlsx, .xls, .csv
                 </p>
               </div>
             )}
