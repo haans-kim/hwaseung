@@ -72,6 +72,8 @@ class AugmentationService:
         # 증강된 데이터프레임 생성
         augmented_df = pd.DataFrame(augmented_rows)
         
+        # 증강된 데이터프레임 생성 완료
+        
         # 연도별로 정렬 (시계열 데이터인 경우)
         if year_column and year_column in augmented_df.columns:
             augmented_df = augmented_df.sort_values(year_column).reset_index(drop=True)
@@ -140,10 +142,11 @@ class AugmentationService:
                             # 수치형 컬럼 보간
                             if pd.notna(current_row[col]) and pd.notna(next_row[col]):
                                 if method == 'linear':
-                                    interpolated_row[col] = (1 - alpha) * current_row[col] + alpha * next_row[col]
+                                    value = (1 - alpha) * current_row[col] + alpha * next_row[col]
                                 else:
                                     # 더 복잡한 보간은 추후 구현
-                                    interpolated_row[col] = (1 - alpha) * current_row[col] + alpha * next_row[col]
+                                    value = (1 - alpha) * current_row[col] + alpha * next_row[col]
+                                interpolated_row[col] = value
                             else:
                                 interpolated_row[col] = current_row[col]
                         else:
@@ -219,7 +222,8 @@ class AugmentationService:
                 if col in mixable_columns:
                     # 수치형 컬럼은 선형 조합
                     if pd.notna(row1[col]) and pd.notna(row2[col]):
-                        new_row[col] = lam * row1[col] + (1 - lam) * row2[col]
+                        value = lam * row1[col] + (1 - lam) * row2[col]
+                        new_row[col] = value
                     else:
                         new_row[col] = row1[col]
                 else:

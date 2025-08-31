@@ -43,9 +43,9 @@ class ModelingService:
         if data_size < 30:
             return {
                 'train_size': 0.9,
-                'cv_folds': 3,
+                'cv_folds': 2 if data_size < 15 else 3,  # 매우 작은 데이터는 2-fold
                 'models': self.small_data_models,
-                'normalize': True,
+                'normalize': False if data_size < 15 else True,  # 매우 작은 데이터는 정규화 안함
                 'transformation': False,
                 'remove_outliers': False,
                 'feature_selection': False,
@@ -185,6 +185,26 @@ class ModelingService:
         old_stderr = sys.stderr
         
         try:
+            # 데이터 체크 디버깅
+            print(f"📊 Before setup - Data shape: {ml_data.shape}")
+            print(f"📊 Data types: {ml_data.dtypes.value_counts()}")
+            
+            # 문제가 될 수 있는 값 체크 및 수정
+            for col in ml_data.columns:
+                if pd.api.types.is_numeric_dtype(ml_data[col]):
+                    # Infinity 값 처리
+                    if ml_data[col].isin([np.inf, -np.inf]).any():
+                        print(f"⚠️ Column {col} contains infinity - replacing with NaN")
+                        ml_data[col] = ml_data[col].replace([np.inf, -np.inf], np.nan)
+                    
+                    # 매우 큰 값 스케일링 (백만 단위로 변환)
+                    max_val = ml_data[col].max()
+                    if pd.notna(max_val) and abs(max_val) > 1e7:
+                        print(f"📊 Column {col} has large values (max: {max_val:.2e}) - scaling down")
+                        # 백만 단위로 스케일링
+                        ml_data[col] = ml_data[col] / 1e6
+                        print(f"  → Scaled to max: {ml_data[col].max():.2f}M")
+            
             # 모든 출력 억제
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
@@ -247,6 +267,7 @@ class ModelingService:
                 
                 # 특성 선택
                 feature_selection=config.get('feature_selection', False),
+                n_features_to_select=optimal_settings.get('n_features_to_select', 0.8) if config.get('feature_selection', False) else 1.0,
                 
                 # CV 전략
                 fold_strategy='kfold',

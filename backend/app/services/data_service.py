@@ -124,6 +124,9 @@ class DataService:
             # 데이터 전처리
             df = self._preprocess_data(df)
             
+            # 최종 데이터 정리
+            df = self._clean_data_for_storage(df)
+            
             # 마스터 데이터로 저장
             self.master_data = df
             self.current_data = df.copy()  # 작업용 복사본
@@ -279,10 +282,11 @@ class DataService:
         # 데이터 타입 변환 (숫자형으로 변환 가능한 컬럼은 변환)
         for col in df.columns:
             try:
+                # 숫자형으로 변환
                 df[col] = pd.to_numeric(df[col], errors='coerce')
-                # Inf 값만 NaN으로 변환 (NaN 처리는 PyCaret에서)
-                df[col] = df[col].replace([np.inf, -np.inf], np.nan)
-            except:
+                        
+            except Exception as e:
+                logging.warning(f"Error processing column {col}: {e}")
                 pass
         
         # 타겟 컬럼 식별
@@ -321,6 +325,11 @@ class DataService:
                 performance_column = col
                 logging.info(f"Performance column identified: {performance_column}")
         
+        return df
+    
+    def _clean_data_for_storage(self, df: pd.DataFrame) -> pd.DataFrame:
+        """저장 전 데이터 최종 정리"""
+        # 최소한의 정리만 수행, PyCaret이 나머지 처리
         return df
     
     def _get_data_recommendations(self, df: pd.DataFrame) -> list:
