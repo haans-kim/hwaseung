@@ -1,4 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Slider } from '../components/ui/slider';
+import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
@@ -35,6 +38,13 @@ export const DataUpload: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [showDataPreview, setShowDataPreview] = useState(false);
+  const [showAugmentOptions, setShowAugmentOptions] = useState(false);
+  
+  // 증강 옵션 상태
+  const [augmentMethod, setAugmentMethod] = useState<string>('auto');
+  const [augmentFactor, setAugmentFactor] = useState<number>(10);
+  const [targetSize, setTargetSize] = useState<number>(200);
+  const [noiseLevel, setNoiseLevel] = useState<number>(0.02);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -108,9 +118,16 @@ export const DataUpload: React.FC = () => {
     setSuccess(null);
 
     try {
-      const result = await apiClient.augmentData(1100, 0.01); // 10x multiplier with 1% noise
-      if (result.augmentation_applied) {
-        setSuccess(`데이터가 ${result.original_size}개에서 ${result.augmented_size}개로 증강되었습니다.`);
+      const result = await apiClient.augmentDataAdvanced({
+        method: augmentMethod,
+        target_size: targetSize,
+        factor: augmentFactor,
+        noise_level: noiseLevel,
+        preserve_distribution: true
+      });
+      
+      if (result.augmentation_info) {
+        setSuccess(`데이터가 ${result.augmentation_info.original_size}개에서 ${result.augmentation_info.augmented_size}개로 증강되었습니다. (방법: ${result.augmentation_info.method})`);
       } else {
         setSuccess(result.message);
       }
@@ -123,6 +140,16 @@ export const DataUpload: React.FC = () => {
       setError(error instanceof Error ? error.message : '데이터 증강 중 오류가 발생했습니다.');
     } finally {
       setAugmenting(false);
+    }
+  };
+  
+  const resetToMaster = async () => {
+    try {
+      const result = await apiClient.resetToMaster();
+      setSuccess('마스터 데이터로 리셋되었습니다.');
+      await checkDataStatus();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '리셋 중 오류가 발생했습니다.');
     }
   };
 
@@ -247,14 +274,14 @@ export const DataUpload: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-3">
-          {dataStatus && dataStatus.status.has_default_data ? (
+          {dataStatus && (dataStatus.status?.has_master_data || dataStatus.has_master_data) ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                 <div>
-                  <p className="text-sm font-medium">기본 데이터 사용 가능</p>
-                  {dataStatus.status.data_shape && (
+                  <p className="text-sm font-medium">마스터 데이터 사용 가능</p>
+                  {(dataStatus.status?.master_data_shape || dataStatus.master_data_shape) && (
                     <p className="text-xs text-muted-foreground">
-                      {dataStatus.status.data_shape[0]}개 행 × {dataStatus.status.data_shape[1]}개 열
+                      {dataStatus.status?.master_data_shape?.[0] || dataStatus.master_data_shape?.[0]}개 행 × {dataStatus.status?.master_data_shape?.[1] || dataStatus.master_data_shape?.[1]}개 열
                     </p>
                   )}
                 </div>
@@ -272,18 +299,13 @@ export const DataUpload: React.FC = () => {
                     )}
                     <span className="ml-1">불러오기</span>
                   </Button>
-                  {dataStatus.status.data_shape && (
+                  {(dataStatus.status?.master_data_shape || dataStatus.master_data_shape) && (
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={augmentData}
-                      disabled={augmenting}
+                      onClick={() => setShowAugmentOptions(!showAugmentOptions)}
                     >
-                      {augmenting ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Zap className="h-3 w-3" />
-                      )}
+                      <Zap className="h-3 w-3" />
                       <span className="ml-1">데이터 증강</span>
                     </Button>
                   )}
@@ -299,6 +321,120 @@ export const DataUpload: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* 데이터 증강 옵션 */}
+      {showAugmentOptions && (dataStatus?.status?.has_master_data || dataStatus?.has_master_data) && (
+        <Card>
+          <CardHeader className="pb-2 pt-3">
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span className="flex items-center">
+                <Zap className="mr-1.5 h-4 w-4" />
+                데이터 증강 설정
+              </span>
+              {dataStatus?.status?.is_augmented && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetToMaster}
+                  className="h-6 text-xs"
+                >
+                  마스터 데이터로 리셋
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-3 space-y-4">
+            {/* 증강 방법 선택 */}
+            <div className="space-y-2">
+              <Label className="text-xs">증강 방법</Label>
+              <Select value={augmentMethod} onValueChange={setAugmentMethod}>
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">자동 선택</SelectItem>
+                  <SelectItem value="noise">가우시안 노이즈</SelectItem>
+                  <SelectItem value="interpolation">보간법 (시계열)</SelectItem>
+                  <SelectItem value="mixup">Mixup (혼합)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 목표 크기 */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-xs">목표 데이터 크기</Label>
+                <span className="text-xs text-muted-foreground">{targetSize}개</span>
+              </div>
+              <Slider
+                value={[targetSize]}
+                onValueChange={([value]: number[]) => setTargetSize(value)}
+                min={100}
+                max={1000}
+                step={50}
+                className="w-full"
+              />
+            </div>
+
+            {/* 노이즈 수준 (노이즈 방법일 때만) */}
+            {augmentMethod === 'noise' && (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label className="text-xs">노이즈 수준</Label>
+                  <span className="text-xs text-muted-foreground">{(noiseLevel * 100).toFixed(1)}%</span>
+                </div>
+                <Slider
+                  value={[noiseLevel * 100]}
+                  onValueChange={([value]: number[]) => setNoiseLevel(value / 100)}
+                  min={0.5}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {/* 현재 상태 */}
+            {dataStatus?.status && (
+              <div className="p-2 bg-muted/50 rounded text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span>마스터 데이터:</span>
+                  <span className="font-medium">
+                    {dataStatus.status.master_data_shape?.[0] || 0} 행
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>현재 작업 데이터:</span>
+                  <span className="font-medium">
+                    {dataStatus.status.working_data_shape?.[0] || 0} 행
+                    {dataStatus.status.is_augmented && " (증강됨)"}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 증강 버튼 */}
+            <Button
+              onClick={augmentData}
+              disabled={augmenting}
+              className="w-full"
+              size="sm"
+            >
+              {augmenting ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  증강 중...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-3 w-3" />
+                  데이터 증강 실행
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* File Upload Card */}
       <Card>

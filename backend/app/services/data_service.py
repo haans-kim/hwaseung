@@ -14,8 +14,12 @@ class DataService:
         self.upload_dir.mkdir(exist_ok=True)
         self.data_dir = Path("data")
         self.data_dir.mkdir(exist_ok=True)
-        self.pickle_file = self.data_dir / "current_data.pkl"
-        self.current_data: Optional[pd.DataFrame] = None
+        self.pickle_file = self.data_dir / "master_data.pkl"  # 마스터 데이터
+        self.working_pickle_file = self.data_dir / "working_data.pkl"  # 작업용 데이터
+        
+        # 마스터 데이터와 작업 데이터 분리
+        self.master_data: Optional[pd.DataFrame] = None  # 원본 마스터 데이터
+        self.current_data: Optional[pd.DataFrame] = None  # 현재 작업 데이터
         self.data_info: Optional[Dict[str, Any]] = None
         self.column_mapping: Dict[str, str] = {}  # 영문 -> 한글 매핑
         self.reverse_column_mapping: Dict[str, str] = {}  # 한글 -> 영문 매핑
@@ -26,10 +30,12 @@ class DataService:
     def _load_default_data(self) -> bool:
         """기본 데이터 로드 (pickle 파일에서)"""
         try:
+            # 마스터 데이터 로드
             if self.pickle_file.exists():
                 with open(self.pickle_file, 'rb') as f:
                     data_package = pickle.load(f)
-                    self.current_data = data_package['data']
+                    self.master_data = data_package['data']
+                    self.current_data = self.master_data.copy()  # 작업용 복사본
                     self.data_info = data_package['info']
                     self.column_mapping = data_package.get('column_mapping', {})
                     self.reverse_column_mapping = data_package.get('reverse_column_mapping', {})
@@ -37,18 +43,18 @@ class DataService:
                         self.target_column = data_package['target_column']
                     if 'year_column' in data_package:
                         self.year_column = data_package['year_column']
-                    logging.info(f"Loaded default data from pickle: {self.current_data.shape}")
+                    logging.info(f"Loaded master data from pickle: {self.master_data.shape}")
                     return True
         except Exception as e:
             logging.warning(f"Failed to load default data from pickle: {e}")
         return False
     
-    def _save_data_to_pickle(self) -> None:
-        """현재 데이터를 pickle 파일로 저장"""
+    def _save_master_data_to_pickle(self) -> None:
+        """마스터 데이터를 pickle 파일로 저장"""
         try:
-            if self.current_data is not None and self.data_info is not None:
+            if self.master_data is not None and self.data_info is not None:
                 data_package = {
-                    'data': self.current_data,
+                    'data': self.master_data,
                     'info': self.data_info,
                     'column_mapping': self.column_mapping,
                     'reverse_column_mapping': self.reverse_column_mapping,
@@ -58,16 +64,36 @@ class DataService:
                 }
                 with open(self.pickle_file, 'wb') as f:
                     pickle.dump(data_package, f)
-                logging.info(f"Saved data to pickle: {self.current_data.shape}")
+                logging.info(f"Saved master data to pickle: {self.master_data.shape}")
         except Exception as e:
-            logging.error(f"Failed to save data to pickle: {e}")
+            logging.error(f"Failed to save master data to pickle: {e}")
+    
+    def _save_working_data_to_pickle(self) -> None:
+        """작업 데이터를 pickle 파일로 저장"""
+        try:
+            if self.current_data is not None:
+                data_package = {
+                    'data': self.current_data,
+                    'is_augmented': len(self.current_data) != len(self.master_data) if self.master_data is not None else False,
+                    'augmentation_info': getattr(self, 'last_augmentation_info', None),
+                    'timestamp': datetime.now().isoformat()
+                }
+                with open(self.working_pickle_file, 'wb') as f:
+                    pickle.dump(data_package, f)
+                logging.info(f"Saved working data to pickle: {self.current_data.shape}")
+        except Exception as e:
+            logging.error(f"Failed to save working data to pickle: {e}")
     
     def get_default_data_status(self) -> Dict[str, Any]:
         """기본 데이터 상태 확인"""
         return {
-            "has_default_data": self.current_data is not None,
-            "pickle_exists": self.pickle_file.exists(),
-            "data_shape": self.current_data.shape if self.current_data is not None else None,
+            "has_master_data": self.master_data is not None,
+            "has_working_data": self.current_data is not None,
+            "master_pickle_exists": self.pickle_file.exists(),
+            "working_pickle_exists": self.working_pickle_file.exists(),
+            "master_data_shape": self.master_data.shape if self.master_data is not None else None,
+            "working_data_shape": self.current_data.shape if self.current_data is not None else None,
+            "is_augmented": (len(self.current_data) != len(self.master_data)) if (self.current_data is not None and self.master_data is not None) else False,
             "pickle_file_path": str(self.pickle_file)
         }
     
@@ -98,15 +124,16 @@ class DataService:
             # 데이터 전처리
             df = self._preprocess_data(df)
             
-            # 데이터 저장
-            self.current_data = df
+            # 마스터 데이터로 저장
+            self.master_data = df
+            self.current_data = df.copy()  # 작업용 복사본
             
             # 데이터 정보 생성
             data_info = self._analyze_dataframe(df)
             self.data_info = data_info
             
-            # pickle 파일로 저장
-            self._save_data_to_pickle()
+            # 마스터 데이터 pickle 파일로 저장
+            self._save_master_data_to_pickle()
             
             return data_info
             
@@ -253,6 +280,8 @@ class DataService:
         for col in df.columns:
             try:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
+                # Inf 값만 NaN으로 변환 (NaN 처리는 PyCaret에서)
+                df[col] = df[col].replace([np.inf, -np.inf], np.nan)
             except:
                 pass
         
@@ -353,6 +382,20 @@ class DataService:
         for col in column_list:
             display_names[col] = self.get_korean_column_name(col)
         return display_names
+    
+    def reset_to_master(self) -> Dict[str, Any]:
+        """작업 데이터를 마스터 데이터로 리셋"""
+        if self.master_data is None:
+            raise ValueError("No master data available")
+        
+        self.current_data = self.master_data.copy()
+        self.last_augmentation_info = None
+        
+        return {
+            "message": "Reset to master data",
+            "master_shape": self.master_data.shape,
+            "working_shape": self.current_data.shape
+        }
     
     def augment_data_with_noise(self, target_size: int = 120, noise_factor: float = 0.01) -> Dict[str, Any]:
         """Target 컬럼을 제외하고 나머지 데이터에 대해서 10배수로 증강"""

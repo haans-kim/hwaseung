@@ -165,9 +165,10 @@ class ModelingService:
         self, 
         target_column: Optional[str] = None, 
         train_size: Optional[float] = None,
-        session_id: int = 123
+        session_id: int = 123,
+        preprocessing_config: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """PyCaret 환경 설정"""
+        """PyCaret 환경 설정 (전처리 옵션 포함)"""
         
         if not self.check_pycaret_availability():
             raise RuntimeError("PyCaret is not available. Please install it first.")
@@ -188,6 +189,27 @@ class ModelingService:
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
             
+            # 전처리 설정 병합
+            if preprocessing_config:
+                # 사용자 정의 설정이 있으면 우선 사용
+                config = preprocessing_config
+            else:
+                # 기본 설정 사용
+                config = {
+                    'imputation_type': 'simple',
+                    'numeric_imputation': 'mean',
+                    'categorical_imputation': 'mode',
+                    'normalize': optimal_settings['normalize'],
+                    'normalize_method': 'zscore' if optimal_settings['normalize'] else None,
+                    'transformation': optimal_settings['transformation'],
+                    'transformation_method': 'yeo-johnson' if optimal_settings['transformation'] else None,
+                    'remove_outliers': optimal_settings['remove_outliers'],
+                    'outliers_threshold': 0.05 if optimal_settings['remove_outliers'] else None,
+                    'remove_multicollinearity': True,
+                    'multicollinearity_threshold': 0.9,
+                    'feature_selection': optimal_settings['feature_selection']
+                }
+            
             # PyCaret setup 실행 (자동 전처리 강화)
             exp = setup(
                 data=ml_data,
@@ -203,18 +225,28 @@ class ModelingService:
                 ignore_features=None,
                 
                 # 결측값 처리
-                imputation_type='simple',  # 단순 대체
-                numeric_imputation='mean',  # 숫자형: 평균값
-                categorical_imputation='mode',  # 범주형: 최빈값
+                imputation_type=config.get('imputation_type', 'simple'),
+                numeric_imputation=config.get('numeric_imputation', 'mean'),
+                categorical_imputation=config.get('categorical_imputation', 'mode'),
                 
-                # 적응적 전처리 옵션
-                normalize=optimal_settings['normalize'],
-                transformation=optimal_settings['transformation'],
-                remove_outliers=optimal_settings['remove_outliers'],
-                remove_multicollinearity=True,
-                multicollinearity_threshold=0.9,
-                feature_selection=optimal_settings['feature_selection'],
-                n_features_to_select=optimal_settings['n_features_to_select'],
+                # 정규화
+                normalize=config.get('normalize', True),
+                normalize_method=config.get('normalize_method', 'zscore'),
+                
+                # 변환
+                transformation=config.get('transformation', False),
+                transformation_method=config.get('transformation_method', 'yeo-johnson'),
+                
+                # 이상치 제거
+                remove_outliers=config.get('remove_outliers', False),
+                outliers_threshold=config.get('outliers_threshold', 0.05),
+                
+                # 다중공선성 제거
+                remove_multicollinearity=config.get('remove_multicollinearity', True),
+                multicollinearity_threshold=config.get('multicollinearity_threshold', 0.9),
+                
+                # 특성 선택
+                feature_selection=config.get('feature_selection', False),
                 
                 # CV 전략
                 fold_strategy='kfold',

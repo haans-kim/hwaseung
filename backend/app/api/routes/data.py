@@ -5,8 +5,16 @@ from pydantic import BaseModel
 import os
 from app.core.config import settings
 from app.services.data_service import data_service
+from app.services.augmentation_service import augmentation_service
 
 router = APIRouter()
+
+class AugmentationRequest(BaseModel):
+    method: str = 'auto'  # 'auto', 'noise', 'interpolation', 'mixup'
+    factor: Optional[int] = None  # 증강 배수
+    target_size: Optional[int] = None  # 목표 크기
+    noise_level: float = 0.02  # 노이즈 수준
+    preserve_distribution: bool = True  # 분포 유지
 
 @router.options("/upload")
 async def upload_options():
@@ -219,8 +227,10 @@ async def get_data_status() -> Dict[str, Any]:
         return {
             "message": "Data status retrieved successfully",
             "status": status,
-            "current_data_shape": status["data_shape"],
-            "has_default_data": status["has_default_data"]
+            "master_data_shape": status["master_data_shape"],
+            "working_data_shape": status["working_data_shape"],
+            "has_master_data": status["has_master_data"],
+            "is_augmented": status["is_augmented"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting data status: {str(e)}")
@@ -245,26 +255,61 @@ async def load_default_data() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error loading default data: {str(e)}")
 
 @router.post("/augment")
-async def augment_data(request: DataAugmentationRequest) -> Dict[str, Any]:
+async def augment_data(request: AugmentationRequest) -> Dict[str, Any]:
     """
-    데이터 증강 - 노이즈 기반으로 120개 데이터로 확장
+    데이터 증강 - 마스터 데이터를 보존하고 작업 데이터만 증강
     """
     try:
-        if data_service.current_data is None:
-            raise HTTPException(status_code=404, detail="No data loaded for augmentation")
+        if data_service.master_data is None:
+            raise HTTPException(status_code=404, detail="No master data loaded for augmentation")
         
-        result = data_service.augment_data_with_noise(
+        # 모델 설정 가져오기
+        model_config = data_service.get_model_config()
+        target_column = model_config.get('target_column')
+        year_column = model_config.get('year_column')
+        
+        # 마스터 데이터로부터 증강 (복사본 사용)
+        augmented_df, info = augmentation_service.smart_augment(
+            df=data_service.master_data.copy(),  # 마스터 데이터의 복사본 사용
+            target_column=target_column,
+            year_column=year_column,
             target_size=request.target_size,
-            noise_factor=request.noise_factor
+            method=request.method
         )
         
-        # 증강 후 요약 정보 추가
-        if result["augmentation_applied"]:
-            result["summary"] = data_service.get_data_summary()
+        # 작업 데이터만 업데이트 (마스터는 보존)
+        data_service.current_data = augmented_df
+        data_service.last_augmentation_info = info
+        data_service._save_working_data_to_pickle()  # 작업 데이터만 저장
         
-        return result
+        # 결과 반환
+        return {
+            "message": f"Data augmented successfully using {info['method']}",
+            "augmentation_info": info,
+            "master_preserved": True,
+            "master_shape": data_service.master_data.shape,
+            "working_shape": data_service.current_data.shape,
+            "summary": data_service.get_data_summary()
+        }
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error augmenting data: {str(e)}")
+
+@router.post("/reset-to-master")
+async def reset_to_master() -> Dict[str, Any]:
+    """
+    작업 데이터를 마스터 데이터로 리셋
+    """
+    try:
+        result = data_service.reset_to_master()
+        return {
+            "message": "Successfully reset to master data",
+            **result,
+            "summary": data_service.get_data_summary()
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error resetting data: {str(e)}")
