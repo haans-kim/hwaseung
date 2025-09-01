@@ -243,7 +243,14 @@ class DashboardService:
             return pd.DataFrame([default_data])
     
     def _predict_performance_trend(self) -> float:
-        """과거 10개년 성과 인상률 데이터를 기반으로 2026년 성과 인상률 예측"""
+        """과거 성과 인상률 데이터를 기반으로 2026년 성과 인상률 예측
+        
+        데이터 구조:
+        - 2015-2024년: 각 연도의 경제지표 + 다음 해 임금인상률
+        - 2025년: 경제지표만 있음 (2026년 임금인상률이 예측 대상)
+        
+        성과 인상률 트렌드는 2016-2025년 임금인상률을 기반으로 2026년 예측
+        """
         try:
             from app.services.data_service import data_service
             from sklearn.linear_model import LinearRegression
@@ -318,11 +325,18 @@ class DashboardService:
                 trend_data['performance_rate'] = trend_data['performance_rate'] / 100
                 print(f"   Converted to ratio format (new mean: {trend_data['performance_rate'].mean():.4f})")
             
+            # 2025년 데이터 제외 (타겟이 없는 예측 대상 데이터)
+            # 성과 인상률이 실제로 존재하는 데이터만 사용
+            trend_data = trend_data[trend_data['performance_rate'].notna()]
+            
+            # 2025년 이후 데이터 제외 (미래 예측 대상)
+            trend_data = trend_data[trend_data['year'] < 2025]
+            
             if len(trend_data) < 3:
                 # 데이터가 너무 적으면 기본값
                 return 0.02
             
-            # 최근 10년 데이터만 사용
+            # 최근 10년 데이터만 사용 (2015-2024)
             trend_data = trend_data.sort_values('year').tail(10)
             
             # 선형회귀 모델 학습
@@ -362,11 +376,37 @@ class DashboardService:
             return 0.02  # 2% 기본값
     
     def predict_wage_increase(self, model, input_data: Dict[str, float], confidence_level: float = 0.95) -> Dict[str, Any]:
-        """임금인상률 예측"""
+        """2026년 임금인상률 예측
+        
+        Args:
+            model: 학습된 모델
+            input_data: 예측에 사용할 2025년 경제지표 데이터
+            confidence_level: 신뢰구간 수준
+            
+        Returns:
+            2026년 임금인상률 예측 결과
+        """
         
         try:
-            # 입력 데이터 준비
-            model_input = self._prepare_model_input(input_data)
+            # ModelingService에서 2025년 데이터 확인
+            from app.services.modeling_service import modeling_service
+            
+            # input_data가 없고 modeling_service에 2025년 데이터가 있으면 사용
+            if not input_data and hasattr(modeling_service, 'prediction_data') and modeling_service.prediction_data is not None:
+                # 2025년 데이터 사용
+                print("📊 Using 2025 data from modeling service for 2026 prediction")
+                model_input = modeling_service.prediction_data.iloc[[0]]  # 첫 번째 행만 사용
+                
+                # 데이터 누수 방지: 임금 관련 컬럼 모두 제거
+                wage_columns_to_remove = [
+                    'wage_increase_total_sbl', 'wage_increase_mi_sbl', 'wage_increase_bu_sbl',
+                    'wage_increase_baseup_sbl', 'Base-up 인상률', '성과인상률', '임금인상률',
+                    'wage_increase_total_group', 'wage_increase_mi_group', 'wage_increase_bu_group'
+                ]
+                model_input = model_input.drop(columns=wage_columns_to_remove, errors='ignore')
+            else:
+                # 입력 데이터 준비
+                model_input = self._prepare_model_input(input_data)
             
             # PyCaret의 predict_model 사용
             try:

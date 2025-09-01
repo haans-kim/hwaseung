@@ -71,7 +71,9 @@ export const Analysis: React.FC = () => {
     try {
       const [shapRes, featureRes, performanceRes] = await Promise.all([
         apiClient.getShapAnalysis(undefined, 20).catch(() => ({ available: false, error: 'SHAP 분석을 사용할 수 없습니다.' })),
-        apiClient.getFeatureImportance('permutation', 15).catch(() => ({ feature_importance: [], error: 'Feature importance 분석을 사용할 수 없습니다.' })),
+        apiClient.getFeatureImportance('pycaret', 15).catch(() => 
+          apiClient.getFeatureImportance('permutation', 15).catch(() => ({ feature_importance: [], error: 'Feature importance 분석을 사용할 수 없습니다.' }))
+        ),
         apiClient.getModelPerformance().catch(() => ({ performance: {}, error: '성능 분석을 사용할 수 없습니다.' }))
       ]);
 

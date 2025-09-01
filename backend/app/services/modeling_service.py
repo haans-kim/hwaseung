@@ -29,6 +29,8 @@ class ModelingService:
         self.compared_models = None  # 비교된 모델들
         self.is_setup_complete = False
         self.feature_names = None  # Store feature names for prediction
+        self.prediction_data = None  # 2025년 예측 대상 데이터
+        self.prediction_features = []  # 예측에 사용할 feature 컬럼명
         
         # 데이터 크기에 따른 모델 선택
         self.small_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt']
@@ -108,6 +110,16 @@ class ModelingService:
         if target_column not in df.columns:
             raise ValueError(f"Target column '{target_column}' not found in data")
         
+        # 2025년 데이터(예측 대상) 분리 저장
+        prediction_data_mask = df[target_column].isna()
+        if prediction_data_mask.any():
+            self.prediction_data = df[prediction_data_mask].copy()
+            self.prediction_features = model_config.get('feature_columns', [])
+            print(f"📊 Separated {len(self.prediction_data)} rows for 2026 prediction (2025 data with no target)")
+        else:
+            self.prediction_data = None
+            self.prediction_features = []
+        
         # 타겟 컬럼에 결측값이 있는 행 제거 (2025년 예측 대상 데이터 제외)
         initial_rows = len(df)
         df = df.dropna(subset=[target_column])
@@ -125,6 +137,21 @@ class ModelingService:
         # '-' 값을 NaN으로 변환 (PyCaret이 인식할 수 있도록)
         df = df.replace(['-', ''], np.nan)
         
+        # 데이터 누수 방지: 임금 관련 컬럼 제거 (타겟과 직접 관련)
+        wage_columns_to_remove = [
+            'wage_increase_bu_sbl',     # Base-up (타겟의 일부)
+            'wage_increase_mi_sbl',      # 성과급 (타겟의 일부)
+            'wage_increase_baseup_sbl',  # Base-up 다른 이름
+            'Base-up 인상률',            # 한글명
+            '성과인상률',                # 한글명
+        ]
+        
+        for col in wage_columns_to_remove:
+            if col in df.columns and col != target_column:
+                df = df.drop(columns=[col])
+                info['dropped_columns'].append(col)
+                print(f"📊 Removed wage-related column (data leakage prevention): {col}")
+        
         # 연도 컬럼 제거 (data_service에서 식별된 것 사용)
         if info['year_column'] and info['year_column'] in df.columns:
             if info['year_column'] != target_column:
@@ -133,7 +160,7 @@ class ModelingService:
                 print(f"📊 Removed year column: {info['year_column']}")
         else:
             # 백업: 수동으로 연도 컬럼 찾기
-            year_columns = ['year', 'Year', 'YEAR', '년도', '연도']
+            year_columns = ['year', 'Year', 'YEAR', '년도', '연도', 'eng', 'kor']
             for year_col in year_columns:
                 if year_col in df.columns and year_col != target_column:
                     df = df.drop(columns=[year_col])

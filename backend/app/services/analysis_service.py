@@ -308,12 +308,150 @@ class AnalysisService:
                 if shap_result.get("available"):
                     feature_importance = shap_result.get("feature_importance", [])
             
+            elif method == "pycaret":
+                # PyCaret의 내장 해석 기능 사용
+                try:
+                    from pycaret.regression import get_config, interpret_model
+                    
+                    # PyCaret의 feature importance 가져오기
+                    try:
+                        # 변수 중요도 플롯 생성 (실제로는 플롯을 그리지 않고 데이터만 추출)
+                        import matplotlib
+                        matplotlib.use('Agg')  # 백엔드를 non-interactive로 설정
+                        
+                        # get_config로 feature importance 시도
+                        feature_importance_df = get_config('feature_importance')
+                        if feature_importance_df is not None:
+                            feature_importance = []
+                            for idx, row in feature_importance_df.iterrows():
+                                if idx < top_n:
+                                    feature_importance.append({
+                                        "feature": row.get('Feature', str(idx)),
+                                        "feature_korean": self.feature_display_names.get(row.get('Feature', str(idx)), row.get('Feature', str(idx))),
+                                        "importance": float(row.get('Importance', 0)),
+                                        "std": 0.0
+                                    })
+                            
+                            result = {
+                                "method": "pycaret",
+                                "feature_importance": feature_importance
+                            }
+                            self._importance_cache[cache_key] = result
+                            return result
+                    except:
+                        pass
+                    
+                    # Fallback to model's built-in importance
+                    if hasattr(model, '_final_estimator'):
+                        final_model = model._final_estimator
+                    elif hasattr(model, 'steps'):
+                        final_model = model.steps[-1][1]
+                    else:
+                        final_model = model
+                    
+                    if hasattr(final_model, 'feature_importances_'):
+                        importances = final_model.feature_importances_
+                    elif hasattr(final_model, 'coef_'):
+                        importances = np.abs(final_model.coef_)
+                    else:
+                        raise ValueError("Model has no feature importance attribute")
+                    
+                    feature_importance = []
+                    for i, importance in enumerate(importances):
+                        if i < len(self.feature_names):
+                            english_name = self.feature_names[i]
+                            korean_name = self.feature_display_names.get(english_name, english_name)
+                            feature_importance.append({
+                                "feature": english_name,
+                                "feature_korean": korean_name,
+                                "importance": float(importance),
+                                "std": 0.0
+                            })
+                    
+                    feature_importance.sort(key=lambda x: x["importance"], reverse=True)
+                    feature_importance = feature_importance[:top_n]
+                    
+                    result = {
+                        "method": "pycaret",
+                        "feature_importance": feature_importance
+                    }
+                    self._importance_cache[cache_key] = result
+                    return result
+                    
+                except Exception as e:
+                    print(f"⚠️ PyCaret method failed: {str(e)}")
+                    
             elif method == "permutation" and SKLEARN_AVAILABLE:
                 # Permutation importance
                 test_X = X_test if X_test is not None else X_train
                 test_y = y_test if y_test is not None else y_train
                 
-                perm_importance = permutation_importance(model, test_X, test_y, n_repeats=10, random_state=42)
+                try:
+                    # PyCaret Pipeline 모델 처리
+                    if hasattr(model, 'steps'):
+                        # Pipeline의 마지막 단계(실제 모델) 추출
+                        actual_model = model.steps[-1][1]
+                        print(f"📊 Using actual model from Pipeline: {type(actual_model).__name__}")
+                        
+                        # Pipeline 전체로 예측하되, feature importance는 실제 모델에서 추출
+                        if hasattr(actual_model, 'coef_'):
+                            # Linear 모델인 경우 계수 사용
+                            importances = np.abs(actual_model.coef_)
+                            feature_importance = []
+                            for i, importance in enumerate(importances):
+                                if i < len(self.feature_names):
+                                    english_name = self.feature_names[i]
+                                    korean_name = self.feature_display_names.get(english_name, english_name)
+                                    feature_importance.append({
+                                        "feature": english_name,
+                                        "feature_korean": korean_name,
+                                        "importance": float(importance),
+                                        "std": 0.0
+                                    })
+                            feature_importance.sort(key=lambda x: x["importance"], reverse=True)
+                            feature_importance = feature_importance[:top_n]
+                            
+                            result = {
+                                "method": "coefficients",
+                                "feature_importance": feature_importance
+                            }
+                            self._importance_cache[cache_key] = result
+                            return result
+                        elif hasattr(actual_model, 'feature_importances_'):
+                            # Tree 기반 모델인 경우
+                            importances = actual_model.feature_importances_
+                            feature_importance = []
+                            for i, importance in enumerate(importances):
+                                if i < len(self.feature_names):
+                                    english_name = self.feature_names[i]
+                                    korean_name = self.feature_display_names.get(english_name, english_name)
+                                    feature_importance.append({
+                                        "feature": english_name,
+                                        "feature_korean": korean_name,
+                                        "importance": float(importance),
+                                        "std": 0.0
+                                    })
+                            feature_importance.sort(key=lambda x: x["importance"], reverse=True)
+                            feature_importance = feature_importance[:top_n]
+                            
+                            result = {
+                                "method": "built_in",
+                                "feature_importance": feature_importance
+                            }
+                            self._importance_cache[cache_key] = result
+                            return result
+                    
+                    # Pipeline이 아닌 경우 일반적인 permutation importance 계산
+                    perm_importance = permutation_importance(model, test_X, test_y, n_repeats=10, random_state=42)
+                    
+                except Exception as e:
+                    print(f"⚠️ Feature importance calculation failed: {str(e)}")
+                    # Fallback: 기본값 반환
+                    return {
+                        "method": method,
+                        "feature_importance": [],
+                        "error": str(e)
+                    }
                 
                 for i, importance in enumerate(perm_importance.importances_mean):
                     if i < len(self.feature_names):

@@ -283,18 +283,16 @@ class AugmentationService:
         
         factor = max(2, target_size // original_size)
         
-        # 자동 방법 선택 - 시계열 데이터는 기본적으로 보간법 사용
+        # 자동 방법 선택 - 회귀 데이터는 노이즈 또는 mixup 사용
         if method == 'auto':
-            if year_column and year_column in df.columns:
-                # 시계열 데이터는 항상 보간법 사용 (데이터가 너무 적어도)
-                method = 'interpolation'
-                self.logger.info(f"Time series data detected, using interpolation method")
+            # 경제지표 → 임금인상률 관계는 시계열이 아닌 회귀 문제
+            # 보간법은 부적합, 노이즈나 mixup이 적합
+            if original_size < 10:
+                method = 'noise'  # 데이터가 적으면 노이즈
+                self.logger.info(f"Small dataset ({original_size} rows), using noise augmentation")
             else:
-                # 일반 데이터도 기본적으로 보간법 시도
-                if original_size < 5:
-                    method = 'noise'  # 5개 미만일 때만 노이즈
-                else:
-                    method = 'interpolation'  # 기본값을 보간법으로
+                method = 'mixup'  # 데이터가 충분하면 mixup
+                self.logger.info(f"Sufficient data ({original_size} rows), using mixup augmentation")
         
         self.logger.info(f"Smart augment: {original_size} -> {target_size} using {method}")
         
