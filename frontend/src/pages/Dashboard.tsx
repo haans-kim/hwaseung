@@ -660,114 +660,126 @@ export const Dashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* 시나리오 선택 및 변수 조정 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 시나리오 템플릿 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Settings2 className="mr-2 h-5 w-5" />
-              시나리오 템플릿
-            </CardTitle>
-            <CardDescription>
-              사전 정의된 시나리오를 선택하여 빠른 분석
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {scenarioTemplates.map((template) => (
-                <Button
-                  key={template.id}
-                  variant={selectedScenario === template.id ? "default" : "outline"}
-                  className="h-auto p-4 text-left"
-                  onClick={() => handleScenarioSelect(template.id)}
-                  disabled={loading === 'prediction'}
-                >
-                  <div>
-                    <div className="font-medium text-sm">{template.name}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {template.description}
-                    </div>
+      {/* 변수 조정과 분석 차트를 2열로 배치 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 왼쪽: 변수 조정 (1/3 너비) */}
+        <div className="lg:col-span-1">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Sliders className="mr-2 h-5 w-5" />
+                변수 조정
+              </CardTitle>
+              <CardDescription>
+                경제 변수를 직접 조정하여 사용자 정의 예측
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {availableVariables.slice(0, 8).map((variable) => (
+                <div key={variable.name} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium">{variable.display_name}</label>
+                    <span className="text-sm text-muted-foreground">
+                      {formatNumber(customVariables[variable.name] || variable.current_value, 1)}{variable.unit}
+                    </span>
                   </div>
-                </Button>
+                  <input
+                    type="range"
+                    min={variable.min_value}
+                    max={variable.max_value}
+                    step={0.1}
+                    value={customVariables[variable.name] || variable.current_value}
+                    onChange={(e) => handleVariableChange(variable.name, parseFloat(e.target.value))}
+                    className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{variable.min_value}{variable.unit}</span>
+                    <span>{variable.max_value}{variable.unit}</span>
+                  </div>
+                </div>
               ))}
-            </div>
 
-            <Button 
-              onClick={handleRunScenarioAnalysis}
-              disabled={loading === 'scenario-analysis'}
-              className="w-full"
-            >
-              {loading === 'scenario-analysis' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  분석 중...
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" />
-                  전체 시나리오 분석
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              <Button 
+                onClick={handleCustomPrediction}
+                disabled={loading === 'custom-prediction'}
+                className="w-full"
+              >
+                {loading === 'custom-prediction' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    예측 중...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    사용자 정의 예측
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* 변수 조정 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Sliders className="mr-2 h-5 w-5" />
-              변수 조정
-            </CardTitle>
-            <CardDescription>
-              경제 변수를 직접 조정하여 사용자 정의 예측
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {availableVariables.slice(0, 5).map((variable) => (
-              <div key={variable.name} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium">{variable.display_name}</label>
-                  <span className="text-sm text-muted-foreground">
-                    {formatNumber(customVariables[variable.name] || variable.current_value, 1)}{variable.unit}
-                  </span>
+        {/* 오른쪽: 트렌드 분석과 영향 요인 분석 (2/3 너비) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* 트렌드 분석 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <LineChart className="mr-2 h-5 w-5" />
+                트렌드 분석
+              </CardTitle>
+              <CardDescription>
+                과거 임금인상률 추이 및 향후 전망
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {trendData && getChartData() ? (
+                <div className="h-64">
+                  <Line data={getChartData()!} options={getChartOptions()} />
                 </div>
-                <input
-                  type="range"
-                  min={variable.min_value}
-                  max={variable.max_value}
-                  step={0.1}
-                  value={customVariables[variable.name] || variable.current_value}
-                  onChange={(e) => handleVariableChange(variable.name, parseFloat(e.target.value))}
-                  className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{variable.min_value}{variable.unit}</span>
-                  <span>{variable.max_value}{variable.unit}</span>
-                </div>
-              </div>
-            ))}
-
-            <Button 
-              onClick={handleCustomPrediction}
-              disabled={loading === 'custom-prediction'}
-              className="w-full"
-            >
-              {loading === 'custom-prediction' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  예측 중...
-                </>
               ) : (
-                <>
-                  <Zap className="mr-2 h-4 w-4" />
-                  사용자 정의 예측
-                </>
+                <div className="h-64 bg-background border rounded-md flex items-center justify-center">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+                    <p className="text-muted-foreground">데이터 로딩 중...</p>
+                  </div>
+                </div>
               )}
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* 영향 요인 분석 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <BarChart3 className="mr-2 h-5 w-5" />
+                영향 요인 분석
+              </CardTitle>
+              <CardDescription>
+                주요 경제 변수의 임금인상률 영향도
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {featureImportance && getWaterfallChartData() ? (
+                <div className="h-64">
+                  <Chart 
+                    type='bar'
+                    data={getWaterfallChartData()!} 
+                    options={getWaterfallChartOptions()} 
+                  />
+                </div>
+              ) : (
+                <div className="h-64 bg-background border rounded-md flex items-center justify-center">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+                    <p className="text-muted-foreground">데이터 로딩 중...</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* 시나리오 분석 결과 */}
@@ -806,65 +818,6 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       )}
-
-      {/* 상세 분석 영역 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <LineChart className="mr-2 h-5 w-5" />
-              트렌드 분석
-            </CardTitle>
-            <CardDescription>
-              과거 임금인상률 추이 및 향후 전망
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {trendData && getChartData() ? (
-              <div className="h-64">
-                <Line data={getChartData()!} options={getChartOptions()} />
-              </div>
-            ) : (
-              <div className="h-64 bg-background border rounded-md flex items-center justify-center">
-                <div className="text-center">
-                  <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
-                  <p className="text-muted-foreground">데이터 로딩 중...</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart3 className="mr-2 h-5 w-5" />
-              영향 요인 분석
-            </CardTitle>
-            <CardDescription>
-              주요 경제 변수의 임금인상률 영향도
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {featureImportance && getWaterfallChartData() ? (
-              <div className="h-64">
-                <Chart 
-                  type='bar'
-                  data={getWaterfallChartData()!} 
-                  options={getWaterfallChartOptions()} 
-                />
-              </div>
-            ) : (
-              <div className="h-64 bg-background border rounded-md flex items-center justify-center">
-                <div className="text-center">
-                  <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
-                  <p className="text-muted-foreground">데이터 로딩 중...</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };
