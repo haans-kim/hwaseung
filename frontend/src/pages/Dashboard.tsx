@@ -232,7 +232,7 @@ export const Dashboard: React.FC = () => {
           pointHoverRadius: 6,
         },
         {
-          label: '2025년 예측',
+          label: '2026년 예측',
           data: values.map((v: number, i: number) => 
             trendData.trend_data[i].type === 'prediction' ? v : null
           ),
@@ -279,7 +279,7 @@ export const Dashboard: React.FC = () => {
       },
       title: {
         display: true,
-        text: '임금인상률 추이 및 2025년 예측',
+        text: '임금인상률 추이 및 2026년 예측',
         font: {
           size: 16,
           weight: 'bold' as const
@@ -508,7 +508,7 @@ export const Dashboard: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">2025년 임금인상률 예측 및 시나리오 분석</p>
+          <p className="text-muted-foreground">2026년 임금인상률 예측 및 시나리오 분석</p>
         </div>
         <Button onClick={loadDashboardData} disabled={loading === 'initial'}>
           {loading === 'initial' ? (
@@ -549,7 +549,7 @@ export const Dashboard: React.FC = () => {
         {/* 현재 예측 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">2025년 예측</CardTitle>
+            <CardTitle className="text-sm font-medium">2026년 예측</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>

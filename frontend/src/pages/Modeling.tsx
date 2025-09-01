@@ -277,7 +277,7 @@ export const Modeling: React.FC = () => {
                     disabled={!availableColumns.length}
                   >
                     <option value="">선택하세요</option>
-                    {availableColumns.map(col => (
+                    {availableColumns.slice().reverse().map(col => (
                       <option key={col} value={col}>{col}</option>
                     ))}
                   </select>

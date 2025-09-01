@@ -70,7 +70,7 @@ export const Analysis: React.FC = () => {
 
     try {
       const [shapRes, featureRes, performanceRes] = await Promise.all([
-        apiClient.getShapAnalysis().catch(() => ({ available: false, error: 'SHAP 분석을 사용할 수 없습니다.' })),
+        apiClient.getShapAnalysis(undefined, 20).catch(() => ({ available: false, error: 'SHAP 분석을 사용할 수 없습니다.' })),
         apiClient.getFeatureImportance().catch(() => ({ feature_importance: [], error: 'Feature importance 분석을 사용할 수 없습니다.' })),
         apiClient.getModelPerformance().catch(() => ({ performance: {}, error: '성능 분석을 사용할 수 없습니다.' }))
       ]);
@@ -91,7 +91,7 @@ export const Analysis: React.FC = () => {
     setError(null);
 
     try {
-      const result = await apiClient.getShapAnalysis(selectedSample);
+      const result = await apiClient.getShapAnalysis(selectedSample, 20);
       setShapAnalysis(result);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'SHAP 분석 중 오류가 발생했습니다.');
