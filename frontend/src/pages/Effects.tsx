@@ -272,7 +272,34 @@ export const Effects: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false  // 기본 범례 숨김
+        display: true,
+        position: 'right' as const,
+        labels: {
+          padding: 15,
+          font: {
+            size: 11
+          },
+          generateLabels: function(chart: any) {
+            // 각 데이터셋의 4개년 평균값 포함
+            const datasets = chart.data.datasets;
+            return datasets.map((dataset: any) => {
+              const avgValue = dataset.data[4];
+              return {
+                text: `${dataset.label}: ${avgValue}%`,
+                fillStyle: dataset.borderColor,
+                strokeStyle: dataset.borderColor,
+                lineWidth: 2,
+                hidden: !chart.isDatasetVisible(chart.data.datasets.indexOf(dataset)),
+                datasetIndex: chart.data.datasets.indexOf(dataset)
+              };
+            }).sort((a: any, b: any) => {
+              // 평균값 기준 내림차순 정렬
+              const aVal = parseFloat(a.text.split(': ')[1]);
+              const bVal = parseFloat(b.text.split(': ')[1]);
+              return bVal - aVal;
+            });
+          }
+        }
       },
       title: {
         display: true,
@@ -313,33 +340,8 @@ export const Effects: React.FC = () => {
             borderWidth: 2,
             borderDash: [5, 5],
             drawTime: 'beforeDatasetsDraw' as const
-          },
-          // 평균값 레이블들 (정렬된 순서대로)
-          ...laborCostSorted.reduce((acc: any, item, index) => {
-            acc[`label${index}`] = {
-              type: 'label' as const,
-              xValue: 4.6,
-              yValue: item.value,
-              content: `${item.name}: ${item.value}%`,
-              backgroundColor: item.color,
-              borderColor: item.color,
-              color: 'white',
-              font: { size: 9, weight: 'bold' as const },
-              padding: { x: 4, y: 2 },
-              borderRadius: 3,
-              textAlign: 'left' as const,
-              position: 'center' as const,
-              xAdjust: 10
-            };
-            
-            return acc;
-          }, {})
+          }
         }
-      }
-    },
-    layout: {
-      padding: {
-        right: 150  // 우측 범례 공간 확보
       }
     },
     scales: {
@@ -398,7 +400,34 @@ export const Effects: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false  // 기본 범례 숨김
+        display: true,
+        position: 'right' as const,
+        labels: {
+          padding: 15,
+          font: {
+            size: 11
+          },
+          generateLabels: function(chart: any) {
+            // 각 데이터셋의 4개년 평균값 포함
+            const datasets = chart.data.datasets;
+            return datasets.map((dataset: any) => {
+              const avgValue = dataset.data[4];
+              return {
+                text: `${dataset.label}: ${avgValue}%`,
+                fillStyle: dataset.borderColor,
+                strokeStyle: dataset.borderColor,
+                lineWidth: 2,
+                hidden: !chart.isDatasetVisible(chart.data.datasets.indexOf(dataset)),
+                datasetIndex: chart.data.datasets.indexOf(dataset)
+              };
+            }).sort((a: any, b: any) => {
+              // 평균값 기준 내림차순 정렬
+              const aVal = parseFloat(a.text.split(': ')[1]);
+              const bVal = parseFloat(b.text.split(': ')[1]);
+              return bVal - aVal;
+            });
+          }
+        }
       },
       title: {
         display: true,
@@ -439,33 +468,8 @@ export const Effects: React.FC = () => {
             borderWidth: 2,
             borderDash: [5, 5],
             drawTime: 'beforeDatasetsDraw' as const
-          },
-          // 평균값 레이블들 (정렬된 순서대로)
-          ...profitSorted.reduce((acc: any, item, index) => {
-            acc[`label${index}`] = {
-              type: 'label' as const,
-              xValue: 4.6,
-              yValue: item.value,
-              content: `${item.name}: ${item.value}%`,
-              backgroundColor: item.color,
-              borderColor: item.color,
-              color: 'white',
-              font: { size: 9, weight: 'bold' as const },
-              padding: { x: 4, y: 2 },
-              borderRadius: 3,
-              textAlign: 'left' as const,
-              position: 'center' as const,
-              xAdjust: 10
-            };
-            
-            return acc;
-          }, {})
+          }
         }
-      }
-    },
-    layout: {
-      padding: {
-        right: 150  // 우측 범례 공간 확보
       }
     },
     scales: {
