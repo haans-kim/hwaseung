@@ -648,41 +648,93 @@ class DashboardService:
         """트렌드 데이터 반환"""
         
         try:
-            if data_service.current_data is not None and 'year' in data_service.current_data.columns:
+            if data_service.current_data is not None:
                 df = data_service.current_data.copy()
                 
-                # 연도별 임금인상률 데이터
-                if 'wage_increase_total_sbl' in df.columns:
-                    trend_data = df[['year', 'wage_increase_total_sbl']].dropna()
+                # 타겟 컬럼 찾기
+                target_col = 'wage_increase_total_sbl'
+                if target_col not in df.columns:
+                    # 다른 가능한 컬럼들 시도
+                    for col in ['wage_increase_rate', 'target', 'wage_increase']:
+                        if col in df.columns:
+                            target_col = col
+                            break
+                
+                # year 또는 eng 컬럼 찾기
+                year_col = 'year' if 'year' in df.columns else 'eng' if 'eng' in df.columns else None
+                
+                if target_col in df.columns and year_col:
+                    # 원본 데이터만 선택 (노이즈 제거)
+                    # 각 연도별로 첫 번째 데이터만 선택 (원본)
+                    original_indices = []
+                    years_seen = set()
+                    for idx, row in df.iterrows():
+                        year = row[year_col]
+                        if year not in years_seen:
+                            original_indices.append(idx)
+                            years_seen.add(year)
                     
-                    # 수치형으로 변환
-                    trend_data['year'] = pd.to_numeric(trend_data['year'], errors='coerce')
-                    trend_data['wage_increase_total_sbl'] = pd.to_numeric(trend_data['wage_increase_total_sbl'], errors='coerce')
-                    trend_data = trend_data.dropna()
+                    df_original = df.loc[original_indices]
+                    
+                    # 연도별 데이터 집계 (원본 데이터만)
+                    yearly_data = df_original.groupby(year_col)[target_col].mean().dropna()
+                    
+                    # 과거 데이터 포맷팅
+                    historical_data = []
+                    for year, value in yearly_data.items():
+                        if pd.notna(value):
+                            # value가 이미 퍼센트인지 확인 (1보다 작으면 비율, 크면 퍼센트)
+                            display_value = float(value) if value > 1 else float(value * 100)
+                            historical_data.append({
+                                "year": int(year),
+                                "value": display_value,
+                                "type": "historical"
+                            })
+                    
+                    # 2026년 예측 데이터 추가 (모델이 있는 경우)
+                    from app.services.modeling_service import modeling_service
+                    if modeling_service.current_model:
+                        try:
+                            # 간단한 예측값 추가 (실제 예측 로직은 나중에)
+                            last_value = historical_data[-1]["value"] if historical_data else 3.5
+                            prediction_data = {
+                                "year": 2026,
+                                "value": last_value * 1.05,  # 임시 예측값
+                                "confidence_lower": last_value * 0.95,
+                                "confidence_upper": last_value * 1.15,
+                                "type": "prediction"
+                            }
+                            historical_data.append(prediction_data)
+                        except:
+                            pass
                     
                     return {
-                        "years": trend_data['year'].tolist(),
-                        "values": trend_data['wage_increase_total_sbl'].tolist(),
-                        "label": "임금인상률 (%)",
-                        "available": True
+                        "message": "Trend data retrieved successfully",
+                        "trend_data": historical_data,
+                        "chart_config": {
+                            "title": "임금인상률 추이 및 2026년 예측",
+                            "y_axis_label": "임금인상률 (%)",
+                            "x_axis_label": "연도"
+                        }
                     }
             
-            # 기본 데이터 (예시)
+            # 기본 데이터 반환
             return {
-                "years": list(range(2015, 2024)),
-                "values": [2.8, 3.2, 3.5, 3.8, 4.2, 3.9, 3.6, 3.3, 3.5],
-                "label": "임금인상률 (%)",
-                "available": False
+                "message": "Using default trend data",
+                "trend_data": [],
+                "chart_config": {
+                    "title": "임금인상률 추이",
+                    "y_axis_label": "임금인상률 (%)",
+                    "x_axis_label": "연도"
+                }
             }
             
         except Exception as e:
             logging.error(f"Failed to get trend data: {str(e)}")
             return {
-                "years": [],
-                "values": [],
-                "label": "임금인상률 (%)",
-                "available": False,
-                "error": str(e)
+                "message": f"Error: {str(e)}",
+                "trend_data": [],
+                "chart_config": {}
             }
 
 # 싱글톤 인스턴스

@@ -37,8 +37,8 @@ class ModelingService:
         self.medium_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt', 'rf', 'gbr']
         self.large_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt', 'rf', 'gbr', 'xgboost', 'lightgbm']
         
-        # 초기화 시 저장된 최신 모델 자동 로드 시도 (나중에 메서드 정의 후 호출)
-        # self._load_latest_model_if_exists()
+        # 초기화 시 저장된 최신 모델 자동 로드 시도
+        self._load_latest_model_if_exists()
     
     def check_pycaret_availability(self) -> bool:
         """PyCaret 사용 가능 여부 확인"""

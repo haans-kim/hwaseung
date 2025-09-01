@@ -279,12 +279,7 @@ async def get_trend_data() -> Dict[str, Any]:
     과거 임금인상률 추이 및 2025년 예측 데이터 (트렌드 차트용)
     """
     try:
-        if not modeling_service.current_model:
-            raise HTTPException(status_code=404, detail="No trained model available")
-        
-        result = dashboard_service.get_trend_data(
-            model=modeling_service.current_model
-        )
+        result = dashboard_service.get_trend_data()
         
         return result
         

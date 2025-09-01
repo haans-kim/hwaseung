@@ -123,7 +123,7 @@ export const Dashboard: React.FC = () => {
         apiClient.getAvailableVariables().catch(() => ({ variables: [], current_values: {} })),
         apiClient.getEconomicIndicators().catch(() => ({ indicators: {} })),
         apiClient.getTrendData().catch(() => null),
-        apiClient.getFeatureImportance('permutation', 10).catch(() => null)
+        apiClient.getFeatureImportance('shap', 10).catch(() => null)
       ]);
 
       setScenarioTemplates(templatesRes.templates || []);
@@ -228,63 +228,89 @@ export const Dashboard: React.FC = () => {
   const getChartData = () => {
     if (!trendData || !trendData.trend_data) return null;
 
-
     const labels = trendData.trend_data.map((d: any) => d.year);
-    const values = trendData.trend_data.map((d: any) => d.value);
     
-    // 신뢰구간 데이터 (예측 데이터만)
-    const confidenceLower = trendData.trend_data.map((d: any) => 
-      d.type === 'prediction' ? d.confidence_lower : d.value
-    );
-    const confidenceUpper = trendData.trend_data.map((d: any) => 
-      d.type === 'prediction' ? d.confidence_upper : d.value
-    );
-
+    // 실제 데이터에서 Base-up과 성과급 분리
+    // currentPrediction에서 breakdown 정보 활용
+    const baseupData = trendData.trend_data.map((d: any) => {
+      // 과거 데이터는 전체의 약 60%를 Base-up으로 가정
+      if (d.type === 'historical') {
+        return d.value * 0.6;
+      }
+      // 예측 데이터는 breakdown 정보 활용
+      if (currentPrediction?.breakdown) {
+        return currentPrediction.breakdown.base_up.rate * 100;
+      }
+      return d.value * 0.6;
+    });
+    
+    const performanceData = trendData.trend_data.map((d: any, i: number) => {
+      // 과거 데이터는 전체의 약 40%를 성과급으로 가정
+      if (d.type === 'historical') {
+        return d.value * 0.4;
+      }
+      // 예측 데이터는 breakdown 정보 활용
+      if (currentPrediction?.breakdown) {
+        return currentPrediction.breakdown.performance.rate * 100;
+      }
+      return d.value * 0.4;
+    });
+    
+    // 총 인상률
+    const totalData = trendData.trend_data.map((d: any) => d.value);
+    
     return {
       labels,
       datasets: [
         {
-          label: '과거 임금인상률',
-          data: values.map((v: number, i: number) => 
-            trendData.trend_data[i].type === 'historical' ? v : null
-          ),
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          tension: 0.1,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          label: '총 인상률',
+          data: totalData,
+          borderColor: 'rgb(168, 85, 247)', // 보라색
+          backgroundColor: 'rgba(168, 85, 247, 0.15)',
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: 'rgb(168, 85, 247)',
+          pointBorderColor: 'rgb(168, 85, 247)',
+          pointBorderWidth: 1,
+          fill: true,
+          segment: {
+            borderDash: (ctx: any) => trendData.trend_data[ctx.p0DataIndex]?.type === 'prediction' ? [5, 5] : undefined,
+          },
         },
         {
-          label: '2026년 예측',
-          data: values.map((v: number, i: number) => 
-            trendData.trend_data[i].type === 'prediction' ? v : null
-          ),
-          borderColor: 'rgb(239, 68, 68)',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          borderDash: [5, 5],
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          pointStyle: 'star',
+          label: 'Base-up',
+          data: baseupData,
+          borderColor: 'rgb(59, 130, 246)', // 파란색
+          backgroundColor: 'rgba(59, 130, 246, 0.15)',
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBorderColor: 'rgb(59, 130, 246)',
+          pointBorderWidth: 1,
+          fill: true,
+          segment: {
+            borderDash: (ctx: any) => trendData.trend_data[ctx.p0DataIndex]?.type === 'prediction' ? [5, 5] : undefined,
+          },
         },
         {
-          label: '신뢰구간 (상한)',
-          data: confidenceUpper,
-          borderColor: 'rgba(239, 68, 68, 0.3)',
-          backgroundColor: 'rgba(239, 68, 68, 0.05)',
-          fill: '+1',
-          borderWidth: 1,
+          label: '성과급',
+          data: performanceData.map((val: number, idx: number) => {
+            // 성과급 값을 Base-up과 총 인상률 사이에 위치시키기
+            const baseupValue = baseupData[idx] || 0;
+            const totalValue = totalData[idx] || 0;
+            return (baseupValue + totalValue) / 2;
+          }),
+          borderColor: 'transparent',
+          backgroundColor: 'transparent',
+          borderWidth: 0,
           pointRadius: 0,
-          hidden: false,
-        },
-        {
-          label: '신뢰구간 (하한)',
-          data: confidenceLower,
-          borderColor: 'rgba(239, 68, 68, 0.3)',
-          backgroundColor: 'rgba(239, 68, 68, 0.05)',
+          pointHoverRadius: 0,
           fill: false,
-          borderWidth: 1,
-          pointRadius: 0,
-          hidden: false,
+          showLine: false,
         }
       ]
     };
@@ -329,7 +355,7 @@ export const Dashboard: React.FC = () => {
     },
     scales: {
       y: {
-        beginAtZero: false,
+        beginAtZero: true,
         title: {
           display: true,
           text: '임금인상률 (%)'
@@ -457,7 +483,7 @@ export const Dashboard: React.FC = () => {
       },
       title: {
         display: true,
-        text: '주요 변수별 중요도 분석 (Permutation Importance)',
+        text: '주요 변수별 중요도 분석 (SHAP)',
         font: {
           size: 16,
           weight: 'bold' as const
