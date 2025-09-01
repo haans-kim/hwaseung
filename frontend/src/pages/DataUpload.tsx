@@ -67,8 +67,8 @@ export const DataUpload: React.FC = () => {
       const status = await apiClient.getDataStatus();
       setDataStatus(status);
       
-      // 기본 데이터가 있는 경우 현재 데이터도 확인
-      if (status.status.has_default_data) {
+      // 기본 데이터 또는 마스터 데이터가 있는 경우 현재 데이터 확인
+      if (status.status.has_default_data || status.status.has_master || status.status.has_current) {
         try {
           const response = await apiClient.getCurrentData(5, false);
           if (response) {
@@ -76,7 +76,11 @@ export const DataUpload: React.FC = () => {
             setShowDataPreview(true);
           }
         } catch (error) {
-          console.log("Current data check failed, but default data exists");
+          console.log("Current data check failed, trying to get available data");
+          // 현재 데이터가 없으면 마스터 데이터라도 보여주기
+          if (status.status.has_master) {
+            setShowDataPreview(true);
+          }
         }
       }
     } catch (error) {
@@ -92,13 +96,12 @@ export const DataUpload: React.FC = () => {
     try {
       const result = await apiClient.loadDefaultData();
       setSuccess("기본 데이터가 성공적으로 로드되었습니다.");
-      setSampleData({
-        message: result.message,
-        source: "pickle",
-        data: [],
-        summary: result.summary
-      });
+      
+      // 로드 후 실제 데이터 가져오기
+      const currentData = await apiClient.getCurrentData(10, false);
+      setSampleData(currentData);
       setShowDataPreview(true);
+      
       await checkDataStatus(); // 상태 새로고침
     } catch (error) {
       setError(error instanceof Error ? error.message : '기본 데이터 로드 중 오류가 발생했습니다.');
@@ -142,6 +145,7 @@ export const DataUpload: React.FC = () => {
     try {
       await apiClient.resetToMaster();
       setSuccess('마스터 데이터로 리셋되었습니다.');
+      setShowDataPreview(true);
       await checkDataStatus();
     } catch (error) {
       setError(error instanceof Error ? error.message : '리셋 중 오류가 발생했습니다.');
@@ -166,6 +170,9 @@ export const DataUpload: React.FC = () => {
       const result = await apiClient.uploadFile(file);
       setUploadResult(result);
       setShowDataPreview(true);
+      
+      // 업로드 후 데이터 상태 확인 및 샘플 데이터 로드
+      await checkDataStatus();
     } catch (error) {
       setError(error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.');
     } finally {

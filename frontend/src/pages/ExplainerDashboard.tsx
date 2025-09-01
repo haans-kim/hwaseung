@@ -19,8 +19,31 @@ export const ExplainerDashboard: React.FC = () => {
   const [explainerUrl, setExplainerUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    checkExplainerStatus();
+    checkAndGenerateDashboard();
   }, []);
+
+  const checkAndGenerateDashboard = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 먼저 ExplainerDashboard 상태 확인
+      const response = await apiClient.getExplainerDashboard();
+      if (response.url) {
+        setExplainerUrl(response.url);
+      } else {
+        // 대시보드가 없으면 자동으로 생성
+        console.log('ExplainerDashboard가 없습니다. 자동으로 생성합니다...');
+        await generateExplainerDashboard();
+      }
+    } catch (err: any) {
+      // 상태 확인 실패 시에도 생성 시도
+      console.log('상태 확인 실패. 새로 생성을 시도합니다...');
+      await generateExplainerDashboard();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkExplainerStatus = async () => {
     setLoading(true);
@@ -32,7 +55,8 @@ export const ExplainerDashboard: React.FC = () => {
       if (response.url) {
         setExplainerUrl(response.url);
       } else {
-        setError('ExplainerDashboard가 아직 생성되지 않았습니다.');
+        // 대시보드가 없으면 자동으로 생성
+        await generateExplainerDashboard();
       }
     } catch (err: any) {
       setError(err.message || 'ExplainerDashboard 상태 확인 중 오류가 발생했습니다.');
@@ -82,6 +106,16 @@ export const ExplainerDashboard: React.FC = () => {
           )}
         </Button>
       </div>
+
+      {loading && !explainerUrl && (
+        <Alert>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertTitle>ExplainerDashboard 준비 중</AlertTitle>
+          <AlertDescription>
+            대시보드를 생성하고 있습니다. 잠시만 기다려주세요...
+          </AlertDescription>
+        </Alert>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -157,12 +191,12 @@ export const ExplainerDashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          {!explainerUrl && (
+          {!explainerUrl && !loading && (
             <Card>
               <CardHeader>
-                <CardTitle>ExplainerDashboard 생성</CardTitle>
+                <CardTitle>ExplainerDashboard 재생성</CardTitle>
                 <CardDescription>
-                  모델이 훈련된 후 ExplainerDashboard를 생성할 수 있습니다.
+                  대시보드를 다시 생성하려면 아래 버튼을 클릭하세요.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -171,17 +205,8 @@ export const ExplainerDashboard: React.FC = () => {
                   disabled={loading}
                   className="w-full"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      생성 중...
-                    </>
-                  ) : (
-                    <>
-                      <LineChart className="mr-2 h-4 w-4" />
-                      ExplainerDashboard 생성
-                    </>
-                  )}
+                  <LineChart className="mr-2 h-4 w-4" />
+                  ExplainerDashboard 재생성
                 </Button>
               </CardContent>
             </Card>

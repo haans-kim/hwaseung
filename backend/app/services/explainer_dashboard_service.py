@@ -12,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from explainerdashboard import ClassifierExplainer, RegressionExplainer, ExplainerDashboard
+from app.services.data_service import data_service
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,47 @@ class ExplainerDashboardService:
             if self.is_running:
                 self.stop_dashboard()
             
-            # X_test에 feature names 설정
+            # data_service에서 한글 컬럼명 가져오기
+            feature_descriptions = data_service.get_display_names(feature_names)
+            
+            # 한글 → 영문 매핑 생성
+            korean_to_english = {}
+            english_to_korean = {}
+            korean_feature_names = []
+            for feat in feature_names:
+                korean_name = feature_descriptions.get(feat, feat)
+                korean_feature_names.append(korean_name)
+                korean_to_english[korean_name] = feat
+                english_to_korean[feat] = korean_name
+            
+            # 모델 래퍼 클래스 정의 (한글 컬럼명 → 영문 컬럼명 변환)
+            class ModelWrapper:
+                def __init__(self, original_model, korean_to_english):
+                    self.model = original_model
+                    self.korean_to_english = korean_to_english
+                    
+                def predict(self, X):
+                    # 한글 컬럼명을 영문으로 변환
+                    if isinstance(X, pd.DataFrame):
+                        X_english = X.rename(columns=self.korean_to_english)
+                    else:
+                        # numpy array인 경우 DataFrame으로 변환
+                        X_english = pd.DataFrame(X, columns=list(self.korean_to_english.keys()))
+                        X_english = X_english.rename(columns=self.korean_to_english)
+                    return self.model.predict(X_english)
+                
+                def __getattr__(self, name):
+                    # 다른 속성들은 원본 모델로 전달
+                    return getattr(self.model, name)
+            
+            # 래핑된 모델 생성
+            wrapped_model = ModelWrapper(model, korean_to_english)
+            
+            # X_test에 한글 feature names 설정
             if isinstance(X_test, pd.DataFrame):
-                X_test.columns = feature_names
+                X_test.columns = korean_feature_names
             else:
-                X_test = pd.DataFrame(X_test, columns=feature_names)
+                X_test = pd.DataFrame(X_test, columns=korean_feature_names)
             
             # 인덱스를 연도와 증강 번호로 설정
             # 예: "2015_원본", "2015_증강1", ... "2016_원본", "2016_증강1", ...
@@ -58,64 +95,21 @@ class ExplainerDashboardService:
                         years.append(f"{base_year}년_증강{sample_num}")
                 X_test.index = years
             
-            # Feature descriptions 생성 (dictionary 형태)
-            feature_descriptions = {
-                'gdp_growth_kr': '한국 GDP 성장률',
-                'gdp_growth_usa': '미국 GDP 성장률',
-                'cpi_kr': '한국 소비자물가지수',
-                'cpi_usa': '미국 소비자물가지수',
-                'unemployment_rate_kr': '한국 실업률',
-                'unemployment_rate_usa': '미국 실업률',
-                'exchange_rate_change_krw': '원화 환율 변동률',
-                'minimum_wage_increase_kr': '한국 최저임금인상률',
-                'public_sector_wage_increase': '공공부문 임금인상률',
-                'private_sector_wage_increase': '민간부문 임금인상률',
-                'wage_increase_bu_group': 'BU그룹 임금인상률',
-                'wage_increase_mi_group': 'MI그룹 임금인상률',
-                'wage_increase_total_group': '그룹 전체 임금인상률',
-                'wage_increase_ce': 'CE 임금인상률',
-                'market_size_growth_rate': '시장규모 성장률',
-                'labor_cost_rate_sbl': 'SBL 인건비율',
-                'labor_cost_per_employee_sbl': 'SBL 인당인건비',
-                'labor_to_revenue_sbl': 'SBL 매출대비인건비',
-                'hcva_sbl': 'SBL 인력부가가치',
-                'hcva_ce': 'CE 인력부가가치',
-                'hcroi_sbl': 'SBL 인력투자수익률',
-                'hcroi_ce': 'CE 인력투자수익률',
-                'esi_usa': '미국 ESI 지수',
-                'vix_usa': '미국 VIX 지수'
-            }
-            
-            # 실제 feature names에 맞춰 descriptions 필터링
-            descriptions_dict = {feat: feature_descriptions.get(feat, feat) for feat in feature_names}
-            
-            # Explainer 생성 (회귀 모델)
+            # Explainer 생성 (회귀 모델) - 기본 파라미터만 사용
             explainer = RegressionExplainer(
-                model, 
+                wrapped_model,  # 래핑된 모델 사용 
                 X_test, 
                 y_test,
-                model_output='raw',  # 원본 출력값 사용
-                units='%',  # 단위 설정
-                descriptions=descriptions_dict,  # feature 설명 (dict)
-                target='임금인상률'  # 타겟 변수명
+                units='%'  # 단위 설정
             )
             
-            # 대시보드 생성
+            # 대시보드 생성 - 기본 설정만 사용
             self.dashboard = ExplainerDashboard(
                 explainer,
                 title="임금인상률 예측 모델 분석",
-                description="2025년 임금인상률 예측 모델의 상세 분석 대시보드",
-                simple=False,  # 전체 기능 사용
-                hide_poweredby=True,  # Powered by 숨김
-                
-                # 포트 설정
+                description="2026년 임금인상률 예측 모델의 상세 분석 대시보드",
                 port=self.dashboard_port,
-                
-                # 모드 설정
-                mode='dash',  # inline, external, jupyterlab 중 선택
-                
-                # 기타 설정
-                bootstrap=True
+                mode='dash'
             )
             
             # 별도 스레드에서 대시보드 실행

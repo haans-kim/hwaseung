@@ -36,6 +36,9 @@ class ModelingService:
         self.small_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt']
         self.medium_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt', 'rf', 'gbr']
         self.large_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt', 'rf', 'gbr', 'xgboost', 'lightgbm']
+        
+        # 초기화 시 저장된 최신 모델 자동 로드 시도 (나중에 메서드 정의 후 호출)
+        # self._load_latest_model_if_exists()
     
     def check_pycaret_availability(self) -> bool:
         """PyCaret 사용 가능 여부 확인"""
@@ -435,6 +438,9 @@ class ModelingService:
             
             self.current_model = final_model
             
+            # 모델 자동 저장
+            self._save_model(model_name)
+            
         except Exception as e:
             raise RuntimeError(f"Model training failed: {str(e)}")
         finally:
@@ -443,9 +449,10 @@ class ModelingService:
             sys.stderr = old_stderr
         
         return {
-            'message': f'Model {model_name} trained successfully',
+            'message': f'Model {model_name} trained and saved successfully',
             'model_type': type(self.current_model).__name__,
-            'model_name': model_name
+            'model_name': model_name,
+            'model_saved': True
         }
     
     def get_model_evaluation(self) -> Dict[str, Any]:
@@ -535,6 +542,86 @@ class ModelingService:
             'data_loaded': data_service.current_data is not None,
             'current_model_type': type(self.current_model).__name__ if self.current_model else None
         }
+    
+    def _save_model(self, model_name: str = None) -> bool:
+        """모델을 파일로 저장"""
+        try:
+            if self.current_model is None:
+                return False
+            
+            # 저장 경로 설정
+            import os
+            from datetime import datetime
+            
+            # models 디렉토리 생성
+            models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'models')
+            os.makedirs(models_dir, exist_ok=True)
+            
+            # 파일명 생성 (모델명_날짜시간.pkl)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            if model_name:
+                filename = f"wage_model_{model_name}_{timestamp}"
+            else:
+                filename = f"wage_model_{timestamp}"
+            
+            filepath = os.path.join(models_dir, filename)
+            
+            # PyCaret의 save_model 사용
+            from pycaret.regression import save_model
+            save_model(self.current_model, filepath, verbose=False)
+            
+            # 최신 모델 링크 생성 (latest.pkl)
+            latest_path = os.path.join(models_dir, 'latest')
+            save_model(self.current_model, latest_path, verbose=False)
+            
+            print(f"✅ Model saved successfully: {filename}.pkl")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Failed to save model: {str(e)}")
+            return False
+    
+    def _load_latest_model_if_exists(self) -> bool:
+        """초기화 시 최신 모델 자동 로드"""
+        try:
+            import os
+            
+            models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'models')
+            latest_path = os.path.join(models_dir, 'latest.pkl')
+            
+            # 최신 모델 파일이 존재하는지 확인
+            if os.path.exists(latest_path):
+                from pycaret.regression import load_model
+                self.current_model = load_model(os.path.join(models_dir, 'latest'))
+                print(f"✅ Latest model loaded automatically from {latest_path}")
+                return True
+            else:
+                print("ℹ️ No saved model found. Will create new model when training.")
+                return False
+                
+        except Exception as e:
+            print(f"⚠️ Could not load saved model: {str(e)}")
+            return False
+    
+    def load_saved_model(self, filename: str = 'latest') -> Dict[str, Any]:
+        """저장된 모델 불러오기"""
+        try:
+            import os
+            from pycaret.regression import load_model
+            
+            models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'models')
+            filepath = os.path.join(models_dir, filename)
+            
+            # 모델 로드
+            self.current_model = load_model(filepath)
+            
+            return {
+                'message': f'Model loaded successfully from {filename}.pkl',
+                'model_type': type(self.current_model).__name__
+            }
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to load model: {str(e)}")
     
     def clear_models(self) -> Dict[str, Any]:
         """모든 모델 및 실험 초기화"""
