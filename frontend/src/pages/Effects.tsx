@@ -1,14 +1,568 @@
 import React from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
+// Chart.js 등록
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  annotationPlugin
+);
+
 export const Effects: React.FC = () => {
+  // 평균값 기준으로 정렬된 회사 데이터 (인건비율)
+  const laborCostSorted = [
+    { name: 'Lonza', value: 34.5, color: 'rgb(168, 85, 247)' },
+    { name: 'Roche', value: 32.8, color: 'rgb(251, 146, 60)' },
+    { name: 'GSK', value: 28, color: 'rgb(250, 204, 21)' },
+    { name: 'AstraZeneca', value: 25.8, color: 'rgb(239, 68, 68)' },
+    { name: 'Bayer', value: 25, color: 'rgb(245, 158, 11)' },
+    { name: 'CSL', value: 24.8, color: 'rgb(220, 38, 127)' },
+    { name: 'SBL', value: 13.5, color: 'rgb(59, 130, 246)' },
+    { name: 'Celltrion', value: 10, color: 'rgb(129, 140, 248)' },
+    { name: 'Wuxi', value: 8.5, color: 'rgb(34, 197, 94)' }
+  ];
+
+  // 평균값 기준으로 정렬된 회사 데이터 (영업이익률)
+  const profitSorted = [
+    { name: 'SBL', value: 32.3, color: 'rgb(59, 130, 246)' },
+    { name: 'Celltrion', value: 30.5, color: 'rgb(129, 140, 248)' },
+    { name: 'Wuxi', value: 29.8, color: 'rgb(34, 197, 94)' },
+    { name: 'Roche', value: 25, color: 'rgb(251, 146, 60)' },
+    { name: 'Lonza', value: 24.3, color: 'rgb(168, 85, 247)' },
+    { name: 'GSK', value: 23.3, color: 'rgb(250, 204, 21)' },
+    { name: 'CSL', value: 18, color: 'rgb(220, 38, 127)' },
+    { name: 'Bayer', value: 16.3, color: 'rgb(245, 158, 11)' },
+    { name: 'AstraZeneca', value: 12.3, color: 'rgb(239, 68, 68)' }
+  ];
+
+  // 인건비/매출액 비중 데이터
+  const laborCostRatioData = {
+    labels: ['2021', '2022', '2023', '2024', '4개년 평균'],
+    datasets: [
+      {
+        label: 'SBL',
+        data: [18, 13, 12, 11, 13.5],
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Lonza',
+        data: [35, 34, 33, 36, 34.5],
+        borderColor: 'rgb(168, 85, 247)',
+        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Wuxi',
+        data: [9, 8, 9, 8, 8.5],
+        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Celltrion',
+        data: [9, 8, 12, 11, 10],
+        borderColor: 'rgb(129, 140, 248)',
+        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Roche',
+        data: [36, 34, 33, 28, 32.8],
+        borderColor: 'rgb(251, 146, 60)',
+        backgroundColor: 'rgba(251, 146, 60, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'GSK',
+        data: [30, 27, 28, 27, 28],
+        borderColor: 'rgb(250, 204, 21)',
+        backgroundColor: 'rgba(250, 204, 21, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'CSL',
+        data: [25, 24, 25, 25, 24.8],
+        borderColor: 'rgb(220, 38, 127)',
+        backgroundColor: 'rgba(220, 38, 127, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'AstraZeneca',
+        data: [27, 25, 26, 25, 25.8],
+        borderColor: 'rgb(239, 68, 68)',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Bayer',
+        data: [27, 26, 22, 25, 25],
+        borderColor: 'rgb(245, 158, 11)',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      }
+    ]
+  };
+
+  // 영업이익/매출액 비중 데이터
+  const operatingProfitRatioData = {
+    labels: ['2021', '2022', '2023', '2024', '4개년 평균'],
+    datasets: [
+      {
+        label: 'SBL',
+        data: [39, 31, 30, 29, 32.3],
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Lonza',
+        data: [22, 27, 26, 22, 24.3],
+        borderColor: 'rgb(168, 85, 247)',
+        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Wuxi',
+        data: [34, 28, 30, 27, 29.8],
+        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Celltrion',
+        data: [32, 31, 30, 29, 30.5],
+        borderColor: 'rgb(129, 140, 248)',
+        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Roche',
+        data: [29, 28, 24, 19, 25],
+        borderColor: 'rgb(251, 146, 60)',
+        backgroundColor: 'rgba(251, 146, 60, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'GSK',
+        data: [25, 22, 25, 21, 23.3],
+        borderColor: 'rgb(250, 204, 21)',
+        backgroundColor: 'rgba(250, 204, 21, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'CSL',
+        data: [19, 22, 17, 14, 18],
+        borderColor: 'rgb(220, 38, 127)',
+        backgroundColor: 'rgba(220, 38, 127, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'AstraZeneca',
+        data: [15, 14, 13, 7, 12.3],
+        borderColor: 'rgb(239, 68, 68)',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Bayer',
+        data: [16, 14, 17, 18, 16.3],
+        borderColor: 'rgb(245, 158, 11)',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: false,
+      }
+    ]
+  };
+
+  // 차트 옵션 (인건비율)
+  const laborCostOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false  // 기본 범례 숨김
+      },
+      title: {
+        display: true,
+        text: '인건비/매출액 비중 2021~2024',
+        font: {
+          size: 16,
+          weight: 'bold' as const
+        }
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        callbacks: {
+          label: (context: any) => {
+            const label = context.dataIndex === 4 ? '4개년 평균' : context.dataset.label;
+            return `${label}: ${context.parsed.y}%`;
+          }
+        }
+      },
+      annotation: {
+        annotations: {
+          // 4개년 평균 섹션 배경
+          avgSection: {
+            type: 'box' as const,
+            xMin: 3.5,
+            xMax: 4.5,
+            backgroundColor: 'rgba(229, 231, 235, 0.5)',
+            borderColor: 'rgba(156, 163, 175, 0.3)',
+            borderWidth: 1,
+            drawTime: 'beforeDatasetsDraw' as const
+          },
+          // 4개년 평균 섹션 구분선
+          verticalLine: {
+            type: 'line' as const,
+            xMin: 3.5,
+            xMax: 3.5,
+            borderColor: 'rgba(156, 163, 175, 0.5)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            drawTime: 'beforeDatasetsDraw' as const
+          },
+          // 평균값 레이블들 (정렬된 순서대로)
+          ...laborCostSorted.reduce((acc: any, item, index) => {
+            acc[`label${index}`] = {
+              type: 'label' as const,
+              xValue: 4.6,
+              yValue: item.value,
+              content: `${item.name}: ${item.value}%`,
+              backgroundColor: item.color,
+              borderColor: item.color,
+              color: 'white',
+              font: { size: 9, weight: 'bold' as const },
+              padding: { x: 4, y: 2 },
+              borderRadius: 3,
+              textAlign: 'left' as const,
+              position: 'center' as const,
+              xAdjust: 10
+            };
+            
+            return acc;
+          }, {})
+        }
+      }
+    },
+    layout: {
+      padding: {
+        right: 150  // 우측 범례 공간 확보
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 45,
+        title: {
+          display: false
+        },
+        ticks: {
+          callback: (value: any) => `${value}%`,
+          stepSize: 5
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)'
+        }
+      },
+      x: {
+        title: {
+          display: false
+        },
+        grid: {
+          display: false,
+          drawOnChartArea: false,
+          drawTicks: true,
+          color: (context: any) => {
+            if (context.index === 4) {
+              return 'rgba(255, 193, 7, 0.8)';
+            }
+            return 'rgba(0, 0, 0, 0.1)';
+          },
+          lineWidth: (context: any) => {
+            if (context.index === 4) {
+              return 2;
+            }
+            return 1;
+          }
+        },
+        ticks: {
+          callback: function(value: any, index: number): string {
+            const labels = ['2021', '2022', '2023', '2024', '4개년 평균'];
+            return labels[index] || '';
+          }
+        }
+      }
+    },
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    }
+  };
+
+  // 차트 옵션 (영업이익률)
+  const operatingProfitOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false  // 기본 범례 숨김
+      },
+      title: {
+        display: true,
+        text: '영업이익/매출액 비중 2021~2024',
+        font: {
+          size: 16,
+          weight: 'bold' as const
+        }
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        callbacks: {
+          label: (context: any) => {
+            const label = context.dataIndex === 4 ? '4개년 평균' : context.dataset.label;
+            return `${label}: ${context.parsed.y}%`;
+          }
+        }
+      },
+      annotation: {
+        annotations: {
+          // 4개년 평균 섹션 배경
+          avgSection: {
+            type: 'box' as const,
+            xMin: 3.5,
+            xMax: 4.5,
+            backgroundColor: 'rgba(229, 231, 235, 0.5)',
+            borderColor: 'rgba(156, 163, 175, 0.3)',
+            borderWidth: 1,
+            drawTime: 'beforeDatasetsDraw' as const
+          },
+          // 4개년 평균 섹션 구분선
+          verticalLine: {
+            type: 'line' as const,
+            xMin: 3.5,
+            xMax: 3.5,
+            borderColor: 'rgba(156, 163, 175, 0.5)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            drawTime: 'beforeDatasetsDraw' as const
+          },
+          // 평균값 레이블들 (정렬된 순서대로)
+          ...profitSorted.reduce((acc: any, item, index) => {
+            acc[`label${index}`] = {
+              type: 'label' as const,
+              xValue: 4.6,
+              yValue: item.value,
+              content: `${item.name}: ${item.value}%`,
+              backgroundColor: item.color,
+              borderColor: item.color,
+              color: 'white',
+              font: { size: 9, weight: 'bold' as const },
+              padding: { x: 4, y: 2 },
+              borderRadius: 3,
+              textAlign: 'left' as const,
+              position: 'center' as const,
+              xAdjust: 10
+            };
+            
+            return acc;
+          }, {})
+        }
+      }
+    },
+    layout: {
+      padding: {
+        right: 150  // 우측 범례 공간 확보
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 45,
+        title: {
+          display: false
+        },
+        ticks: {
+          callback: (value: any) => `${value}%`,
+          stepSize: 5
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)'
+        }
+      },
+      x: {
+        title: {
+          display: false
+        },
+        grid: {
+          display: false,
+          drawOnChartArea: false,
+          drawTicks: true,
+          color: (context: any) => {
+            if (context.index === 4) {
+              return 'rgba(255, 193, 7, 0.8)';
+            }
+            return 'rgba(0, 0, 0, 0.1)';
+          },
+          lineWidth: (context: any) => {
+            if (context.index === 4) {
+              return 2;
+            }
+            return 1;
+          }
+        },
+        ticks: {
+          callback: function(value: any, index: number): string {
+            const labels = ['2021', '2022', '2023', '2024', '4개년 평균'];
+            return labels[index] || '';
+          }
+        }
+      }
+    },
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">기대효과</h1>
-        <p className="text-muted-foreground">시나리오별 기대효과 분석 및 리포트</p>
+        <p className="text-muted-foreground">경쟁사 대비 분석 및 기대효과</p>
       </div>
 
+      {/* 경쟁사 비교 차트 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>인건비율 비교</CardTitle>
+            <CardDescription>주요 경쟁사 대비 인건비/매출액 비중 추이</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div style={{ height: '600px', position: 'relative' }}>
+              <Line data={laborCostRatioData} options={laborCostOptions} />
+            </div>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-900">
+                <strong>SBL 현황:</strong> 업계 최저 수준의 인건비율 (4개년 평균 13.5%)을 유지하며 우수한 비용 효율성 달성
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>영업이익률 비교</CardTitle>
+            <CardDescription>주요 경쟁사 대비 영업이익/매출액 비중 추이</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div style={{ height: '600px', position: 'relative' }}>
+              <Line data={operatingProfitRatioData} options={operatingProfitOptions} />
+            </div>
+            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-900">
+                <strong>SBL 현황:</strong> 업계 최고 수준의 영업이익률 (4개년 평균 32.3%)을 유지하며 안정적 수익성 확보
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 기존 효과 섹션 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -18,16 +572,20 @@ export const Effects: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span>소비 증가율</span>
-                <span className="font-semibold">+2.1%</span>
+                <span>생산성 향상</span>
+                <span className="font-semibold text-green-600">+3.2%</span>
               </div>
               <div className="flex justify-between">
-                <span>물가 상승율</span>
-                <span className="font-semibold">+0.8%</span>
+                <span>이직률 감소</span>
+                <span className="font-semibold text-green-600">-15%</span>
               </div>
               <div className="flex justify-between">
-                <span>고용 증가율</span>
-                <span className="font-semibold">+1.3%</span>
+                <span>인재 유치 경쟁력</span>
+                <span className="font-semibold text-green-600">향상</span>
+              </div>
+              <div className="flex justify-between">
+                <span>조직 몰입도</span>
+                <span className="font-semibold text-green-600">+8.5%</span>
               </div>
             </div>
           </CardContent>
@@ -35,22 +593,26 @@ export const Effects: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>사회적 효과</CardTitle>
-            <CardDescription>임금인상의 사회적 파급효과</CardDescription>
+            <CardTitle>경쟁력 지표</CardTitle>
+            <CardDescription>경쟁사 대비 포지셔닝</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span>소득 격차 개선</span>
-                <span className="font-semibold text-green-600">개선</span>
+                <span>인건비 효율성</span>
+                <span className="font-semibold text-blue-600">1위</span>
               </div>
               <div className="flex justify-between">
-                <span>생활 만족도</span>
-                <span className="font-semibold text-green-600">향상</span>
+                <span>영업이익률</span>
+                <span className="font-semibold text-blue-600">2위</span>
               </div>
               <div className="flex justify-between">
-                <span>사회 안정성</span>
-                <span className="font-semibold text-green-600">증대</span>
+                <span>인당 생산성</span>
+                <span className="font-semibold text-blue-600">상위 20%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>임금 경쟁력</span>
+                <span className="font-semibold text-amber-600">중위권</span>
               </div>
             </div>
           </CardContent>
@@ -59,12 +621,30 @@ export const Effects: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>종합 리포트</CardTitle>
-          <CardDescription>전체 분석 결과 및 권고사항</CardDescription>
+          <CardTitle>종합 분석</CardTitle>
+          <CardDescription>2026년 임금인상 전략 권고사항</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 bg-background border rounded-md flex items-center justify-center">
-            <p className="text-muted-foreground">리포트 생성 영역</p>
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <h3 className="font-semibold mb-2">핵심 인사이트</h3>
+              <ul className="space-y-2 text-sm">
+                <li>• SBL은 업계 최저 수준의 인건비율(11%)과 최상위 영업이익률(29%)을 동시에 달성</li>
+                <li>• 경쟁사 대비 우수한 비용 효율성으로 임금 인상 여력 충분</li>
+                <li>• 2026년 예상 인상률 5.88%는 업계 평균을 상회하지만 재무 건전성 유지 가능</li>
+                <li>• 인재 확보 경쟁력 강화를 위한 전략적 임금 인상 필요</li>
+              </ul>
+            </div>
+            
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold mb-2 text-blue-900">권고사항</h3>
+              <ul className="space-y-2 text-sm text-blue-800">
+                <li>✓ Base-up 3.5% + 성과급 2.38% 구조로 탄력적 운영</li>
+                <li>✓ 핵심 인재 대상 차별화된 보상 전략 수립</li>
+                <li>✓ 생산성 향상과 연계한 성과 보상 체계 강화</li>
+                <li>✓ 분기별 시장 동향 모니터링 및 유연한 대응</li>
+              </ul>
+            </div>
           </div>
         </CardContent>
       </Card>
