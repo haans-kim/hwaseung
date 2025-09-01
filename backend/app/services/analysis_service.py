@@ -41,6 +41,10 @@ class AnalysisService:
         self.feature_display_names = {}  # 한글 표시명
         self.train_data = None
         self.test_data = None
+        # 캐시 추가
+        self._shap_cache = {}
+        self._importance_cache = {}
+        self._last_model_id = None
         
     def _get_training_data(self):
         """PyCaret 환경에서 학습 데이터 가져오기"""
@@ -79,6 +83,22 @@ class AnalysisService:
                 "error": "SHAP not available. Please install with: pip install shap",
                 "available": False
             }
+        
+        # 캐시 키 생성
+        model_id = id(model)
+        cache_key = f"{model_id}_{top_n}"
+        
+        # 모델이 변경되었으면 캐시 초기화
+        if self._last_model_id != model_id:
+            self._shap_cache = {}
+            self._importance_cache = {}
+            self._last_model_id = model_id
+        
+        # 캐시에서 결과 확인
+        if cache_key in self._shap_cache and sample_index is None:
+            cached_result = self._shap_cache[cache_key]
+            print(f"📊 Using cached SHAP analysis for model {model_id}")
+            return cached_result
         
         try:
             # warnings 억제
@@ -124,14 +144,14 @@ class AnalysisService:
                     shap_values = explainer.shap_values(analysis_data, check_additivity=False)
                 else:
                     # 다른 모델들은 KernelExplainer 사용 (더 안전함)
-                    n_background = min(50, len(X_train_array))
+                    n_background = min(20, len(X_train_array))  # 줄임
                     np.random.seed(42)
                     background_indices = np.random.choice(len(X_train_array), n_background, replace=False)
                     background_data = X_train_array[background_indices]
                     
                     explainer = shap.KernelExplainer(model.predict, background_data)
                     
-                    n_samples = min(10, len(analysis_data))
+                    n_samples = min(3, len(analysis_data))  # 크게 줄임
                     np.random.seed(42)
                     sample_indices = np.random.choice(len(analysis_data), n_samples, replace=False)
                     analysis_sample = analysis_data[sample_indices]
@@ -165,14 +185,14 @@ class AnalysisService:
                             except:
                                 return np.full(len(X) if hasattr(X, '__len__') else 1, 0.042)
                     
-                    n_background = min(50, len(X_train_array))
+                    n_background = min(20, len(X_train_array))  # 줄임
                     np.random.seed(42)
                     background_indices = np.random.choice(len(X_train_array), n_background, replace=False)
                     background_data = X_train_array[background_indices]
                     
                     explainer = shap.KernelExplainer(safe_predict, background_data)
                     
-                    n_samples = min(5, len(analysis_data))
+                    n_samples = min(3, len(analysis_data))  # 크게 줄임
                     np.random.seed(42)
                     sample_indices = np.random.choice(len(analysis_data), n_samples, replace=False)
                     analysis_sample = analysis_data[sample_indices]
@@ -237,7 +257,7 @@ class AnalysisService:
                         "base_value": float(explainer.expected_value) if hasattr(explainer, 'expected_value') else 0
                     }
             
-            return {
+            result = {
                 "message": "SHAP analysis completed successfully",
                 "available": True,
                 "feature_importance": feature_importance,
@@ -246,6 +266,13 @@ class AnalysisService:
                 "n_features": len(self.feature_names) if self.feature_names else 0,
                 "n_samples_analyzed": len(shap_values) if isinstance(shap_values, np.ndarray) else 0
             }
+            
+            # 캐시에 저장 (sample_index가 없을 때만)
+            if sample_index is None:
+                self._shap_cache[cache_key] = result
+                print(f"📊 Cached SHAP analysis for model {model_id}")
+            
+            return result
             
         except Exception as e:
             logging.error(f"SHAP analysis failed: {str(e)}")
@@ -256,6 +283,16 @@ class AnalysisService:
     
     def get_feature_importance(self, model, method: str = "shap", top_n: int = 15) -> Dict[str, Any]:
         """Feature importance 분석"""
+        
+        # 캐시 키 생성
+        model_id = id(model)
+        cache_key = f"{model_id}_{method}_{top_n}"
+        
+        # 캐시에서 결과 확인
+        if cache_key in self._importance_cache:
+            cached_result = self._importance_cache[cache_key]
+            print(f"📊 Using cached {method} importance for model {model_id}")
+            return cached_result
         
         try:
             X_train, y_train, X_test, y_test = self._get_training_data()
@@ -311,12 +348,18 @@ class AnalysisService:
                 else:
                     raise ValueError("Model does not have built-in feature importance")
             
-            return {
+            result = {
                 "message": f"Feature importance analysis completed using {method}",
                 "method": method,
                 "feature_importance": feature_importance,
                 "n_features": len(feature_importance)
             }
+            
+            # 캐시에 저장
+            self._importance_cache[cache_key] = result
+            print(f"📊 Cached {method} importance for model {model_id}")
+            
+            return result
             
         except Exception as e:
             logging.error(f"Feature importance analysis failed: {str(e)}")
