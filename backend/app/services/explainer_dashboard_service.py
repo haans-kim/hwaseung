@@ -79,21 +79,43 @@ class ExplainerDashboardService:
             else:
                 X_test = pd.DataFrame(X_test, columns=korean_feature_names)
             
-            # 인덱스를 연도와 증강 번호로 설정
-            # 예: "2015_원본", "2015_증강1", ... "2016_원본", "2016_증강1", ...
-            if len(X_test) > 0:
-                # 연도별로 몇 개의 데이터가 있는지 추정 (예: 10개씩)
-                samples_per_year = 10
-                years = []
+            # 원본 X_test 데이터에서 모델 학습 시 사용된 feature만 선택
+            if feature_names:
+                # feature_names에 있는 컬럼만 선택
+                X_test_filtered = X_test[[col for col in feature_names if col in X_test.columns]]
+                if len(X_test_filtered.columns) > 0:
+                    X_test = X_test_filtered
+            
+            # 한글 컬럼명 적용
+            new_columns = []
+            for col in X_test.columns:
+                korean_name = feature_descriptions.get(col, col)
+                new_columns.append(korean_name)
+            X_test.columns = new_columns
+            
+            # 원본 데이터만 표시하도록 인덱스 설정
+            # 데이터 크기를 확인하여 원본만 선택
+            if len(X_test) > 20:  # 증강된 데이터가 있는 경우
+                # 10개씩 묶여있다고 가정하고 첫 번째만 원본
+                original_indices = []
                 for i in range(len(X_test)):
-                    year_offset = i // samples_per_year
-                    sample_num = i % samples_per_year
-                    base_year = 2015 + year_offset
-                    if sample_num == 0:
-                        years.append(f"{base_year}년_원본")
-                    else:
-                        years.append(f"{base_year}년_증강{sample_num}")
-                X_test.index = years
+                    if i % 10 == 0:
+                        original_indices.append(i)
+                
+                if original_indices:
+                    X_test = X_test.iloc[original_indices]
+                    y_test = y_test.iloc[original_indices] if y_test is not None else None
+                    
+            # 인덱스를 연도로 설정
+            num_samples = len(X_test)
+            if num_samples <= 10:
+                # 원본 데이터만 있는 경우
+                start_year = 2025 - num_samples
+                years = [f"{start_year + i}년" for i in range(num_samples)]
+            else:
+                # 여전히 많은 데이터가 있는 경우
+                years = [f"데이터_{i+1}" for i in range(num_samples)]
+            X_test.index = years
             
             # Explainer 생성 (회귀 모델) - 기본 파라미터만 사용
             explainer = RegressionExplainer(
