@@ -102,7 +102,7 @@ export const Dashboard: React.FC = () => {
         apiClient.getAvailableVariables().catch(() => ({ variables: [], current_values: {} })),
         apiClient.getEconomicIndicators().catch(() => ({ indicators: {} })),
         apiClient.getTrendData().catch(() => null),
-        apiClient.getFeatureImportance('shap', 10).catch(() => null)
+        apiClient.getFeatureImportance('permutation', 10).catch(() => null)
       ]);
 
       setScenarioTemplates(templatesRes.templates || []);
@@ -364,13 +364,12 @@ export const Dashboard: React.FC = () => {
     }
     
     const featureContributions: FeatureContribution[] = topFeatures.map((item: any, index: number) => {
-      const baseContribution = (item.importance / topFeatures[0].importance) * maxContribution;
-      // 첫 3개는 양수, 나머지는 음수
-      const contribution = index < 3 ? baseContribution : -baseContribution * 0.7;
+      // Permutation importance 값을 그대로 사용 (모두 양수)
+      const normalizedImportance = item.importance / topFeatures[0].importance;
       
       return {
         feature: item.feature,
-        contribution: contribution,
+        contribution: normalizedImportance * 2, // 시각화를 위해 스케일 조정
         importance: item.importance,
         value: item.importance // 표시용 원본 값
       };
@@ -379,9 +378,10 @@ export const Dashboard: React.FC = () => {
     // 기타 항목
     if (otherFeatures.length > 0) {
       const othersImportance = otherFeatures.reduce((sum: number, item: any) => sum + item.importance, 0) / otherFeatures.length;
+      const normalizedOthers = othersImportance / topFeatures[0].importance;
       featureContributions.push({
         feature: 'others',
-        contribution: -0.05,
+        contribution: normalizedOthers * 2,
         importance: othersImportance,
         value: othersImportance
       });
@@ -428,12 +428,8 @@ export const Dashboard: React.FC = () => {
         {
           label: '기여도',
           data: contributions,
-          backgroundColor: contributions.map((c: number) => 
-            c >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(239, 68, 68, 0.8)'
-          ),
-          borderColor: contributions.map((c: number) => 
-            c >= 0 ? 'rgb(59, 130, 246)' : 'rgb(239, 68, 68)'
-          ),
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+          borderColor: 'rgb(59, 130, 246)',
           borderWidth: 1,
         }
       ]
@@ -450,7 +446,7 @@ export const Dashboard: React.FC = () => {
       },
       title: {
         display: true,
-        text: '주요 변수별 임금인상률 기여도 분석 (SHAP)',
+        text: '주요 변수별 중요도 분석 (Permutation Importance)',
         font: {
           size: 16,
           weight: 'bold' as const

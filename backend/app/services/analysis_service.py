@@ -125,12 +125,14 @@ class AnalysisService:
                 else:
                     # 다른 모델들은 KernelExplainer 사용 (더 안전함)
                     n_background = min(50, len(X_train_array))
+                    np.random.seed(42)
                     background_indices = np.random.choice(len(X_train_array), n_background, replace=False)
                     background_data = X_train_array[background_indices]
                     
                     explainer = shap.KernelExplainer(model.predict, background_data)
                     
                     n_samples = min(10, len(analysis_data))
+                    np.random.seed(42)
                     sample_indices = np.random.choice(len(analysis_data), n_samples, replace=False)
                     analysis_sample = analysis_data[sample_indices]
                     shap_values = explainer.shap_values(analysis_sample)
@@ -164,12 +166,14 @@ class AnalysisService:
                                 return np.full(len(X) if hasattr(X, '__len__') else 1, 0.042)
                     
                     n_background = min(50, len(X_train_array))
+                    np.random.seed(42)
                     background_indices = np.random.choice(len(X_train_array), n_background, replace=False)
                     background_data = X_train_array[background_indices]
                     
                     explainer = shap.KernelExplainer(safe_predict, background_data)
                     
                     n_samples = min(5, len(analysis_data))
+                    np.random.seed(42)
                     sample_indices = np.random.choice(len(analysis_data), n_samples, replace=False)
                     analysis_sample = analysis_data[sample_indices]
                     shap_values = explainer.shap_values(analysis_sample)
@@ -184,6 +188,7 @@ class AnalysisService:
                         # 모든 기능이 실패한 경우 더미 값 반환 (0이 아닌 작은 값)
                         num_features = len(self.feature_names) if self.feature_names else analysis_data.shape[1]
                         # 평균 0.01, 표준편차 0.005의 정규분포로 생성
+                        np.random.seed(42)
                         shap_values = np.random.normal(0.01, 0.005, (min(5, len(analysis_data)), num_features))
                         print(f"⚠️ Using fallback SHAP values with shape: {shap_values.shape}")
             
@@ -361,6 +366,7 @@ class AnalysisService:
             train_data_clean = np.nan_to_num(train_data, nan=0.0, posinf=1e6, neginf=-1e6)
             
             # 각 피처의 분산이 0인 경우 작은 값 추가
+            np.random.seed(42)
             for i in range(train_data_clean.shape[1]):
                 if np.var(train_data_clean[:, i]) == 0:
                     train_data_clean[:, i] += np.random.normal(0, 1e-6, len(train_data_clean[:, i]))

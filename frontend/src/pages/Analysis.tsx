@@ -71,7 +71,7 @@ export const Analysis: React.FC = () => {
     try {
       const [shapRes, featureRes, performanceRes] = await Promise.all([
         apiClient.getShapAnalysis(undefined, 20).catch(() => ({ available: false, error: 'SHAP 분석을 사용할 수 없습니다.' })),
-        apiClient.getFeatureImportance().catch(() => ({ feature_importance: [], error: 'Feature importance 분석을 사용할 수 없습니다.' })),
+        apiClient.getFeatureImportance('permutation', 15).catch(() => ({ feature_importance: [], error: 'Feature importance 분석을 사용할 수 없습니다.' })),
         apiClient.getModelPerformance().catch(() => ({ performance: {}, error: '성능 분석을 사용할 수 없습니다.' }))
       ]);
 
@@ -196,7 +196,7 @@ export const Analysis: React.FC = () => {
               {shapAnalysis?.available && <CheckCircle className="ml-auto h-5 w-5 text-green-600" />}
             </CardTitle>
             <CardDescription>
-              SHAP 값을 통한 feature 중요도 분석
+              SHAP 값 기반 - 각 변수의 예측 기여도 분석
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -317,10 +317,10 @@ export const Analysis: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart3 className="mr-2 h-5 w-5" />
-              Feature 중요도
+              Feature 중요도 (Permutation)
             </CardTitle>
             <CardDescription>
-              전체 모델에서의 각 변수의 상대적 중요도
+              순열 중요도 기반 - 각 변수를 제거했을 때의 성능 저하 측정
             </CardDescription>
           </CardHeader>
           <CardContent>

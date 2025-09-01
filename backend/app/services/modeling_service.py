@@ -312,14 +312,13 @@ class ModelingService:
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
             
-            # 모델 비교 실행 (random_state 고정)
+            # 모델 비교 실행
             best_models = compare_models(
                 include=models_to_use,
                 sort='R2',
                 n_select=min(n_select, len(models_to_use)),
                 verbose=False,
-                fold=3,  # 빠른 비교를 위해 fold 수 제한
-                random_state=42
+                fold=3  # 빠른 비교를 위해 fold 수 제한
             )
             
             # 단일 모델이 반환된 경우 리스트로 변환
@@ -347,7 +346,7 @@ class ModelingService:
             # 실패 시 기본 선형 회귀 사용
             warnings.warn(f"Model comparison failed: {str(e)}. Using default linear regression.")
             
-            linear_model = create_model('lr', verbose=False, random_state=42)
+            linear_model = create_model('lr', verbose=False)  # lr은 random_state를 지원하지 않음
             self.model_results = {
                 'best_models': [linear_model],
                 'comparison_df': None,
@@ -383,12 +382,18 @@ class ModelingService:
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
             
-            # 모델 생성 (random_state 고정)
-            model = create_model(model_name, verbose=False, random_state=42)
+            # 모델 생성 (모델별로 random_state 지원 여부 확인)
+            # Linear models (lr, ridge, lasso 등)은 random_state를 지원하지 않음
+            models_without_random_state = ['lr', 'ridge', 'lasso', 'en', 'lar', 'llar', 'omp', 'br', 'ard', 'par', 'ransac', 'tr', 'huber']
+            
+            if model_name in models_without_random_state:
+                model = create_model(model_name, verbose=False)
+            else:
+                model = create_model(model_name, verbose=False, random_state=42)
             
             # 모델 튜닝 (선택적)
             try:
-                tuned_model = tune_model(model, optimize='R2', verbose=False, random_state=42)
+                tuned_model = tune_model(model, optimize='R2', verbose=False)
             except:
                 tuned_model = model
             
