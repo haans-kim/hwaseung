@@ -8,7 +8,7 @@ router = APIRouter()
 class ModelingSetupRequest(BaseModel):
     target_column: Optional[str] = None  # 자동 감지 가능
     train_size: Optional[float] = None
-    session_id: int = 123
+    session_id: int = 42  # 고정된 시드값 사용
 
 class ModelTrainingRequest(BaseModel):
     model_name: str

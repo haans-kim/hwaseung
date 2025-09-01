@@ -165,7 +165,7 @@ class ModelingService:
         self, 
         target_column: Optional[str] = None, 
         train_size: Optional[float] = None,
-        session_id: int = 123,
+        session_id: int = 42,  # 고정된 시드값 사용
         preprocessing_config: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """PyCaret 환경 설정 (전처리 옵션 포함)"""
@@ -312,13 +312,14 @@ class ModelingService:
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
             
-            # 모델 비교 실행
+            # 모델 비교 실행 (random_state 고정)
             best_models = compare_models(
                 include=models_to_use,
                 sort='R2',
                 n_select=min(n_select, len(models_to_use)),
                 verbose=False,
-                fold=3  # 빠른 비교를 위해 fold 수 제한
+                fold=3,  # 빠른 비교를 위해 fold 수 제한
+                random_state=42
             )
             
             # 단일 모델이 반환된 경우 리스트로 변환
@@ -346,7 +347,7 @@ class ModelingService:
             # 실패 시 기본 선형 회귀 사용
             warnings.warn(f"Model comparison failed: {str(e)}. Using default linear regression.")
             
-            linear_model = create_model('lr', verbose=False)
+            linear_model = create_model('lr', verbose=False, random_state=42)
             self.model_results = {
                 'best_models': [linear_model],
                 'comparison_df': None,
@@ -382,12 +383,12 @@ class ModelingService:
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
             
-            # 모델 생성
-            model = create_model(model_name, verbose=False)
+            # 모델 생성 (random_state 고정)
+            model = create_model(model_name, verbose=False, random_state=42)
             
             # 모델 튜닝 (선택적)
             try:
-                tuned_model = tune_model(model, optimize='R2', verbose=False)
+                tuned_model = tune_model(model, optimize='R2', verbose=False, random_state=42)
             except:
                 tuned_model = model
             
