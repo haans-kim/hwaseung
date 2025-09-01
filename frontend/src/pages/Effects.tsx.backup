@@ -313,26 +313,8 @@ export const Effects: React.FC = () => {
             borderWidth: 2,
             borderDash: [5, 5],
             drawTime: 'beforeDatasetsDraw' as const
-          },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
+          }
         }
-      }
-    },
-    layout: {
-      padding: {
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20
       }
     },
     scales: {
@@ -351,8 +333,6 @@ export const Effects: React.FC = () => {
         }
       },
       x: {
-        min: 0,
-        max: 7,  // X축 범위 크게 확장하여 레이블 공간 충분히 확보
         title: {
           display: false
         },
@@ -377,17 +357,7 @@ export const Effects: React.FC = () => {
           callback: function(value: any, index: number): string {
             const labels = ['2021', '2022', '2023', '2024', '4개년 평균'];
             return labels[index] || '';
-          },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
+          }
         }
       }
     },
@@ -444,26 +414,8 @@ export const Effects: React.FC = () => {
             borderWidth: 2,
             borderDash: [5, 5],
             drawTime: 'beforeDatasetsDraw' as const
-          },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
+          }
         }
-      }
-    },
-    layout: {
-      padding: {
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20
       }
     },
     scales: {
@@ -482,8 +434,6 @@ export const Effects: React.FC = () => {
         }
       },
       x: {
-        min: 0,
-        max: 7,  // X축 범위 크게 확장하여 레이블 공간 충분히 확보
         title: {
           display: false
         },
@@ -508,17 +458,7 @@ export const Effects: React.FC = () => {
           callback: function(value: any, index: number): string {
             const labels = ['2021', '2022', '2023', '2024', '4개년 평균'];
             return labels[index] || '';
-          },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
+          }
         }
       }
     },
