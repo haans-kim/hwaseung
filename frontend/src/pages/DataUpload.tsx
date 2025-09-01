@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Slider } from '../components/ui/slider';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { 
@@ -20,11 +20,6 @@ import {
 } from 'lucide-react';
 import { apiClient, DataUploadResponse, SampleDataResponse } from '../lib/api';
 
-interface FileValidation {
-  isValid: boolean;
-  issues: string[];
-  recommendations: string[];
-}
 
 export const DataUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -42,7 +37,7 @@ export const DataUpload: React.FC = () => {
   
   // 증강 옵션 상태
   const [augmentMethod, setAugmentMethod] = useState<string>('auto');
-  const [augmentFactor, setAugmentFactor] = useState<number>(10);
+  const [augmentFactor] = useState<number>(10);
   const [targetSize, setTargetSize] = useState<number>(200);
   const [noiseLevel, setNoiseLevel] = useState<number>(0.02);
 
@@ -145,7 +140,7 @@ export const DataUpload: React.FC = () => {
   
   const resetToMaster = async () => {
     try {
-      const result = await apiClient.resetToMaster();
+      await apiClient.resetToMaster();
       setSuccess('마스터 데이터로 리셋되었습니다.');
       await checkDataStatus();
     } catch (error) {

@@ -5,8 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { 
   BarChart3, 
   Brain, 
-  TrendingUp, 
-  Target,
+  TrendingUp,
   AlertTriangle,
   CheckCircle,
   Loader2,

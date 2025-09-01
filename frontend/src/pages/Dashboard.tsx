@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line, Bar, Chart } from 'react-chartjs-2';
+import { Line, Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -21,12 +21,10 @@ import {
   Settings2, 
   Play,
   AlertTriangle,
-  CheckCircle,
   Loader2,
   Zap,
   Target,
   Activity,
-  DollarSign,
   PieChart,
   LineChart,
   Sliders
@@ -207,8 +205,6 @@ export const Dashboard: React.FC = () => {
   const getChartData = () => {
     if (!trendData || !trendData.trend_data) return null;
 
-    const historicalData = trendData.trend_data.filter((d: any) => d.type === 'historical');
-    const predictionData = trendData.trend_data.filter((d: any) => d.type === 'prediction');
 
     const labels = trendData.trend_data.map((d: any) => d.year);
     const values = trendData.trend_data.map((d: any) => d.value);
@@ -349,14 +345,12 @@ export const Dashboard: React.FC = () => {
     const data = featureImportance.feature_importance;
     
     // 현재 예측값을 백분율로 변환
-    const currentPredictionPercent = currentPrediction.prediction * 100;
     
     // 상위 8개 주요 변수만 선택하고 나머지는 '기타'로 묶기
     const topFeatures = data.slice(0, 8);
     const otherFeatures = data.slice(8);
     
     // 전체 importance의 합
-    const totalImportance = data.reduce((sum: number, item: any) => sum + item.importance, 0);
     
     // 각 feature의 기여도를 극대화하여 계산
     const maxContribution = 1.5; // 최대 기여도 ±1.5%p
