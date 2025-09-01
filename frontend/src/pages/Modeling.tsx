@@ -37,7 +37,7 @@ export const Modeling: React.FC = () => {
   const [status, setStatus] = useState<ModelingStatus | null>(null);
   const [availableModels, setAvailableModels] = useState<AvailableModel[]>([]);
   const [recommendations, setRecommendations] = useState<any>(null);
-  const [targetColumn, setTargetColumn] = useState<string>('');
+  const [targetColumn, setTargetColumn] = useState<string>('wage_increase_total_sbl');
   const [availableColumns, setAvailableColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +61,10 @@ export const Modeling: React.FC = () => {
       
       if (currentDataRes?.summary?.columns) {
         setAvailableColumns(currentDataRes.summary.columns);
+        // wage_increase_total_sbl이 컬럼에 있으면 기본으로 선택
+        if (currentDataRes.summary.columns.includes('wage_increase_total_sbl')) {
+          setTargetColumn('wage_increase_total_sbl');
+        }
       }
 
       // 권고사항 로드 (데이터가 있는 경우)

@@ -26,6 +26,7 @@ class ModelingService:
         self.current_experiment = None
         self.current_model = None
         self.model_results = None
+        self.compared_models = None  # 비교된 모델들
         self.is_setup_complete = False
         self.feature_names = None  # Store feature names for prediction
         
@@ -340,7 +341,9 @@ class ModelingService:
                 'comparison_df': comparison_results,
                 'recommended_model': best_models[0] if best_models else None
             }
-            self.current_model = best_models[0] if best_models else None
+            # 모델 비교 후에는 current_model을 설정하지 않음 (명시적 학습 필요)
+            # self.current_model = best_models[0] if best_models else None
+            self.compared_models = best_models  # 비교된 모델들만 저장
             
         except Exception as e:
             # 실패 시 기본 선형 회귀 사용
@@ -422,10 +425,8 @@ class ModelingService:
         """현재 모델의 평가 결과 반환"""
         
         if self.current_model is None:
-            if self.model_results and self.model_results['recommended_model']:
-                self.current_model = self.model_results['recommended_model']
-            else:
-                raise RuntimeError("No trained model available")
+            # 모델 비교만 하고 학습하지 않은 경우 에러 반환
+            raise RuntimeError("No trained model available. Please train a model first after comparison.")
         
         old_stdout = sys.stdout
         old_stderr = sys.stderr

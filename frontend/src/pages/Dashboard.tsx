@@ -63,9 +63,30 @@ interface Variable {
 
 interface PredictionResult {
   prediction: number;
+  base_up_rate?: number;
+  performance_rate?: number;
   confidence_interval: [number, number];
   confidence_level: number;
   input_variables: Record<string, number>;
+  breakdown?: {
+    base_up: {
+      rate: number;
+      percentage: number;
+      description: string;
+      calculation: string;
+    };
+    performance: {
+      rate: number;
+      percentage: number;
+      description: string;
+      calculation: string;
+    };
+    total: {
+      rate: number;
+      percentage: number;
+      description: string;
+    };
+  };
 }
 
 interface EconomicIndicator {
@@ -199,7 +220,9 @@ export const Dashboard: React.FC = () => {
 
   const formatPrediction = (num: number, decimals: number = 1) => {
     // 백엔드에서 받은 소수점 값(0.0577)을 퍼센트(5.77%)로 변환
-    return Number(num * 100).toFixed(decimals);
+    // 정확한 반올림 처리
+    const percentage = num * 100;
+    return percentage.toFixed(decimals);
   };
 
   const getChartData = () => {
@@ -545,66 +568,80 @@ export const Dashboard: React.FC = () => {
         {/* 현재 예측 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">2026년 예측</CardTitle>
+            <CardTitle className="text-sm font-medium">2026년 총 인상률</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              {currentPrediction ? `${formatPrediction(currentPrediction.prediction)}%` : '-.-%'}
+              {currentPrediction ? `${formatPrediction(currentPrediction.prediction, 1)}%` : '-.-%'}
             </div>
             <p className="text-xs text-muted-foreground">
               {currentPrediction && (
-                `구간: ${formatPrediction(currentPrediction.confidence_interval[0])}% - ${formatPrediction(currentPrediction.confidence_interval[1])}%`
+                `신뢰구간: ${formatPrediction(currentPrediction.confidence_interval[0], 1)}% - ${formatPrediction(currentPrediction.confidence_interval[1], 1)}%`
               )}
             </p>
           </CardContent>
         </Card>
 
-        {/* GDP 성장률 */}
+        {/* Base-up */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">GDP 성장률</CardTitle>
+            <CardTitle className="text-sm font-medium">Base-up</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {economicIndicators.gdp_growth ? `${economicIndicators.gdp_growth.value}%` : '-.-%'}
+            <div className="text-2xl font-bold text-blue-600">
+              {currentPrediction?.breakdown ? `${formatPrediction(currentPrediction.breakdown.base_up.rate, 1)}%` : '-.-%'}
             </div>
-            <p className={`text-xs ${getStatusColor(economicIndicators.gdp_growth?.status || '')}`}>
-              {economicIndicators.gdp_growth?.change || ''}
-            </p>
+            {currentPrediction?.breakdown && (
+              <div className="text-xs text-muted-foreground mt-1">
+                <div className="mb-1">기본 인상분</div>
+                <div className="font-mono text-[10px]">= 총 인상률 - 성과 인상률</div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* 인플레이션율 */}
+        {/* 성과 인상률 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">인플레이션율</CardTitle>
+            <CardTitle className="text-sm font-medium">성과 인상률</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {economicIndicators.inflation_rate ? `${economicIndicators.inflation_rate.value}%` : '-.-%'}
+            <div className="text-2xl font-bold text-green-600">
+              {currentPrediction?.breakdown ? `${formatPrediction(currentPrediction.breakdown.performance.rate, 1)}%` : '-.-%'}
             </div>
-            <p className={`text-xs ${getStatusColor(economicIndicators.inflation_rate?.status || '')}`}>
-              {economicIndicators.inflation_rate?.change || ''}
-            </p>
+            {currentPrediction?.breakdown && (
+              <div className="text-xs text-muted-foreground mt-1">
+                <div className="mb-1">과거 10년 성과급 추세 예측</div>
+                <div className="font-mono text-[10px]">선형회귀 분석</div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* 실업률 */}
+        {/* 경제 지표 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">실업률</CardTitle>
+            <CardTitle className="text-sm font-medium">주요 경제지표</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {economicIndicators.unemployment_rate ? `${economicIndicators.unemployment_rate.value}%` : '-.-%'}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">GDP:</span>
+                <span className="font-medium">{economicIndicators.gdp_growth?.value || '-'}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">인플레:</span>
+                <span className="font-medium">{economicIndicators.inflation_rate?.value || '-'}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">실업률:</span>
+                <span className="font-medium">{economicIndicators.unemployment_rate?.value || '-'}%</span>
+              </div>
             </div>
-            <p className={`text-xs ${getStatusColor(economicIndicators.unemployment_rate?.status || '')}`}>
-              {economicIndicators.unemployment_rate?.change || ''}
-            </p>
           </CardContent>
         </Card>
       </div>

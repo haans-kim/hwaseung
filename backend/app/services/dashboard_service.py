@@ -242,6 +242,125 @@ class DashboardService:
             
             return pd.DataFrame([default_data])
     
+    def _predict_performance_trend(self) -> float:
+        """과거 10개년 성과 인상률 데이터를 기반으로 2026년 성과 인상률 예측"""
+        try:
+            from app.services.data_service import data_service
+            from sklearn.linear_model import LinearRegression
+            
+            if data_service.current_data is None:
+                # 데이터가 없는 경우 기본값 반환
+                return 0.02  # 2% 기본값
+            
+            # master_data(원본)가 있으면 사용, 없으면 current_data 사용
+            if hasattr(data_service, 'master_data') and data_service.master_data is not None:
+                df = data_service.master_data.copy()
+            else:
+                df = data_service.current_data.copy()
+            
+            # 성과 인상률 관련 컬럼 찾기
+            performance_columns = [
+                'wage_increase_mi_sbl',  # SBL Merit Increase (성과급)
+                'wage_increase_mi_group',  # 그룹 성과급
+                'merit_increase',  # 성과급
+                'performance_rate',  # 성과 인상률
+            ]
+            
+            # 사용 가능한 컬럼 찾기
+            available_col = None
+            for col in performance_columns:
+                if col in df.columns:
+                    available_col = col
+                    break
+            
+            if not available_col:
+                # 성과 인상률 컬럼이 없는 경우, 총 인상률에서 추정
+                if 'wage_increase_total_sbl' in df.columns and 'wage_increase_baseup_sbl' in df.columns:
+                    # 총 인상률 - Base-up = 성과 인상률
+                    df['estimated_performance'] = df['wage_increase_total_sbl'] - df['wage_increase_baseup_sbl']
+                    available_col = 'estimated_performance'
+                elif 'wage_increase_total_sbl' in df.columns and 'wage_increase_bu_sbl' in df.columns:
+                    df['estimated_performance'] = df['wage_increase_total_sbl'] - df['wage_increase_bu_sbl']
+                    available_col = 'estimated_performance'
+                elif 'wage_increase_total_group' in df.columns and 'wage_increase_bu_group' in df.columns:
+                    df['estimated_performance'] = df['wage_increase_total_group'] - df['wage_increase_bu_group']
+                    available_col = 'estimated_performance'
+                else:
+                    # 추정할 수 없는 경우 기본값
+                    return 0.02
+            
+            # 연도와 성과 인상률 데이터 준비
+            if 'year' in df.columns:
+                year_col = 'year'
+            elif 'Year' in df.columns:
+                year_col = 'Year'
+            elif 'eng' in df.columns:
+                # eng 컬럼이 연도 데이터인 경우
+                year_col = 'eng'
+            else:
+                # 연도 컬럼이 없으면 인덱스 사용
+                df['year'] = range(2016, 2016 + len(df))
+                year_col = 'year'
+            
+            # 데이터 정리
+            trend_data = df[[year_col, available_col]].copy()
+            trend_data.columns = ['year', 'performance_rate']
+            
+            # 수치형으로 변환
+            trend_data['year'] = pd.to_numeric(trend_data['year'], errors='coerce')
+            trend_data['performance_rate'] = pd.to_numeric(trend_data['performance_rate'], errors='coerce')
+            trend_data = trend_data.dropna()
+            
+            # 데이터가 퍼센트로 저장되어 있는지 확인 (2.0 이상이면 퍼센트로 간주)
+            if len(trend_data) > 0 and trend_data['performance_rate'].mean() > 0.5:
+                print(f"⚠️ Data appears to be in percentage format (mean: {trend_data['performance_rate'].mean():.2f})")
+                # 퍼센트를 비율로 변환 (2.0% -> 0.02)
+                trend_data['performance_rate'] = trend_data['performance_rate'] / 100
+                print(f"   Converted to ratio format (new mean: {trend_data['performance_rate'].mean():.4f})")
+            
+            if len(trend_data) < 3:
+                # 데이터가 너무 적으면 기본값
+                return 0.02
+            
+            # 최근 10년 데이터만 사용
+            trend_data = trend_data.sort_values('year').tail(10)
+            
+            # 선형회귀 모델 학습
+            X = trend_data[['year']].values
+            y = trend_data['performance_rate'].values
+            
+            # 디버깅: 실제 데이터 값 출력
+            print(f"📊 Performance rate data for regression:")
+            for i, row in trend_data.iterrows():
+                print(f"   Year {int(row['year'])}: {row['performance_rate']:.4f} ({row['performance_rate']*100:.2f}%)")
+            
+            # 평균값 계산 (단순 평균도 참고)
+            mean_performance = y.mean()
+            print(f"   Average performance rate: {mean_performance:.4f} ({mean_performance*100:.2f}%)")
+            
+            lr_model = LinearRegression()
+            lr_model.fit(X, y)
+            
+            # 회귀 계수 출력
+            print(f"   Regression coefficient (slope): {lr_model.coef_[0]:.6f}")
+            print(f"   Regression intercept: {lr_model.intercept_:.6f}")
+            
+            # 2026년 예측
+            prediction_year = np.array([[2026]])
+            predicted_performance = lr_model.predict(prediction_year)[0]
+            
+            print(f"   Raw prediction for 2026: {predicted_performance:.4f} ({predicted_performance*100:.2f}%)")
+            
+            print(f"📊 Final Performance rate prediction for 2026: {predicted_performance:.3f} ({predicted_performance*100:.1f}%)")
+            print(f"   Based on {len(trend_data)} years of data from column '{available_col}'")
+            
+            return float(predicted_performance)
+            
+        except Exception as e:
+            print(f"⚠️ Error predicting performance trend: {e}")
+            # 오류 시 기본값 반환
+            return 0.02  # 2% 기본값
+    
     def predict_wage_increase(self, model, input_data: Dict[str, float], confidence_level: float = 0.95) -> Dict[str, Any]:
         """임금인상률 예측"""
         
@@ -265,6 +384,45 @@ class DashboardService:
                 logging.warning(f"PyCaret predict_model failed, using direct prediction: {e}")
                 # 폴백: 직접 예측 시도
                 prediction = model.predict(model_input)[0]
+            
+            # 과거 10개년 성과 인상률 데이터를 기반으로 선형회귀 예측
+            performance_rate = self._predict_performance_trend()
+            
+            # 반올림 처리를 위해 소수점 4자리까지만 유지
+            prediction_value = round(float(prediction), 4)
+            performance_rate = round(performance_rate, 4)
+            
+            print(f"🔍 Debug - Total prediction: {prediction_value:.4f} ({prediction_value*100:.2f}%)")
+            print(f"🔍 Debug - Performance rate (from trend): {performance_rate:.4f} ({performance_rate*100:.2f}%)")
+            
+            # Base-up = 총 인상률 - 성과 인상률
+            base_up_rate = round(prediction_value - performance_rate, 4)
+            print(f"🔍 Debug - Base-up (total - performance): {base_up_rate:.4f} ({base_up_rate*100:.2f}%)")
+            
+            # Base-up이 음수인 경우 - 성과 인상률은 변경하지 않고 base_up만 조정
+            if base_up_rate < 0:
+                print(f"⚠️ Debug - Base-up negative ({base_up_rate:.4f}), setting to 0")
+                base_up_rate = 0
+                # 성과 인상률은 트렌드 예측값 그대로 유지
+            
+            # 성과 인상률이 총 예측값보다 큰 경우 - 성과 인상률은 유지하고 base_up을 0으로
+            if performance_rate > prediction_value:
+                print(f"⚠️ Debug - Performance ({performance_rate:.4f}) > Total ({prediction_value:.4f})")
+                print(f"⚠️ Debug - Keeping performance rate as is, setting base_up to 0")
+                base_up_rate = 0
+                # 성과 인상률은 트렌드 예측값 그대로 유지
+            
+            # 최종 검증: 합계가 총 예측값과 일치하도록 조정
+            calculated_total = round(base_up_rate + performance_rate, 4)
+            if abs(calculated_total - prediction_value) > 0.0001:
+                # 차이가 있으면 base_up_rate로 조정
+                base_up_rate = round(prediction_value - performance_rate, 4)
+            
+            print(f"✅ Debug - FINAL VALUES:")
+            print(f"   Performance: {performance_rate:.4f} ({performance_rate*100:.2f}%)")
+            print(f"   Base-up: {base_up_rate:.4f} ({base_up_rate*100:.2f}%)")
+            print(f"   Total: {prediction_value:.4f} ({prediction_value*100:.2f}%)")
+            print(f"   Sum check: {base_up_rate + performance_rate:.4f} vs {prediction_value:.4f}")
             
             # 신뢰구간 계산 (간단한 방법 - 잔차 기반)
             try:
@@ -290,23 +448,45 @@ class DashboardService:
                 else:
                     # 기본값
                     confidence_interval = [
-                        float(prediction * 0.85),
-                        float(prediction * 1.15)
+                        round(prediction_value * 0.95, 4),
+                        round(prediction_value * 1.05, 4)
                     ]
             except:
                 confidence_interval = [
-                    float(prediction * 0.85),
-                    float(prediction * 1.15)
+                    round(prediction_value * 0.95, 4),
+                    round(prediction_value * 1.05, 4)
                 ]
             
             return {
                 "message": "Wage increase prediction completed",
-                "prediction": float(prediction),
+                "prediction": prediction_value,
+                "base_up_rate": base_up_rate,
+                "performance_rate": performance_rate,
                 "confidence_interval": confidence_interval,
                 "confidence_level": confidence_level,
                 "input_variables": input_data,
                 "prediction_date": datetime.now().strftime("%Y-%m-%d"),
-                "model_type": type(model).__name__
+                "model_type": type(model).__name__,
+                "breakdown": {
+                    "base_up": {
+                        "rate": base_up_rate,
+                        "percentage": round(base_up_rate * 100, 2),
+                        "description": "기본 인상분",
+                        "calculation": "총 인상률 - 성과 인상률"
+                    },
+                    "performance": {
+                        "rate": performance_rate,
+                        "percentage": round(performance_rate * 100, 2),
+                        "description": "과거 10년 성과급 추세 기반 예측",
+                        "calculation": "선형회귀 분석으로 예측"
+                    },
+                    "total": {
+                        "rate": prediction_value,
+                        "percentage": round(prediction_value * 100, 2),
+                        "description": "2026년 총 임금 인상률 예측",
+                        "verification": f"{round(base_up_rate * 100, 2)}% + {round(performance_rate * 100, 2)}% = {round(prediction_value * 100, 2)}%"
+                    }
+                }
             }
             
         except Exception as e:
