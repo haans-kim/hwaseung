@@ -303,10 +303,17 @@ class AnalysisService:
             feature_importance = []
             
             if method == "shap" and SHAP_AVAILABLE:
-                # SHAP 기반 feature importance
+                # SHAP 기반 feature importance - 동일한 분석 결과 사용
                 shap_result = self.get_shap_analysis(model, top_n=top_n)
                 if shap_result.get("available"):
                     feature_importance = shap_result.get("feature_importance", [])
+                    # Feature importance 형식으로 재구성
+                    result = {
+                        "method": "shap",
+                        "feature_importance": feature_importance
+                    }
+                    self._importance_cache[cache_key] = result
+                    return result
             
             elif method == "pycaret":
                 # PyCaret의 내장 해석 기능 사용

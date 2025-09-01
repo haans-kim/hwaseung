@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Layout } from './components/layout/Layout';
 import { DataUpload } from './pages/DataUpload';
 import { Modeling } from './pages/Modeling';
-import { Analysis } from './pages/Analysis';
+import Analysis from './pages/Analysis';
 import { Dashboard } from './pages/Dashboard';
 import { Effects } from './pages/Effects';
 import { ExplainerDashboard } from './pages/ExplainerDashboard';

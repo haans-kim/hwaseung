@@ -351,16 +351,6 @@ export const Dashboard: React.FC = () => {
     }
   });
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      'growing': 'text-green-600',
-      'improving': 'text-green-600',
-      'stable': 'text-blue-600',
-      'volatile': 'text-yellow-600',
-      'declining': 'text-red-600'
-    };
-    return colors[status] || 'text-gray-600';
-  };
 
   const getWaterfallChartData = () => {
     if (!featureImportance || !featureImportance.feature_importance || !currentPrediction) return null;
@@ -376,8 +366,6 @@ export const Dashboard: React.FC = () => {
     // 전체 importance의 합
     
     // 각 feature의 기여도를 극대화하여 계산
-    const maxContribution = 1.5; // 최대 기여도 ±1.5%p
-    
     // 상위 3개는 양수, 나머지는 음수로 설정하여 대비 극대화
     interface FeatureContribution {
       feature: string;
