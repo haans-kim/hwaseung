@@ -12,6 +12,7 @@ import {
   Filler
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
 // Chart.js 등록
@@ -24,7 +25,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   Filler,
-  annotationPlugin
+  annotationPlugin,
+  ChartDataLabels
 );
 
 export const Effects: React.FC = () => {
@@ -65,7 +67,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -76,7 +78,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(168, 85, 247, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -87,7 +89,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -98,7 +100,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(129, 140, 248, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -109,7 +111,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(251, 146, 60, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -120,7 +122,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(250, 204, 21, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -131,7 +133,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(220, 38, 127, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -142,7 +144,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       },
@@ -153,7 +155,7 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: [4, 4, 4, 4, 6],
         pointHoverRadius: 6,
         spanGaps: false,
       }
@@ -292,6 +294,55 @@ export const Effects: React.FC = () => {
           }
         }
       },
+      datalabels: {
+        display: true, // 모든 포인트에 레이블 표시
+        align: function(context: any) {
+          // 4개년 평균은 오른쪽, 나머지는 위
+          return context.dataIndex === 4 ? 'right' : 'top';
+        } as any,
+        anchor: function(context: any) {
+          // 4개년 평균은 center, 나머지는 end
+          return context.dataIndex === 4 ? 'center' : 'end';
+        } as any,
+        offset: function(context: any) {
+          // 4개년 평균은 10, 나머지는 5
+          return context.dataIndex === 4 ? 10 : 5;
+        },
+        formatter: function(value: any, context: any) {
+          if (context.dataIndex === 4) {
+            const label = context.dataset.label;
+            return `${label}: ${value}%`;
+          }
+          return `${value}%`;
+        },
+        color: function(context: any) {
+          return context.dataIndex === 4 ? context.dataset.borderColor : '#666';
+        } as any,
+        font: function(context: any) {
+          return {
+            size: context.dataIndex === 4 ? 11 : 10,
+            weight: context.dataIndex === 4 ? 'bold' : 'normal'
+          };
+        } as any,
+        backgroundColor: function(context: any) {
+          return context.dataIndex === 4 ? 'rgba(255, 255, 255, 0.9)' : 'transparent';
+        } as any,
+        borderColor: function(context: any) {
+          return context.dataIndex === 4 ? context.dataset.borderColor : 'transparent';
+        } as any,
+        borderRadius: 4,
+        borderWidth: function(context: any) {
+          return context.dataIndex === 4 ? 1 : 0;
+        },
+        padding: function(context: any) {
+          return context.dataIndex === 4 ? {
+            top: 2,
+            bottom: 2,
+            left: 6,
+            right: 6
+          } : 0;
+        } as any
+      },
       annotation: {
         annotations: {
           // 4개년 평균 섹션 배경
@@ -314,23 +365,13 @@ export const Effects: React.FC = () => {
             borderDash: [5, 5],
             drawTime: 'beforeDatasetsDraw' as const
           },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
         }
       }
     },
     layout: {
       padding: {
         left: 20,
-        right: 20,
+        right: 150,  // 오른쪽 공간 확대
         top: 20,
         bottom: 20
       }
@@ -351,43 +392,20 @@ export const Effects: React.FC = () => {
         }
       },
       x: {
-        min: 0,
-        max: 7,  // X축 범위 크게 확장하여 레이블 공간 충분히 확보
+        offset: true,  // 첫 번째와 마지막 포인트를 위한 오프셋 추가
         title: {
           display: false
         },
         grid: {
           display: false,
-          drawOnChartArea: false,
-          drawTicks: true,
-          color: (context: any) => {
-            if (context.index === 4) {
-              return 'rgba(255, 193, 7, 0.8)';
-            }
-            return 'rgba(0, 0, 0, 0.1)';
-          },
-          lineWidth: (context: any) => {
-            if (context.index === 4) {
-              return 2;
-            }
-            return 1;
-          }
+          offset: true  // 그리드에도 오프셋 적용
         },
         ticks: {
+          padding: 10,  // 틱과 축 사이의 패딩
           callback: function(value: any, index: number): string {
             const labels = ['2021', '2022', '2023', '2024', '4개년 평균'];
             return labels[index] || '';
-          },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
+          }
         }
       }
     },
@@ -423,6 +441,55 @@ export const Effects: React.FC = () => {
           }
         }
       },
+      datalabels: {
+        display: true, // 모든 포인트에 레이블 표시
+        align: function(context: any) {
+          // 4개년 평균은 오른쪽, 나머지는 위
+          return context.dataIndex === 4 ? 'right' : 'top';
+        } as any,
+        anchor: function(context: any) {
+          // 4개년 평균은 center, 나머지는 end
+          return context.dataIndex === 4 ? 'center' : 'end';
+        } as any,
+        offset: function(context: any) {
+          // 4개년 평균은 10, 나머지는 5
+          return context.dataIndex === 4 ? 10 : 5;
+        },
+        formatter: function(value: any, context: any) {
+          if (context.dataIndex === 4) {
+            const label = context.dataset.label;
+            return `${label}: ${value}%`;
+          }
+          return `${value}%`;
+        },
+        color: function(context: any) {
+          return context.dataIndex === 4 ? context.dataset.borderColor : '#666';
+        } as any,
+        font: function(context: any) {
+          return {
+            size: context.dataIndex === 4 ? 11 : 10,
+            weight: context.dataIndex === 4 ? 'bold' : 'normal'
+          };
+        } as any,
+        backgroundColor: function(context: any) {
+          return context.dataIndex === 4 ? 'rgba(255, 255, 255, 0.9)' : 'transparent';
+        } as any,
+        borderColor: function(context: any) {
+          return context.dataIndex === 4 ? context.dataset.borderColor : 'transparent';
+        } as any,
+        borderRadius: 4,
+        borderWidth: function(context: any) {
+          return context.dataIndex === 4 ? 1 : 0;
+        },
+        padding: function(context: any) {
+          return context.dataIndex === 4 ? {
+            top: 2,
+            bottom: 2,
+            left: 6,
+            right: 6
+          } : 0;
+        } as any
+      },
       annotation: {
         annotations: {
           // 4개년 평균 섹션 배경
@@ -445,23 +512,13 @@ export const Effects: React.FC = () => {
             borderDash: [5, 5],
             drawTime: 'beforeDatasetsDraw' as const
           },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
         }
       }
     },
     layout: {
       padding: {
         left: 20,
-        right: 20,
+        right: 150,  // 오른쪽 공간 확대
         top: 20,
         bottom: 20
       }
@@ -482,43 +539,20 @@ export const Effects: React.FC = () => {
         }
       },
       x: {
-        min: 0,
-        max: 7,  // X축 범위 크게 확장하여 레이블 공간 충분히 확보
+        offset: true,  // 첫 번째와 마지막 포인트를 위한 오프셋 추가
         title: {
           display: false
         },
         grid: {
           display: false,
-          drawOnChartArea: false,
-          drawTicks: true,
-          color: (context: any) => {
-            if (context.index === 4) {
-              return 'rgba(255, 193, 7, 0.8)';
-            }
-            return 'rgba(0, 0, 0, 0.1)';
-          },
-          lineWidth: (context: any) => {
-            if (context.index === 4) {
-              return 2;
-            }
-            return 1;
-          }
+          offset: true  // 그리드에도 오프셋 적용
         },
         ticks: {
+          padding: 10,  // 틱과 축 사이의 패딩
           callback: function(value: any, index: number): string {
             const labels = ['2021', '2022', '2023', '2024', '4개년 평균'];
             return labels[index] || '';
-          },
-          // 4\uac1c\ub144 \ud3c9\uade0\uac12 \ud14d\uc2a4\ud2b8 \ub808\uc774\ube14 - \ubaa8\ub4e0 \ud68c\uc0ac
-          label0: { type: 'label' as const, xValue: 4.5, yValue: 32.3, content: 'SBL: 32.3%', backgroundColor: 'rgb(59, 130, 246)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label1: { type: 'label' as const, xValue: 4.5, yValue: 30.5, content: 'Celltrion: 30.5%', backgroundColor: 'rgb(129, 140, 248)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label2: { type: 'label' as const, xValue: 4.5, yValue: 29.8, content: 'Wuxi: 29.8%', backgroundColor: 'rgb(34, 197, 94)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label3: { type: 'label' as const, xValue: 4.5, yValue: 25, content: 'Roche: 25%', backgroundColor: 'rgb(251, 146, 60)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label4: { type: 'label' as const, xValue: 4.5, yValue: 24.3, content: 'Lonza: 24.3%', backgroundColor: 'rgb(168, 85, 247)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label5: { type: 'label' as const, xValue: 4.5, yValue: 23.3, content: 'GSK: 23.3%', backgroundColor: 'rgb(250, 204, 21)', color: 'black', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label6: { type: 'label' as const, xValue: 4.5, yValue: 18, content: 'CSL: 18%', backgroundColor: 'rgb(220, 38, 127)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label7: { type: 'label' as const, xValue: 4.5, yValue: 16.3, content: 'Bayer: 16.3%', backgroundColor: 'rgb(245, 158, 11)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 },
-          label8: { type: 'label' as const, xValue: 4.5, yValue: 12.3, content: 'AstraZeneca: 12.3%', backgroundColor: 'rgb(239, 68, 68)', color: 'white', font: { size: 12, weight: 'bold' as const }, padding: 4, borderRadius: 3 }
+          }
         }
       }
     },
