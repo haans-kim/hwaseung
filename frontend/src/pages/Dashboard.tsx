@@ -625,11 +625,6 @@ export const Dashboard: React.FC = () => {
             <div className="text-2xl font-bold text-primary">
               {currentPrediction ? `${formatPrediction(currentPrediction.prediction, 1)}%` : '-.-%'}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {currentPrediction && (
-                `신뢰구간: ${formatPrediction(currentPrediction.confidence_interval[0], 1)}% - ${formatPrediction(currentPrediction.confidence_interval[1], 1)}%`
-              )}
-            </p>
           </CardContent>
         </Card>
 
