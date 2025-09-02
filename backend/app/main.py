@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi import Request
 from app.api.routes import data, modeling, analysis, dashboard
 from app.core.config import settings
+import os
 
 app = FastAPI(
     title="SambioWage API",
@@ -11,23 +12,26 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 수동 CORS 헤더 추가
-@app.middleware("http")
-async def cors_handler(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
-# CORS 설정
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS 설정 - 환경에 따라 다르게 적용
+if os.getenv("ENVIRONMENT") == "production":
+    # Production CORS 설정
+    origins = os.getenv("CORS_ORIGINS", "").split(",")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins if origins[0] else ["https://sambiowage.vercel.app"],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+else:
+    # Development CORS 설정 (모든 origin 허용)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # 라우터 등록
 app.include_router(data.router, prefix="/api/data", tags=["data"])
