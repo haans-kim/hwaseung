@@ -469,8 +469,7 @@ export const Dashboard: React.FC = () => {
       // topFeatures에서 feature_korean 찾기
       const originalFeature = topFeatures.find((f: any) => f.feature === d.feature);
       const name = originalFeature?.feature_korean || d.feature;
-      const valueStr = `${(d.value * 100).toFixed(1)}`;
-      return `${valueStr}% = ${name}`;
+      return name; // 숫자 제거, 이름만 표시
     });
     
     const contributions = featureContributions.map((d: FeatureContribution) => d.contribution);
@@ -499,7 +498,7 @@ export const Dashboard: React.FC = () => {
       },
       title: {
         display: true,
-        text: '주요 변수별 중요도 분석 (SHAP)',
+        text: '주요 변수별 중요도 분석 (Permutation Importance)',
         font: {
           size: 16,
           weight: 'bold' as const
@@ -509,9 +508,30 @@ export const Dashboard: React.FC = () => {
         callbacks: {
           label: (context: any) => {
             const value = context.parsed.x;
-            const sign = value >= 0 ? '+' : '';
-            return `기여도: ${sign}${value.toFixed(2)}%p`;
+            const dataIndex = context.dataIndex;
+            const featureData = featureImportance?.feature_importance[dataIndex];
+            if (featureData) {
+              return `중요도: ${(featureData.importance * 100).toFixed(1)}%`;
+            }
+            return `기여도: ${value.toFixed(2)}`;
           }
+        }
+      },
+      datalabels: {
+        color: 'white',
+        font: {
+          weight: 'bold' as const,
+          size: 12
+        },
+        anchor: 'center' as const,
+        align: 'center' as const,
+        formatter: (value: any, context: any) => {
+          const dataIndex = context.dataIndex;
+          const featureData = featureImportance?.feature_importance[dataIndex];
+          if (featureData) {
+            return `${(featureData.importance * 100).toFixed(1)}%`;
+          }
+          return '';
         }
       }
     },
