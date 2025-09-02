@@ -32,10 +32,20 @@ class ExplainerDashboardService:
         """ExplainerDashboard 생성"""
         try:
             logger.info("Creating ExplainerDashboard...")
+            logger.info(f"X_test shape: {X_test.shape}, features: {list(X_test.columns)[:5]}...")
+            logger.info(f"feature_names: {feature_names[:5]}...")
             
             # 모델이 이미 있으면 종료
             if self.is_running:
                 self.stop_dashboard()
+            
+            # X_test의 컬럼이 이미 올바른 feature 이름을 가지고 있는지 확인
+            if hasattr(X_test, 'columns'):
+                actual_features = list(X_test.columns)
+                # feature_names와 X_test.columns가 일치하지 않으면 매핑
+                if actual_features != feature_names:
+                    logger.info(f"Mapping columns: {actual_features[:3]} -> {feature_names[:3]}")
+                    X_test.columns = feature_names
             
             # data_service에서 한글 컬럼명 가져오기
             feature_descriptions = data_service.get_display_names(feature_names)
@@ -79,48 +89,44 @@ class ExplainerDashboardService:
             else:
                 X_test = pd.DataFrame(X_test, columns=korean_feature_names)
             
-            # 원본 X_test 데이터에서 모델 학습 시 사용된 feature만 선택
-            if feature_names:
-                # feature_names에 있는 컬럼만 선택
-                X_test_filtered = X_test[[col for col in feature_names if col in X_test.columns]]
-                if len(X_test_filtered.columns) > 0:
-                    X_test = X_test_filtered
+            # 원본 X_test 데이터 복사 (원본 수정 방지)
+            X_test_copy = X_test.copy()
             
-            # 한글 컬럼명 적용
+            # 한글 컬럼명 적용 (복사본에)
             new_columns = []
-            for col in X_test.columns:
+            for col in X_test_copy.columns:
                 korean_name = feature_descriptions.get(col, col)
                 new_columns.append(korean_name)
-            X_test.columns = new_columns
+            X_test_copy.columns = new_columns
             
             # 원본 데이터만 표시하도록 인덱스 설정
             # 데이터 크기를 확인하여 원본만 선택
-            if len(X_test) > 20:  # 증강된 데이터가 있는 경우
+            if len(X_test_copy) > 20:  # 증강된 데이터가 있는 경우
                 # 10개씩 묶여있다고 가정하고 첫 번째만 원본
                 original_indices = []
-                for i in range(len(X_test)):
+                for i in range(len(X_test_copy)):
                     if i % 10 == 0:
                         original_indices.append(i)
                 
                 if original_indices:
-                    X_test = X_test.iloc[original_indices]
+                    X_test_copy = X_test_copy.iloc[original_indices]
                     y_test = y_test.iloc[original_indices] if y_test is not None else None
                     
             # 인덱스를 연도로 설정
-            num_samples = len(X_test)
+            num_samples = len(X_test_copy)
             if num_samples <= 10:
                 # 원본 데이터만 있는 경우
-                start_year = 2025 - num_samples
+                start_year = 2016  # 실제 데이터 시작 연도
                 years = [f"{start_year + i}년" for i in range(num_samples)]
             else:
                 # 여전히 많은 데이터가 있는 경우
                 years = [f"데이터_{i+1}" for i in range(num_samples)]
-            X_test.index = years
+            X_test_copy.index = years
             
             # Explainer 생성 (회귀 모델) - 기본 파라미터만 사용
             explainer = RegressionExplainer(
                 wrapped_model,  # 래핑된 모델 사용 
-                X_test, 
+                X_test_copy,  # 복사본 사용
                 y_test,
                 units='%'  # 단위 설정
             )
