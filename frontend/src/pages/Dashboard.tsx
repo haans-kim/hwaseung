@@ -12,6 +12,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
@@ -41,7 +42,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  ChartDataLabels
 );
 
 interface ScenarioTemplate {
@@ -135,9 +137,17 @@ export const Dashboard: React.FC = () => {
 
       // 기본 시나리오로 초기 예측 수행
       if (variablesRes.current_values) {
+        console.log('Running initial prediction with:', variablesRes.current_values);
         setCustomVariables(variablesRes.current_values);
-        const predictionRes = await apiClient.predictWageIncrease(variablesRes.current_values);
-        setCurrentPrediction(predictionRes);
+        try {
+          const predictionRes = await apiClient.predictWageIncrease(variablesRes.current_values);
+          console.log('Prediction result:', predictionRes);
+          setCurrentPrediction(predictionRes);
+        } catch (predError) {
+          console.error('Prediction failed:', predError);
+        }
+      } else {
+        console.log('No current_values available for prediction');
       }
     } catch (error: any) {
       console.error('Dashboard data loading failed:', error);
@@ -230,89 +240,103 @@ export const Dashboard: React.FC = () => {
 
     const labels = trendData.trend_data.map((d: any) => d.year);
     
-    // 실제 데이터에서 Base-up과 성과급 분리
-    // currentPrediction에서 breakdown 정보 활용
-    const baseupData = trendData.trend_data.map((d: any) => {
-      // 과거 데이터는 전체의 약 60%를 Base-up으로 가정
-      if (d.type === 'historical') {
-        return d.value * 0.6;
-      }
-      // 예측 데이터는 breakdown 정보 활용
-      if (currentPrediction?.breakdown) {
-        return currentPrediction.breakdown.base_up.rate * 100;
-      }
-      return d.value * 0.6;
-    });
-    
-    const performanceData = trendData.trend_data.map((d: any, i: number) => {
-      // 과거 데이터는 전체의 약 40%를 성과급으로 가정
-      if (d.type === 'historical') {
-        return d.value * 0.4;
-      }
-      // 예측 데이터는 breakdown 정보 활용
-      if (currentPrediction?.breakdown) {
-        return currentPrediction.breakdown.performance.rate * 100;
-      }
-      return d.value * 0.4;
-    });
-    
     // 총 인상률
     const totalData = trendData.trend_data.map((d: any) => d.value);
     
-    return {
-      labels,
-      datasets: [
-        {
+    // Base-up 데이터 (있는 경우만)
+    const baseupData = trendData.trend_data.map((d: any) => d.base_up);
+    const hasBaseupData = baseupData.some((v: any) => v !== null && v !== undefined);
+    
+    // 2026년 예측값 인덱스 찾기
+    const prediction2026Index = trendData.trend_data.findIndex((d: any) => d.year === 2026);
+    
+    const datasets = [];
+    
+    // Base-up 데이터가 있으면 먼저 추가
+    if (hasBaseupData) {
+      datasets.push({
+        label: 'Base-up',
+        data: baseupData,
+        borderColor: 'rgb(59, 130, 246)', // 파란색
+        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+        borderWidth: 2.5,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: 'rgb(59, 130, 246)',
+        pointBorderColor: 'rgb(59, 130, 246)',
+        pointBorderWidth: 1,
+        fill: false,
+        datalabels: {
+          display: true,
+          align: 'bottom' as const,
+          offset: 5,
+          formatter: (value: any) => value ? value.toFixed(1) : '',
+          font: {
+            size: 10,
+            weight: 'bold' as const
+          },
+          color: 'rgb(59, 130, 246)'
+        }
+      });
+    }
+    
+    // 총 인상률 차트
+    datasets.push({
           label: '총 인상률',
           data: totalData,
-          borderColor: 'rgb(168, 85, 247)', // 보라색
-          backgroundColor: 'rgba(168, 85, 247, 0.15)',
+          borderColor: (ctx: any) => {
+            // 2026년 구간은 빨간색으로 표시
+            if (ctx.type === 'segment' && ctx.p0DataIndex === prediction2026Index - 1) {
+              return 'rgb(239, 68, 68)';
+            }
+            return 'rgb(34, 197, 94)'; // 기본 초록색
+          },
+          backgroundColor: 'rgba(34, 197, 94, 0.15)',
           borderWidth: 2.5,
           tension: 0.4,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          pointBackgroundColor: 'rgb(168, 85, 247)',
-          pointBorderColor: 'rgb(168, 85, 247)',
-          pointBorderWidth: 1,
-          fill: true,
-          segment: {
-            borderDash: (ctx: any) => trendData.trend_data[ctx.p0DataIndex]?.type === 'prediction' ? [5, 5] : undefined,
+          pointRadius: (ctx: any) => {
+            // 2026년 예측값은 더 큰 포인트로 표시
+            return ctx.dataIndex === prediction2026Index ? 8 : 4;
           },
-        },
-        {
-          label: 'Base-up',
-          data: baseupData,
-          borderColor: 'rgb(59, 130, 246)', // 파란색
-          backgroundColor: 'rgba(59, 130, 246, 0.15)',
-          borderWidth: 2.5,
-          tension: 0.4,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          pointBackgroundColor: 'rgb(59, 130, 246)',
-          pointBorderColor: 'rgb(59, 130, 246)',
-          pointBorderWidth: 1,
-          fill: true,
-          segment: {
-            borderDash: (ctx: any) => trendData.trend_data[ctx.p0DataIndex]?.type === 'prediction' ? [5, 5] : undefined,
+          pointHoverRadius: (ctx: any) => {
+            return ctx.dataIndex === prediction2026Index ? 10 : 6;
           },
-        },
-        {
-          label: '성과급',
-          data: performanceData.map((val: number, idx: number) => {
-            // 성과급 값을 Base-up과 총 인상률 사이에 위치시키기
-            const baseupValue = baseupData[idx] || 0;
-            const totalValue = totalData[idx] || 0;
-            return (baseupValue + totalValue) / 2;
-          }),
-          borderColor: 'transparent',
-          backgroundColor: 'transparent',
-          borderWidth: 0,
-          pointRadius: 0,
-          pointHoverRadius: 0,
+          pointBackgroundColor: (ctx: any) => {
+            // 2026년 예측값은 빨간색으로 표시
+            return ctx.dataIndex === prediction2026Index ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
+          },
+          pointBorderColor: (ctx: any) => {
+            return ctx.dataIndex === prediction2026Index ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
+          },
+          pointBorderWidth: (ctx: any) => {
+            return ctx.dataIndex === prediction2026Index ? 3 : 1;
+          },
           fill: false,
-          showLine: false,
-        }
-      ]
+          segment: {
+            borderDash: (ctx: any) => {
+              // 2025-2026 구간은 점선으로 표시
+              return ctx.p0DataIndex === prediction2026Index - 1 ? [5, 5] : undefined;
+            }
+          },
+          datalabels: {
+            display: true,
+            align: 'top' as const,
+            offset: 5,
+            formatter: (value: any) => value ? value.toFixed(1) : '',
+            font: {
+              size: 10,
+              weight: 'bold' as const
+            },
+            color: (ctx: any) => {
+              return ctx.dataIndex === prediction2026Index ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
+            }
+          }
+        });
+    
+    return {
+      labels,
+      datasets
     };
   };
 
@@ -334,21 +358,27 @@ export const Dashboard: React.FC = () => {
           weight: 'bold' as const
         }
       },
+      datalabels: {
+        display: false // 전역적으로 비활성화 (각 dataset에서 개별 설정)
+      },
       tooltip: {
         callbacks: {
           label: (context: any) => {
-            if (context.dataset.label?.includes('신뢰구간')) return;
+            if (context.dataset.label?.includes('신뢰구간')) return '';
             const value = context.parsed.y;
-            const isHistorical = trendData.trend_data[context.dataIndex]?.type === 'historical';
-            const label = isHistorical ? '과거 실적' : '예측값';
-            return `${label}: ${value.toFixed(1)}%`;
+            const year = trendData.trend_data[context.dataIndex]?.year;
+            
+            if (year === 2026) {
+              return `🎯 2026년 예측값: ${value.toFixed(1)}%`;
+            }
+            return `${year}년 실적: ${value.toFixed(1)}%`;
           },
           afterLabel: (context: any) => {
             const dataPoint = trendData.trend_data[context.dataIndex];
             if (dataPoint?.type === 'prediction') {
               return `신뢰구간: ${dataPoint.confidence_lower.toFixed(1)}% - ${dataPoint.confidence_upper.toFixed(1)}%`;
             }
-            return;
+            return '';
           }
         }
       }
@@ -379,7 +409,14 @@ export const Dashboard: React.FC = () => {
 
 
   const getWaterfallChartData = () => {
-    if (!featureImportance || !featureImportance.feature_importance || !currentPrediction) return null;
+    console.log('getWaterfallChartData called');
+    console.log('featureImportance:', featureImportance);
+    console.log('currentPrediction:', currentPrediction);
+    
+    if (!featureImportance || !featureImportance.feature_importance) {
+      console.log('Returning null - missing feature importance data');
+      return null;
+    }
 
     const data = featureImportance.feature_importance;
     
@@ -424,37 +461,16 @@ export const Dashboard: React.FC = () => {
       });
     }
     
-    // 변수명 한글 매핑
-    const featureNameMap: Record<string, string> = {
-      'wage_increase_ce': 'CE 임금인상률',
-      'hcroi_sbl': 'SBL 인력투자수익률',
-      'gdp_growth_usa': '미국 GDP 성장률',
-      'labor_cost_per_employee_sbl': 'SBL 인당인건비',
-      'market_size_growth_rate': '시장규모 성장률',
-      'cpi_usa': '미국 소비자물가지수',
-      'labor_cost_rate_sbl': 'SBL 인건비율',
-      'hcva_sbl': 'SBL 인력부가가치',
-      'wage_increase_total_group': '그룹 전체 임금인상률',
-      'public_sector_wage_increase': '공공부문 임금인상률',
-      'esi_usa': '미국 ESI',
-      'exchange_rate_change_krw': '원화 환율 변동',
-      'wage_increase_bu_group': 'BU그룹 임금인상률',
-      'wage_increase_mi_group': 'MI그룹 임금인상률',
-      'hcva_ce': 'CE 인력부가가치',
-      'labor_to_revenue_sbl': 'SBL 매출대비인건비',
-      'minimum_wage_increase_kr': '한국 최저임금인상률',
-      'gdp_growth_kr': '한국 GDP 성장률',
-      'others': '기타 요인'
-    };
-    
     // 기여도 순으로 정렬 (절대값 기준)
     featureContributions.sort((a: FeatureContribution, b: FeatureContribution) => Math.abs(b.contribution) - Math.abs(a.contribution));
     
-    // 레이블과 데이터 준비
-    const labels = featureContributions.map((d: FeatureContribution) => {
-      const name = featureNameMap[d.feature] || d.feature;
+    // 레이블과 데이터 준비 - API에서 제공하는 feature_korean 사용
+    const labels = featureContributions.map((d: FeatureContribution, index: number) => {
+      // topFeatures에서 feature_korean 찾기
+      const originalFeature = topFeatures.find((f: any) => f.feature === d.feature);
+      const name = originalFeature?.feature_korean || d.feature;
       const valueStr = `${(d.value * 100).toFixed(1)}`;
-      return `${valueStr} = ${name}`;
+      return `${valueStr}% = ${name}`;
     });
     
     const contributions = featureContributions.map((d: FeatureContribution) => d.contribution);
@@ -761,22 +777,31 @@ export const Dashboard: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {featureImportance && getWaterfallChartData() ? (
-                <div className="h-64">
-                  <Chart 
-                    type='bar'
-                    data={getWaterfallChartData()!} 
-                    options={getWaterfallChartOptions()} 
-                  />
-                </div>
-              ) : (
-                <div className="h-64 bg-background border rounded-md flex items-center justify-center">
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
-                    <p className="text-muted-foreground">데이터 로딩 중...</p>
-                  </div>
-                </div>
-              )}
+              {(() => {
+                const chartData = getWaterfallChartData();
+                console.log('Chart data:', chartData);
+                
+                if (chartData) {
+                  return (
+                    <div className="h-64">
+                      <Chart 
+                        type='bar'
+                        data={chartData} 
+                        options={getWaterfallChartOptions()} 
+                      />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="h-64 bg-background border rounded-md flex items-center justify-center">
+                      <div className="text-center">
+                        <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+                        <p className="text-muted-foreground">데이터 로딩 중...</p>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
             </CardContent>
           </Card>
         </div>

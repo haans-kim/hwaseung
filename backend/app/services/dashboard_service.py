@@ -648,9 +648,31 @@ class DashboardService:
         """트렌드 데이터 반환"""
         
         try:
-            if data_service.current_data is not None:
+            # 원본 master_data 파일 로드
+            import pickle
+            import os
+            
+            master_data_path = os.path.join(os.path.dirname(__file__), '../../data/master_data.pkl')
+            
+            if os.path.exists(master_data_path):
+                with open(master_data_path, 'rb') as f:
+                    data = pickle.load(f)
+                    # data가 dict인 경우 DataFrame으로 변환
+                    if isinstance(data, dict):
+                        if 'data' in data:
+                            df = data['data']
+                        else:
+                            df = pd.DataFrame(data)
+                    else:
+                        df = data
+                print(f"✅ Loaded original master_data from {master_data_path}")
+            elif data_service.current_data is not None:
                 df = data_service.current_data.copy()
-                
+                print("⚠️ Using current_data (may contain augmented data)")
+            else:
+                df = None
+            
+            if df is not None:
                 # 타겟 컬럼 찾기
                 target_col = 'wage_increase_total_sbl'
                 if target_col not in df.columns:
@@ -664,32 +686,49 @@ class DashboardService:
                 year_col = 'year' if 'year' in df.columns else 'eng' if 'eng' in df.columns else None
                 
                 if target_col in df.columns and year_col:
-                    # 원본 데이터만 선택 (노이즈 제거)
-                    # 각 연도별로 첫 번째 데이터만 선택 (원본)
-                    original_indices = []
-                    years_seen = set()
-                    for idx, row in df.iterrows():
-                        year = row[year_col]
-                        if year not in years_seen:
-                            original_indices.append(idx)
-                            years_seen.add(year)
-                    
-                    df_original = df.loc[original_indices]
-                    
-                    # 연도별 데이터 집계 (원본 데이터만)
-                    yearly_data = df_original.groupby(year_col)[target_col].mean().dropna()
+                    # 원본 데이터만 사용 (master_data는 이미 원본)
+                    yearly_data = df.groupby(year_col)[target_col].first().dropna()
                     
                     # 과거 데이터 포맷팅
+                    # 엑셀 구조: 2015년 feature → 2016년 임금인상률
+                    # 따라서 year + 1로 표시
                     historical_data = []
+                    
+                    # Base-up과 Performance 컬럼 찾기
+                    baseup_col = None
+                    performance_col = None
+                    for col in df.columns:
+                        if 'wage_increase_bu' in col.lower() or 'base_up' in col.lower():
+                            baseup_col = col
+                        if 'wage_increase_mi' in col.lower() or 'performance' in col.lower():
+                            performance_col = col
+                    
                     for year, value in yearly_data.items():
                         if pd.notna(value):
                             # value가 이미 퍼센트인지 확인 (1보다 작으면 비율, 크면 퍼센트)
                             display_value = float(value) if value > 1 else float(value * 100)
-                            historical_data.append({
-                                "year": int(year),
-                                "value": display_value,
-                                "type": "historical"
-                            })
+                            # 실제 적용 연도는 feature 연도 + 1
+                            actual_year = int(year) + 1
+                            # 2025년 데이터는 제외 (2026년 예측값이므로)
+                            if actual_year <= 2025:
+                                data_point = {
+                                    "year": actual_year,
+                                    "value": display_value,
+                                    "type": "historical"
+                                }
+                                
+                                # Base-up과 Performance 데이터 추가 (있는 경우)
+                                if baseup_col and year in df[year_col].values:
+                                    baseup_value = df[df[year_col] == year][baseup_col].iloc[0]
+                                    if pd.notna(baseup_value):
+                                        data_point["base_up"] = float(baseup_value) if baseup_value > 1 else float(baseup_value * 100)
+                                
+                                if performance_col and year in df[year_col].values:
+                                    perf_value = df[df[year_col] == year][performance_col].iloc[0]
+                                    if pd.notna(perf_value):
+                                        data_point["performance"] = float(perf_value) if perf_value > 1 else float(perf_value * 100)
+                                
+                                historical_data.append(data_point)
                     
                     # 2026년 예측 데이터 추가 (모델이 있는 경우)
                     from app.services.modeling_service import modeling_service
