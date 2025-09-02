@@ -62,18 +62,19 @@ export const Effects: React.FC = () => {
     datasets: [
       {
         label: 'SBL',
-        data: [18, 13, 12, 11, 13.5],
+        data: [17.89, 13.12, 12.22, 11.26, 13.62],
         borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
         tension: 0.4,
-        borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        borderWidth: 4,  // 더 굵은 선
+        pointRadius: [5, 5, 5, 5, 7],  // 더 큰 포인트
+        pointHoverRadius: 8,
         spanGaps: false,
+        order: 0,  // 다른 선들 위에 그려지도록
       },
       {
         label: 'Lonza',
-        data: [35, 34, 33, 36, 34.5],
+        data: [34.92, 34.37, 33.48, 35.88, 34.67],
         borderColor: 'rgb(168, 85, 247)',
         backgroundColor: 'rgba(168, 85, 247, 0.1)',
         tension: 0.4,
@@ -84,7 +85,7 @@ export const Effects: React.FC = () => {
       },
       {
         label: 'Wuxi',
-        data: [9, 8, 9, 8, 8.5],
+        data: [34.72, 26.43, 26.34, 27.17, 28.66],
         borderColor: 'rgb(34, 197, 94)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         tension: 0.4,
@@ -95,7 +96,7 @@ export const Effects: React.FC = () => {
       },
       {
         label: 'Celltrion',
-        data: [9, 8, 12, 11, 10],
+        data: [8.98, 7.82, 9.31, 7.80, 8.48],
         borderColor: 'rgb(129, 140, 248)',
         backgroundColor: 'rgba(129, 140, 248, 0.1)',
         tension: 0.4,
@@ -106,7 +107,7 @@ export const Effects: React.FC = () => {
       },
       {
         label: 'Roche',
-        data: [36, 34, 33, 28, 32.8],
+        data: [26.74, 24.48, 27.48, 27.20, 26.48],
         borderColor: 'rgb(251, 146, 60)',
         backgroundColor: 'rgba(251, 146, 60, 0.1)',
         tension: 0.4,
@@ -117,7 +118,7 @@ export const Effects: React.FC = () => {
       },
       {
         label: 'GSK',
-        data: [30, 27, 28, 27, 28],
+        data: [36.46, 26.23, 27.94, 27.92, 29.64],
         borderColor: 'rgb(250, 204, 21)',
         backgroundColor: 'rgba(250, 204, 21, 0.1)',
         tension: 0.4,
@@ -128,7 +129,7 @@ export const Effects: React.FC = () => {
       },
       {
         label: 'CSL',
-        data: [25, 24, 25, 25, 24.8],
+        data: [26.72, 26.67, 25.43, 24.98, 25.95],
         borderColor: 'rgb(220, 38, 127)',
         backgroundColor: 'rgba(220, 38, 127, 0.1)',
         tension: 0.4,
@@ -139,9 +140,20 @@ export const Effects: React.FC = () => {
       },
       {
         label: 'AstraZeneca',
-        data: [27, 25, 26, 25, 25.8],
+        data: [27.46, 26.00, 26.93, 25.35, 26.44],
         borderColor: 'rgb(239, 68, 68)',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: [4, 4, 4, 4, 6],
+        pointHoverRadius: 6,
+        spanGaps: false,
+      },
+      {
+        label: 'Bayer',
+        data: [26.76, 24.87, 22.44, 26.72, 25.20],
+        borderColor: 'rgb(245, 158, 11)',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
         tension: 0.4,
         borderWidth: 2,
         pointRadius: [4, 4, 4, 4, 6],
@@ -170,12 +182,13 @@ export const Effects: React.FC = () => {
         label: 'SBL',
         data: [39, 31, 30, 29, 32.3],
         borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
         tension: 0.4,
-        borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        borderWidth: 4,  // 더 굵은 선
+        pointRadius: [5, 5, 5, 5, 7],  // 더 큰 포인트
+        pointHoverRadius: 8,
         spanGaps: false,
+        order: 0,  // 다른 선들 위에 그려지도록
       },
       {
         label: 'Lonza',
@@ -295,25 +308,31 @@ export const Effects: React.FC = () => {
         }
       },
       datalabels: {
-        display: true, // 모든 포인트에 레이블 표시
-        align: function(context: any) {
-          // 4개년 평균은 오른쪽, 나머지는 위
-          return context.dataIndex === 4 ? 'right' : 'top';
-        } as any,
-        anchor: function(context: any) {
-          // 4개년 평균은 center, 나머지는 end
-          return context.dataIndex === 4 ? 'center' : 'end';
-        } as any,
+        display: function(context: any) {
+          // 4개년 평균 포인트만 라벨 표시
+          return context.dataIndex === 4;
+        },
+        align: 'right' as any,
+        anchor: 'center' as any,
         offset: function(context: any) {
-          // 4개년 평균은 10, 나머지는 5
-          return context.dataIndex === 4 ? 10 : 5;
+          const datasetIndex = context.datasetIndex;
+          // 각 데이터셋마다 오프셋을 다르게 하여 겹침 방지
+          // 값이 높은 순서대로 위에서 아래로 배치
+          const sortedData = context.chart.data.datasets
+            .map((dataset: any, index: number) => ({
+              index,
+              value: dataset.data[4]
+            }))
+            .sort((a: any, b: any) => b.value - a.value);
+          
+          const position = sortedData.findIndex((item: any) => item.index === datasetIndex);
+          
+          // 기본 오프셋 + 위치별 추가 오프셋
+          return 10 + position * 2;
         },
         formatter: function(value: any, context: any) {
-          if (context.dataIndex === 4) {
-            const label = context.dataset.label;
-            return `${label}: ${value}%`;
-          }
-          return `${value}%`;
+          const label = context.dataset.label;
+          return `${label}: ${value}%`;
         },
         color: function(context: any) {
           return context.dataIndex === 4 ? context.dataset.borderColor : '#666';
@@ -442,25 +461,31 @@ export const Effects: React.FC = () => {
         }
       },
       datalabels: {
-        display: true, // 모든 포인트에 레이블 표시
-        align: function(context: any) {
-          // 4개년 평균은 오른쪽, 나머지는 위
-          return context.dataIndex === 4 ? 'right' : 'top';
-        } as any,
-        anchor: function(context: any) {
-          // 4개년 평균은 center, 나머지는 end
-          return context.dataIndex === 4 ? 'center' : 'end';
-        } as any,
+        display: function(context: any) {
+          // 4개년 평균 포인트만 라벨 표시
+          return context.dataIndex === 4;
+        },
+        align: 'right' as any,
+        anchor: 'center' as any,
         offset: function(context: any) {
-          // 4개년 평균은 10, 나머지는 5
-          return context.dataIndex === 4 ? 10 : 5;
+          const datasetIndex = context.datasetIndex;
+          // 각 데이터셋마다 오프셋을 다르게 하여 겹침 방지
+          // 값이 높은 순서대로 위에서 아래로 배치
+          const sortedData = context.chart.data.datasets
+            .map((dataset: any, index: number) => ({
+              index,
+              value: dataset.data[4]
+            }))
+            .sort((a: any, b: any) => b.value - a.value);
+          
+          const position = sortedData.findIndex((item: any) => item.index === datasetIndex);
+          
+          // 기본 오프셋 + 위치별 추가 오프셋
+          return 10 + position * 2;
         },
         formatter: function(value: any, context: any) {
-          if (context.dataIndex === 4) {
-            const label = context.dataset.label;
-            return `${label}: ${value}%`;
-          }
-          return `${value}%`;
+          const label = context.dataset.label;
+          return `${label}: ${value}%`;
         },
         color: function(context: any) {
           return context.dataIndex === 4 ? context.dataset.borderColor : '#666';
