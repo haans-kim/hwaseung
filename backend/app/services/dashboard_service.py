@@ -228,16 +228,20 @@ class DashboardService:
             
             default_data = {}
             for col in default_features:
-                if col == 'gdp_growth_kr':
+                if col == 'wage_increase_bu_group':
+                    default_data[col] = variables.get('wage_increase_bu_group', 3.0) * 0.01
+                elif col == 'gdp_growth_kr':
                     default_data[col] = variables.get('gdp_growth', 2.8) * 0.01
-                elif col == 'cpi_kr':
-                    default_data[col] = variables.get('inflation_rate', 2.5) * 0.01
                 elif col == 'unemployment_rate_kr':
                     default_data[col] = variables.get('unemployment_rate', 3.2) * 0.01
+                elif col == 'market_size_growth_rate':
+                    default_data[col] = variables.get('market_size_growth_rate', 5.0) * 0.01
+                elif col == 'hcroi_sbl':
+                    default_data[col] = variables.get('hcroi_sbl', 1.5)  # 비율이므로 그대로
+                elif col == 'cpi_kr':
+                    default_data[col] = 0.025  # 기본 인플레이션 2.5%
                 elif col == 'minimum_wage_increase_kr':
-                    default_data[col] = variables.get('productivity_growth', 2.0) * 0.01
-                elif col == 'exchange_rate_change_krw':
-                    default_data[col] = variables.get('exchange_rate_volatility', 1.0) * 0.01
+                    default_data[col] = 0.025  # 기본 최저임금인상률 2.5%
                 else:
                     default_data[col] = 0.02  # 기본값
             
@@ -257,8 +261,8 @@ class DashboardService:
             from sklearn.linear_model import LinearRegression
             
             if data_service.current_data is None:
-                # 데이터가 없는 경우 기본값 반환
-                return 0.02  # 2% 기본값
+                # 데이터가 없는 경우 에러
+                raise ValueError("No data available for performance trend prediction")
             
             # master_data(원본)가 있으면 사용, 없으면 current_data 사용
             if hasattr(data_service, 'master_data') and data_service.master_data is not None:
@@ -294,8 +298,8 @@ class DashboardService:
                     df['estimated_performance'] = df['wage_increase_total_group'] - df['wage_increase_bu_group']
                     available_col = 'estimated_performance'
                 else:
-                    # 추정할 수 없는 경우 기본값
-                    return 0.02
+                    # 추정할 수 없는 경우 에러
+                    raise ValueError("Cannot estimate performance rate from available data")
             
             # 연도와 성과 인상률 데이터 준비
             if 'year' in df.columns:
@@ -334,8 +338,8 @@ class DashboardService:
             trend_data = trend_data[trend_data['year'] < 2025]
             
             if len(trend_data) < 3:
-                # 데이터가 너무 적으면 기본값
-                return 0.02
+                # 데이터가 너무 적으면 에러
+                raise ValueError("Insufficient data for trend analysis")
             
             # 최근 10년 데이터만 사용 (2015-2024)
             trend_data = trend_data.sort_values('year').tail(10)
@@ -373,8 +377,8 @@ class DashboardService:
             
         except Exception as e:
             print(f"⚠️ Error predicting performance trend: {e}")
-            # 오류 시 기본값 반환
-            return 0.02  # 2% 기본값
+            # 오류 시 에러 발생
+            raise
     
     def predict_wage_increase(self, model, input_data: Dict[str, float], confidence_level: float = 0.95) -> Dict[str, Any]:
         """2026년 임금인상률 예측
@@ -437,12 +441,17 @@ class DashboardService:
             # 최근 2년이 5.3%, 5.6%로 높은 인상률을 보임
             from app.services.data_service import data_service
             
-            # 최근 2년 평균 5.45%, 최근 3년 평균 고려
-            recent_2yr_avg = 0.0545  # 최근 2년 평균 (5.3% + 5.6%) / 2
-            recent_trend = 0.0550    # 최근 상승 트렌드 반영
-            
-            # 가중 평균: 모델 예측 30% + 최근 2년 트렌드 50% + 상승 트렌드 20%
-            prediction_value = round(raw_prediction * 0.3 + recent_2yr_avg * 0.5 + recent_trend * 0.2, 4)
+            # 그룹 Base-up의 논리적 영향 반영
+            # 그룹 Base-up이 높으면 SBL 임금도 높아야 함 (상식적 관계)
+            if isinstance(input_data, dict) and 'wage_increase_bu_group' in input_data:
+                group_baseup_input = input_data['wage_increase_bu_group']
+                # 기준값(3.0%)과의 차이를 계산
+                baseup_diff = (group_baseup_input - 3.0) * 0.01
+                # 양의 관계로 조정 (그룹 base-up 1%p 증가 → 예측값 0.3%p 증가)
+                logical_adjustment = baseup_diff * 0.3
+                prediction_value = round(raw_prediction + logical_adjustment, 4)
+            else:
+                prediction_value = raw_prediction
             
             print(f"🔍 Debug - Raw model prediction: {raw_prediction:.4f} ({raw_prediction*100:.2f}%)")
             print(f"🔍 Debug - Adjusted prediction (60% model + 40% trend): {prediction_value:.4f} ({prediction_value*100:.2f}%)")
@@ -499,7 +508,7 @@ class DashboardService:
                         float(prediction + margin_error)
                     ]
                 else:
-                    # 기본값
+                    # PyCaret config가 없으면 간단한 신뢰구간 계산
                     confidence_interval = [
                         round(prediction_value * 0.95, 4),
                         round(prediction_value * 1.05, 4)
@@ -744,25 +753,67 @@ class DashboardService:
                                 historical_data.append(data_point)
                     
                     # 2026년 예측 데이터 추가 (모델이 있는 경우)
+                    # 이미 2026년 데이터가 있는지 확인
+                    has_2026 = any(d.get('year') == 2026 for d in historical_data)
+                    
                     from app.services.modeling_service import modeling_service
-                    if modeling_service.current_model:
+                    if modeling_service.current_model and not has_2026:
                         try:
-                            # 간단한 예측값 추가 (실제 예측 로직은 나중에)
-                            last_value = historical_data[-1]["value"] if historical_data else 3.5
+                            # 실제 모델 예측 수행
+                            default_input = {
+                                'wage_increase_bu_group': 3.0,
+                                'gdp_growth': 2.8,
+                                'unemployment_rate': 3.2,
+                                'market_size_growth_rate': 5.0,
+                                'hcroi_sbl': 1.5
+                            }
+                            
+                            # 예측 수행
+                            prediction_result = self.predict_wage_increase(
+                                modeling_service.current_model,
+                                default_input,
+                                confidence_level=0.95
+                            )
+                            
+                            # 예측값 검증
+                            pred_value = prediction_result["prediction"]
+                            base_up = prediction_result.get("base_up_rate", 0)
+                            perf = prediction_result.get("performance_rate", 0)
+                            
+                            # 비정상적인 값 체크 (예: 100% 이상 또는 음수)
+                            if abs(pred_value) > 1.0 or pred_value < 0:
+                                print(f"⚠️ Abnormal prediction value: {pred_value}")
+                                raise ValueError("Abnormal prediction value")
+                            
+                            # 예측 결과를 퍼센트로 변환하여 추가
                             prediction_data = {
                                 "year": 2026,
-                                "value": last_value * 1.05,  # 임시 예측값
-                                "confidence_lower": last_value * 0.95,
-                                "confidence_upper": last_value * 1.15,
+                                "value": round(pred_value * 100, 2),
+                                "base_up": round(base_up * 100, 2),
+                                "performance": round(perf * 100, 2),
                                 "type": "prediction"
                             }
                             historical_data.append(prediction_data)
-                        except:
+                            
+                            # Base-up 데이터도 별도로 추가 (차트에서 사용)
+                            if hasbaseup and 'baseup_data' in locals():
+                                baseup_pred = {
+                                    "year": 2026,
+                                    "value": round(prediction_result.get("base_up_rate", 0) * 100, 2),
+                                    "type": "prediction"
+                                }
+                                baseup_data.append(baseup_pred)
+                            
+                            print(f"✅ Added 2026 prediction: Total={prediction_data['value']}%, Base-up={prediction_data['base_up']}%")
+                        except Exception as e:
+                            print(f"⚠️ Could not generate prediction: {e}")
+                            # 오류 시에는 추가하지 않음 (중복 방지)
                             pass
                     
                     return {
                         "message": "Trend data retrieved successfully",
                         "trend_data": historical_data,
+                        "baseup_data": baseup_data if 'baseup_data' in locals() else [],
                         "chart_config": {
                             "title": "임금인상률 추이 및 2026년 예측",
                             "y_axis_label": "임금인상률 (%)",
@@ -770,9 +821,9 @@ class DashboardService:
                         }
                     }
             
-            # 기본 데이터 반환
+            # 데이터가 없으면 빈 배열 반환
             return {
-                "message": "Using default trend data",
+                "message": "No trend data available",
                 "trend_data": [],
                 "chart_config": {
                     "title": "임금인상률 추이",
