@@ -232,8 +232,8 @@ tasks/
 
 # Project specific
 uploads/
-data/current_data.pkl
-*.pkl
+# data/current_data.pkl  # pkl 파일들은 포함
+# *.pkl  # 모델과 데이터 파일 포함을 위해 주석 처리
 *.joblib
 *.h5
 
