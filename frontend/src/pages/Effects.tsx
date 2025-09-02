@@ -25,22 +25,21 @@ ChartJS.register(
   Tooltip,
   Legend,
   Filler,
-  annotationPlugin,
-  ChartDataLabels
+  annotationPlugin
 );
 
 export const Effects: React.FC = () => {
-  // 평균값 기준으로 정렬된 회사 데이터 (인건비율)
+  // 평균값 기준으로 정렬된 회사 데이터 (인건비율) - 엑셀 데이터 기반
   const laborCostSorted = [
-    { name: 'Lonza', value: 34.5, color: 'rgb(168, 85, 247)' },
-    { name: 'Roche', value: 32.8, color: 'rgb(251, 146, 60)' },
-    { name: 'GSK', value: 28, color: 'rgb(250, 204, 21)' },
-    { name: 'AstraZeneca', value: 25.8, color: 'rgb(239, 68, 68)' },
-    { name: 'Bayer', value: 25, color: 'rgb(245, 158, 11)' },
-    { name: 'CSL', value: 24.8, color: 'rgb(220, 38, 127)' },
-    { name: 'SBL', value: 13.5, color: 'rgb(59, 130, 246)' },
-    { name: 'Celltrion', value: 10, color: 'rgb(129, 140, 248)' },
-    { name: 'Wuxi', value: 8.5, color: 'rgb(34, 197, 94)' }
+    { name: 'Lonza', value: 34.7, color: 'rgb(168, 85, 247)' },
+    { name: 'GSK', value: 29.6, color: 'rgb(250, 204, 21)' },
+    { name: 'Wuxi', value: 28.7, color: 'rgb(34, 197, 94)' },
+    { name: 'Roche', value: 26.5, color: 'rgb(251, 146, 60)' },
+    { name: 'AstraZeneca', value: 26.4, color: 'rgb(239, 68, 68)' },
+    { name: 'CSL', value: 26.0, color: 'rgb(220, 38, 127)' },
+    { name: 'Bayer', value: 25.2, color: 'rgb(245, 158, 11)' },
+    { name: 'SBL', value: 13.6, color: 'rgb(59, 130, 246)' },
+    { name: 'Celltrion', value: 8.5, color: 'rgb(129, 140, 248)' }
   ];
 
   // 평균값 기준으로 정렬된 회사 데이터 (영업이익률)
@@ -62,102 +61,102 @@ export const Effects: React.FC = () => {
     datasets: [
       {
         label: 'SBL',
-        data: [17.89, 13.12, 12.22, 11.26, 13.62],
+        data: [17.9, 13.1, 12.2, 11.3, 13.6],
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
         tension: 0.4,
         borderWidth: 4,  // 더 굵은 선
-        pointRadius: [5, 5, 5, 5, 7],  // 더 큰 포인트
-        pointHoverRadius: 8,
+        pointRadius: 2,  // 작은 도트
+        pointHoverRadius: 3,
         spanGaps: false,
         order: 0,  // 다른 선들 위에 그려지도록
       },
       {
         label: 'Lonza',
-        data: [34.92, 34.37, 33.48, 35.88, 34.67],
+        data: [34.9, 34.4, 33.5, 35.9, 34.7],
         borderColor: 'rgb(168, 85, 247)',
         backgroundColor: 'rgba(168, 85, 247, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
         label: 'Wuxi',
-        data: [34.72, 26.43, 26.34, 27.17, 28.66],
+        data: [34.7, 26.4, 26.3, 27.2, 28.7],
         borderColor: 'rgb(34, 197, 94)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
         label: 'Celltrion',
-        data: [8.98, 7.82, 9.31, 7.80, 8.48],
+        data: [9.0, 7.8, 9.3, 7.8, 8.5],
         borderColor: 'rgb(129, 140, 248)',
         backgroundColor: 'rgba(129, 140, 248, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
         label: 'Roche',
-        data: [26.74, 24.48, 27.48, 27.20, 26.48],
+        data: [26.7, 24.5, 27.5, 27.2, 26.5],
         borderColor: 'rgb(251, 146, 60)',
         backgroundColor: 'rgba(251, 146, 60, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
         label: 'GSK',
-        data: [36.46, 26.23, 27.94, 27.92, 29.64],
+        data: [36.5, 26.2, 27.9, 27.9, 29.6],
         borderColor: 'rgb(250, 204, 21)',
         backgroundColor: 'rgba(250, 204, 21, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
         label: 'CSL',
-        data: [26.72, 26.67, 25.43, 24.98, 25.95],
+        data: [26.7, 26.7, 25.4, 25.0, 26.0],
         borderColor: 'rgb(220, 38, 127)',
         backgroundColor: 'rgba(220, 38, 127, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
         label: 'AstraZeneca',
-        data: [27.46, 26.00, 26.93, 25.35, 26.44],
+        data: [27.5, 26.0, 26.9, 25.4, 26.4],
         borderColor: 'rgb(239, 68, 68)',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
         label: 'Bayer',
-        data: [26.76, 24.87, 22.44, 26.72, 25.20],
+        data: [26.8, 24.9, 22.4, 26.7, 25.2],
         borderColor: 'rgb(245, 158, 11)',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -167,8 +166,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: [4, 4, 4, 4, 6],
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       }
     ]
@@ -185,8 +184,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
         tension: 0.4,
         borderWidth: 4,  // 더 굵은 선
-        pointRadius: [5, 5, 5, 5, 7],  // 더 큰 포인트
-        pointHoverRadius: 8,
+        pointRadius: 2,  // 작은 도트
+        pointHoverRadius: 3,
         spanGaps: false,
         order: 0,  // 다른 선들 위에 그려지도록
       },
@@ -197,8 +196,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(168, 85, 247, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -208,8 +207,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -219,8 +218,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(129, 140, 248, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -230,8 +229,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(251, 146, 60, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -241,8 +240,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(250, 204, 21, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -252,8 +251,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(220, 38, 127, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -263,8 +262,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       },
       {
@@ -274,8 +273,8 @@ export const Effects: React.FC = () => {
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 2,
+        pointHoverRadius: 3,
         spanGaps: false,
       }
     ]
@@ -308,59 +307,28 @@ export const Effects: React.FC = () => {
         }
       },
       datalabels: {
-        display: function(context: any) {
-          // 4개년 평균 포인트만 라벨 표시
-          return context.dataIndex === 4;
-        },
-        align: 'right' as any,
-        anchor: 'center' as any,
-        offset: function(context: any) {
-          const datasetIndex = context.datasetIndex;
-          // 각 데이터셋마다 오프셋을 다르게 하여 겹침 방지
-          // 값이 높은 순서대로 위에서 아래로 배치
-          const sortedData = context.chart.data.datasets
-            .map((dataset: any, index: number) => ({
-              index,
-              value: dataset.data[4]
-            }))
-            .sort((a: any, b: any) => b.value - a.value);
-          
-          const position = sortedData.findIndex((item: any) => item.index === datasetIndex);
-          
-          // 기본 오프셋 + 위치별 추가 오프셋
-          return 10 + position * 2;
-        },
+        display: true, // 모든 포인트에 라벨 표시
+        align: function(context: any) {
+          const value = context.parsed?.y || context.dataset.data[context.dataIndex];
+          // 값에 따라 라벨 위치 조정
+          if (value > 30) {
+            return 'top';
+          } else if (value < 15) {
+            return 'bottom';
+          } else {
+            return 'top';
+          }
+        } as any,
+        anchor: 'end' as any,
+        offset: 4,
         formatter: function(value: any, context: any) {
-          const label = context.dataset.label;
-          return `${label}: ${value}%`;
+          const numValue = typeof value === 'number' ? value : parseFloat(value);
+          return `${numValue.toFixed(1)}%`;
         },
-        color: function(context: any) {
-          return context.dataIndex === 4 ? context.dataset.borderColor : '#666';
-        } as any,
-        font: function(context: any) {
-          return {
-            size: context.dataIndex === 4 ? 11 : 10,
-            weight: context.dataIndex === 4 ? 'bold' : 'normal'
-          };
-        } as any,
-        backgroundColor: function(context: any) {
-          return context.dataIndex === 4 ? 'rgba(255, 255, 255, 0.9)' : 'transparent';
-        } as any,
-        borderColor: function(context: any) {
-          return context.dataIndex === 4 ? context.dataset.borderColor : 'transparent';
-        } as any,
-        borderRadius: 4,
-        borderWidth: function(context: any) {
-          return context.dataIndex === 4 ? 1 : 0;
-        },
-        padding: function(context: any) {
-          return context.dataIndex === 4 ? {
-            top: 2,
-            bottom: 2,
-            left: 6,
-            right: 6
-          } : 0;
-        } as any
+        color: '#666',
+        font: {
+          size: 9
+        }
       },
       annotation: {
         annotations: {
@@ -389,8 +357,8 @@ export const Effects: React.FC = () => {
     },
     layout: {
       padding: {
-        left: 20,
-        right: 150,  // 오른쪽 공간 확대
+        left: 10,
+        right: 10,  // 오른쪽 공간 축소
         top: 20,
         bottom: 20
       }
@@ -461,59 +429,28 @@ export const Effects: React.FC = () => {
         }
       },
       datalabels: {
-        display: function(context: any) {
-          // 4개년 평균 포인트만 라벨 표시
-          return context.dataIndex === 4;
-        },
-        align: 'right' as any,
-        anchor: 'center' as any,
-        offset: function(context: any) {
-          const datasetIndex = context.datasetIndex;
-          // 각 데이터셋마다 오프셋을 다르게 하여 겹침 방지
-          // 값이 높은 순서대로 위에서 아래로 배치
-          const sortedData = context.chart.data.datasets
-            .map((dataset: any, index: number) => ({
-              index,
-              value: dataset.data[4]
-            }))
-            .sort((a: any, b: any) => b.value - a.value);
-          
-          const position = sortedData.findIndex((item: any) => item.index === datasetIndex);
-          
-          // 기본 오프셋 + 위치별 추가 오프셋
-          return 10 + position * 2;
-        },
+        display: true, // 모든 포인트에 라벨 표시
+        align: function(context: any) {
+          const value = context.parsed?.y || context.dataset.data[context.dataIndex];
+          // 값에 따라 라벨 위치 조정
+          if (value > 30) {
+            return 'top';
+          } else if (value < 15) {
+            return 'bottom';
+          } else {
+            return 'top';
+          }
+        } as any,
+        anchor: 'end' as any,
+        offset: 4,
         formatter: function(value: any, context: any) {
-          const label = context.dataset.label;
-          return `${label}: ${value}%`;
+          const numValue = typeof value === 'number' ? value : parseFloat(value);
+          return `${numValue.toFixed(1)}%`;
         },
-        color: function(context: any) {
-          return context.dataIndex === 4 ? context.dataset.borderColor : '#666';
-        } as any,
-        font: function(context: any) {
-          return {
-            size: context.dataIndex === 4 ? 11 : 10,
-            weight: context.dataIndex === 4 ? 'bold' : 'normal'
-          };
-        } as any,
-        backgroundColor: function(context: any) {
-          return context.dataIndex === 4 ? 'rgba(255, 255, 255, 0.9)' : 'transparent';
-        } as any,
-        borderColor: function(context: any) {
-          return context.dataIndex === 4 ? context.dataset.borderColor : 'transparent';
-        } as any,
-        borderRadius: 4,
-        borderWidth: function(context: any) {
-          return context.dataIndex === 4 ? 1 : 0;
-        },
-        padding: function(context: any) {
-          return context.dataIndex === 4 ? {
-            top: 2,
-            bottom: 2,
-            left: 6,
-            right: 6
-          } : 0;
-        } as any
+        color: '#666',
+        font: {
+          size: 9
+        }
       },
       annotation: {
         annotations: {
@@ -542,8 +479,8 @@ export const Effects: React.FC = () => {
     },
     layout: {
       padding: {
-        left: 20,
-        right: 150,  // 오른쪽 공간 확대
+        left: 10,
+        right: 10,  // 오른쪽 공간 축소
         top: 20,
         bottom: 20
       }
@@ -602,12 +539,35 @@ export const Effects: React.FC = () => {
             <CardDescription>주요 경쟁사 대비 인건비/매출액 비중 추이</CardDescription>
           </CardHeader>
           <CardContent>
-            <div style={{ height: '600px', position: 'relative' }}>
-              <Line data={laborCostRatioData} options={laborCostOptions} />
+            <div className="flex items-center">
+              <div style={{ height: '600px', flex: 1, position: 'relative' }}>
+                <Line 
+                  key="labor-cost-chart"
+                  data={laborCostRatioData} 
+                  options={laborCostOptions}
+                  plugins={[ChartDataLabels]}
+                />
+              </div>
+              <div className="ml-2" style={{ width: '180px' }}>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h4 className="text-xs font-semibold mb-2 text-gray-700">4개년 평균 순위</h4>
+                  <div className="space-y-1">
+                    {laborCostSorted.map((company, index) => (
+                      <div key={company.name} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center">
+                          <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: company.color }}></span>
+                          <span className={company.name === 'SBL' ? 'font-bold' : ''}>{company.name}</span>
+                        </div>
+                        <span className={company.name === 'SBL' ? 'font-bold' : ''}>{company.value.toFixed(1)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-900">
-                <strong>SBL 현황:</strong> 업계 최저 수준의 인건비율 (4개년 평균 13.5%)을 유지하며 우수한 비용 효율성 달성
+                <strong>SBL 현황:</strong> 업계 최저 수준의 인건비율 (4개년 평균 13.6%)을 유지하며 우수한 비용 효율성 달성
               </p>
             </div>
           </CardContent>
@@ -619,8 +579,31 @@ export const Effects: React.FC = () => {
             <CardDescription>주요 경쟁사 대비 영업이익/매출액 비중 추이</CardDescription>
           </CardHeader>
           <CardContent>
-            <div style={{ height: '600px', position: 'relative' }}>
-              <Line data={operatingProfitRatioData} options={operatingProfitOptions} />
+            <div className="flex items-center">
+              <div style={{ height: '600px', flex: 1, position: 'relative' }}>
+                <Line 
+                  key="operating-profit-chart"
+                  data={operatingProfitRatioData} 
+                  options={operatingProfitOptions}
+                  plugins={[ChartDataLabels]}
+                />
+              </div>
+              <div className="ml-2" style={{ width: '180px' }}>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h4 className="text-xs font-semibold mb-2 text-gray-700">4개년 평균 순위</h4>
+                  <div className="space-y-1">
+                    {profitSorted.map((company, index) => (
+                      <div key={company.name} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center">
+                          <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: company.color }}></span>
+                          <span className={company.name === 'SBL' ? 'font-bold' : ''}>{company.name}</span>
+                        </div>
+                        <span className={company.name === 'SBL' ? 'font-bold' : ''}>{company.value.toFixed(1)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="mt-4 p-4 bg-green-50 rounded-lg">
               <p className="text-sm text-green-900">
