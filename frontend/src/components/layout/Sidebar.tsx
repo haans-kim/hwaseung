@@ -21,7 +21,7 @@ const navigation = [
   { name: 'Data 업로드', href: '/data', icon: Upload },
   { name: '모델링', href: '/modeling', icon: Settings },
   { name: 'Analysis', href: '/analysis', icon: BarChart3 },
-  { name: 'Dashboard', href: '/dashboard', icon: Activity },
+  { name: '적정인력', href: '/dashboard', icon: Activity },
   { name: '기대효과', href: '/effects', icon: TrendingUp },
 ];
 
@@ -30,8 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) 
     <div className="w-64 bg-background border-r border-border h-screen flex flex-col flex-shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-border">
-        <h1 className="text-xl font-bold text-foreground">Salary Increase Forecast</h1>
-        <p className="text-sm text-muted-foreground">임금인상률 예측 시스템</p>
+        <h1 className="text-xl font-bold text-foreground">Headcount Optimization</h1>
+        <p className="text-sm text-muted-foreground">적정인력 산정 시스템</p>
       </div>
 
       {/* Navigation */}

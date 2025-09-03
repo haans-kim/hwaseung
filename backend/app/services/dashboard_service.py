@@ -522,8 +522,8 @@ class DashboardService:
                 # 폴백: 직접 예측 시도
                 prediction = model.predict(model_input)[0]
             
-            # 과거 10개년 성과 인상률 데이터를 기반으로 선형회귀 예측
-            performance_rate = self._predict_performance_trend()
+            # 성과 인상률은 적정인력 산정에서 사용하지 않음
+            performance_rate = 0.0
             
             # 2026년 headcount 예측 추가
             headcount_prediction = self._predict_headcount_2026()
@@ -791,11 +791,11 @@ class DashboardService:
                 df = None
             
             if df is not None:
-                # 타겟 컬럼 찾기
-                target_col = 'wage_increase_total_sbl'
+                # 타겟 컬럼 찾기 (headcount 데이터)
+                target_col = 'headcount'
                 if target_col not in df.columns:
-                    # 다른 가능한 컬럼들 시도
-                    for col in ['wage_increase_rate', 'target', 'wage_increase']:
+                    # 다른 가능한 headcount 컬럼들 시도
+                    for col in ['정원', 'employee_count', 'total_headcount']:
                         if col in df.columns:
                             target_col = col
                             break
@@ -808,45 +808,22 @@ class DashboardService:
                     yearly_data = df.groupby(year_col)[target_col].first().dropna()
                     
                     # 과거 데이터 포맷팅
-                    # 엑셀 구조: 2015년 feature → 2016년 임금인상률
-                    # 따라서 year + 1로 표시
+                    # Headcount 연도별 데이터
                     historical_data = []
-                    
-                    # Base-up과 Performance 컬럼 찾기
-                    baseup_col = None
-                    performance_col = None
-                    for col in df.columns:
-                        if 'wage_increase_bu' in col.lower() or 'base_up' in col.lower():
-                            baseup_col = col
-                        if 'wage_increase_mi' in col.lower() or 'performance' in col.lower():
-                            performance_col = col
                     
                     for year, value in yearly_data.items():
                         if pd.notna(value):
-                            # value가 이미 퍼센트인지 확인 (1보다 작으면 비율, 크면 퍼센트)
-                            display_value = float(value) if value > 1 else float(value * 100)
-                            # 실제 적용 연도는 feature 연도 + 1
-                            actual_year = int(year) + 1
-                            # 2025년 데이터는 제외 (2026년 예측값이므로)
-                            if actual_year <= 2025:
-                                data_point = {
-                                    "year": actual_year,
-                                    "value": display_value,
-                                    "type": "historical"
-                                }
-                                
-                                # Base-up과 Performance 데이터 추가 (있는 경우)
-                                if baseup_col and year in df[year_col].values:
-                                    baseup_value = df[df[year_col] == year][baseup_col].iloc[0]
-                                    if pd.notna(baseup_value):
-                                        data_point["base_up"] = float(baseup_value) if baseup_value > 1 else float(baseup_value * 100)
-                                
-                                if performance_col and year in df[year_col].values:
-                                    perf_value = df[df[year_col] == year][performance_col].iloc[0]
-                                    if pd.notna(perf_value):
-                                        data_point["performance"] = float(perf_value) if perf_value > 1 else float(perf_value * 100)
-                                
-                                historical_data.append(data_point)
+                            # headcount는 절대값이므로 그대로 사용
+                            display_value = int(float(value))
+                            actual_year = int(year)
+                            
+                            data_point = {
+                                "year": actual_year,
+                                "value": display_value,
+                                "type": "historical"
+                            }
+                            
+                            historical_data.append(data_point)
                     
                     # 2026년 예측 데이터 추가 (모델이 있는 경우)
                     # 이미 2026년 데이터가 있는지 확인
@@ -911,8 +888,8 @@ class DashboardService:
                         "trend_data": historical_data,
                         "baseup_data": baseup_data if 'baseup_data' in locals() else [],
                         "chart_config": {
-                            "title": "임금인상률 추이 및 2026년 예측",
-                            "y_axis_label": "임금인상률 (%)",
+                            "title": "인원 수 추이 및 2026년 예측",
+                            "y_axis_label": "인원 수 (명)",
                             "x_axis_label": "연도"
                         }
                     }
@@ -922,8 +899,8 @@ class DashboardService:
                 "message": "No trend data available",
                 "trend_data": [],
                 "chart_config": {
-                    "title": "임금인상률 추이",
-                    "y_axis_label": "임금인상률 (%)",
+                    "title": "인원 수 추이",
+                    "y_axis_label": "인원 수 (명)",
                     "x_axis_label": "연도"
                 }
             }

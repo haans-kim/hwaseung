@@ -48,7 +48,7 @@ class ModelingService:
         """데이터 크기에 따른 최적 설정 반환"""
         if data_size < 30:
             return {
-                'train_size': 1.0 if data_size <= 4 else 0.9,  # 매우 작은 데이터는 전체를 학습에 사용
+                'train_size': 0.99 if data_size <= 4 else 0.9,  # 매우 작은 데이터는 거의 전체를 학습에 사용
                 'cv_folds': 2,  # 작은 데이터는 2-fold만 사용
                 'models': ['lr'],  # 가장 단순한 모델만 사용
                 'normalize': False,  # 정규화 비활성화
@@ -270,7 +270,6 @@ class ModelingService:
                     train_size=actual_train_size,
                     html=False,
                     verbose=False,
-                    silent=True,  # 모든 출력 억제
                     
                     # 자동 데이터 타입 추론 및 전처리
                     numeric_features=None,  # PyCaret이 자동 감지
@@ -279,7 +278,7 @@ class ModelingService:
                     
                     # 작은 데이터셋을 위한 설정
                     use_gpu=False,  # GPU 사용 안 함
-                    fold_strategy='kfold' if len(ml_data) > 10 else None,  # 작은 데이터는 fold 전략 비활성화
+                    # fold_strategy='kfold',  # 기본값 사용
                     fold=optimal_settings['cv_folds'],
                 
                 # 결측값 처리
@@ -305,11 +304,7 @@ class ModelingService:
                 
                 # 특성 선택
                 feature_selection=config.get('feature_selection', False),
-                n_features_to_select=optimal_settings.get('n_features_to_select', 0.8) if config.get('feature_selection', False) else 1.0,
-                
-                # CV 전략
-                fold_strategy='kfold',
-                fold=optimal_settings['cv_folds']
+                n_features_to_select=optimal_settings.get('n_features_to_select', 0.8) if config.get('feature_selection', False) else 1.0
                 )
                 
                 self.current_experiment = exp
@@ -324,10 +319,9 @@ class ModelingService:
                     data=ml_data,
                     target=target_column,
                     session_id=session_id,
-                    train_size=1.0,  # 모든 데이터를 학습에 사용
+                    train_size=0.99,  # 거의 모든 데이터를 학습에 사용
                     html=False,
                     verbose=False,
-                    silent=True,
                     
                     # 최소한의 전처리만 수행
                     imputation_type='simple',
@@ -338,7 +332,7 @@ class ModelingService:
                     remove_outliers=False,
                     remove_multicollinearity=False,
                     feature_selection=False,
-                    fold_strategy=None,  # CV 비활성화
+                    # fold_strategy='kfold',  # 기본값 사용
                     fold=2
                 )
                 

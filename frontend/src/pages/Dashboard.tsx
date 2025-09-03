@@ -358,7 +358,7 @@ export const Dashboard: React.FC = () => {
       },
       title: {
         display: true,
-        text: '임금인상률 추이 및 2026년 예측',
+        text: '인원 수 추이 및 2026년 예측',
         font: {
           size: 16,
           weight: 'bold' as const
@@ -375,9 +375,9 @@ export const Dashboard: React.FC = () => {
             const year = trendData.trend_data[context.dataIndex]?.year;
             
             if (year === 2026) {
-              return `🎯 2026년 예측값: ${value.toFixed(1)}%`;
+              return `🎯 2026년 예측값: ${value.toLocaleString()}명`;
             }
-            return `${year}년 실적: ${value.toFixed(1)}%`;
+            return `${year}년 실적: ${value.toLocaleString()}명`;
           },
           afterLabel: (context: any) => {
             const dataPoint = trendData.trend_data[context.dataIndex];
@@ -582,8 +582,8 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">2026년 임금인상률 예측 및 시나리오 분석</p>
+          <h1 className="text-3xl font-bold text-foreground">적정인력 산정</h1>
+          <p className="text-muted-foreground">2026년 적정인력 예측 및 시나리오 분석</p>
         </div>
         <Button onClick={loadDashboardData} disabled={loading === 'initial'}>
           {loading === 'initial' ? (
@@ -624,51 +624,50 @@ export const Dashboard: React.FC = () => {
         {/* 현재 예측 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">2026년 총 인상률</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">2026년 적정인력</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              {currentPrediction ? `${formatPrediction(currentPrediction.prediction, 1)}%` : '-.-%'}
+              {currentPrediction?.headcount_prediction ? 
+                `${currentPrediction.headcount_prediction.predicted_headcount.toLocaleString()}명` : '-명'}
             </div>
           </CardContent>
         </Card>
 
-        {/* Base-up */}
+        {/* 증감률 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Base-up</CardTitle>
+            <CardTitle className="text-sm font-medium">증감률</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {currentPrediction?.breakdown ? `${formatPrediction(currentPrediction.breakdown.base_up.rate, 1)}%` : '-.-%'}
+              {currentPrediction?.headcount_prediction ? 
+                `${currentPrediction.headcount_prediction.growth_rate > 0 ? '+' : ''}${(currentPrediction.headcount_prediction.growth_rate * 100).toFixed(1)}%` : '-.-%'}
             </div>
-            {currentPrediction?.breakdown && (
-              <div className="text-xs text-muted-foreground mt-1">
-                <div className="mb-1">기본 인상분</div>
-                <div className="font-mono text-[10px]">= 총 인상률 - 성과 인상률</div>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground mt-1">
+              <div className="mb-1">전년 대비 증감</div>
+              <div className="font-mono text-[10px]">선형회귀 기반</div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* 성과 인상률 */}
+        {/* 모델 정확도 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">성과 인상률</CardTitle>
+            <CardTitle className="text-sm font-medium">모델 정확도</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {currentPrediction?.breakdown ? `${formatPrediction(currentPrediction.breakdown.performance.rate, 1)}%` : '-.-%'}
+              {currentPrediction?.headcount_prediction?.model_info ? 
+                `${(currentPrediction.headcount_prediction.model_info.data_points || 0)}개 년도` : '-개 년도'}
             </div>
-            {currentPrediction?.breakdown && (
-              <div className="text-xs text-muted-foreground mt-1">
-                <div className="mb-1">과거 10년 성과급 추세 예측</div>
-                <div className="font-mono text-[10px]">선형회귀 분석</div>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground mt-1">
+              <div className="mb-1">학습 데이터 범위</div>
+              <div className="font-mono text-[10px]">선형회귀 모델</div>
+            </div>
           </CardContent>
         </Card>
 
@@ -709,11 +708,13 @@ export const Dashboard: React.FC = () => {
                 변수 조정
               </CardTitle>
               <CardDescription>
-                경제 변수를 직접 조정하여 사용자 정의 예측
+                주요 변수를 조정하여 적정인력 예측
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {availableVariables.slice(0, 8).map((variable) => (
+              {availableVariables
+                .filter(v => ['operating_income', 'ev_growth_gl', 'exchange_rate_change_krw', 'labor_costs', 'v_growth_gl'].includes(v.name))
+                .map((variable) => (
                 <div key={variable.name} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="text-sm font-medium">{variable.display_name}</label>
@@ -750,7 +751,7 @@ export const Dashboard: React.FC = () => {
                 ) : (
                   <>
                     <Zap className="mr-2 h-4 w-4" />
-                    사용자 정의 예측
+                    적정인력 예측
                   </>
                 )}
               </Button>
