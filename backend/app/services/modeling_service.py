@@ -48,10 +48,10 @@ class ModelingService:
         """데이터 크기에 따른 최적 설정 반환"""
         if data_size < 30:
             return {
-                'train_size': 0.9,
-                'cv_folds': 2 if data_size < 15 else 3,  # 매우 작은 데이터는 2-fold
-                'models': self.small_data_models,
-                'normalize': False if data_size < 15 else True,  # 매우 작은 데이터는 정규화 안함
+                'train_size': 1.0 if data_size <= 4 else 0.9,  # 매우 작은 데이터는 전체를 학습에 사용
+                'cv_folds': 2,  # 작은 데이터는 2-fold만 사용
+                'models': ['lr'],  # 가장 단순한 모델만 사용
+                'normalize': False,  # 정규화 비활성화
                 'transformation': False,
                 'remove_outliers': False,
                 'feature_selection': False,
@@ -262,18 +262,25 @@ class ModelingService:
                 }
             
             # PyCaret setup 실행 (자동 전처리 강화)
-            exp = setup(
-                data=ml_data,
-                target=target_column,
-                session_id=session_id,
-                train_size=actual_train_size,
-                html=False,
-                verbose=False,
-                
-                # 자동 데이터 타입 추론 및 전처리
-                numeric_features=None,  # PyCaret이 자동 감지
-                categorical_features=None,  # PyCaret이 자동 감지
-                ignore_features=None,
+            try:
+                exp = setup(
+                    data=ml_data,
+                    target=target_column,
+                    session_id=session_id,
+                    train_size=actual_train_size,
+                    html=False,
+                    verbose=False,
+                    silent=True,  # 모든 출력 억제
+                    
+                    # 자동 데이터 타입 추론 및 전처리
+                    numeric_features=None,  # PyCaret이 자동 감지
+                    categorical_features=None,  # PyCaret이 자동 감지
+                    ignore_features=None,
+                    
+                    # 작은 데이터셋을 위한 설정
+                    use_gpu=False,  # GPU 사용 안 함
+                    fold_strategy='kfold' if len(ml_data) > 10 else None,  # 작은 데이터는 fold 전략 비활성화
+                    fold=optimal_settings['cv_folds'],
                 
                 # 결측값 처리
                 imputation_type=config.get('imputation_type', 'simple'),
@@ -303,13 +310,41 @@ class ModelingService:
                 # CV 전략
                 fold_strategy='kfold',
                 fold=optimal_settings['cv_folds']
-            )
-            
-            self.current_experiment = exp
-            self.is_setup_complete = True
-            
-        except Exception as e:
-            raise RuntimeError(f"PyCaret setup failed: {str(e)}")
+                )
+                
+                self.current_experiment = exp
+                self.is_setup_complete = True
+                
+            except Exception as e:
+                print(f"⚠️ Standard PyCaret setup failed: {e}")
+                print("🔄 Trying with minimal settings...")
+                
+                # 매우 기본적인 설정으로 재시도
+                exp = setup(
+                    data=ml_data,
+                    target=target_column,
+                    session_id=session_id,
+                    train_size=1.0,  # 모든 데이터를 학습에 사용
+                    html=False,
+                    verbose=False,
+                    silent=True,
+                    
+                    # 최소한의 전처리만 수행
+                    imputation_type='simple',
+                    numeric_imputation='mean',
+                    categorical_imputation='mode',
+                    normalize=False,
+                    transformation=False,
+                    remove_outliers=False,
+                    remove_multicollinearity=False,
+                    feature_selection=False,
+                    fold_strategy=None,  # CV 비활성화
+                    fold=2
+                )
+                
+                self.current_experiment = exp
+                self.is_setup_complete = True
+                print("✅ PyCaret setup completed with minimal settings")
         finally:
             # 출력 복원
             sys.stdout = old_stdout
@@ -344,13 +379,19 @@ class ModelingService:
             sys.stderr = io.StringIO()
             
             # 모델 비교 실행
-            best_models = compare_models(
-                include=models_to_use,
-                sort='R2',
-                n_select=min(n_select, len(models_to_use)),
-                verbose=False,
-                fold=3  # 빠른 비교를 위해 fold 수 제한
-            )
+            try:
+                best_models = compare_models(
+                    include=models_to_use,
+                    sort='R2',
+                    n_select=min(n_select, len(models_to_use)),
+                    verbose=False,
+                    fold=max(2, min(3, data_size // 2))  # 데이터 크기에 따른 동적 fold 수
+                )
+            except Exception as e:
+                # compare_models 실패시 단순한 선형회귀 모델 생성
+                print(f"⚠️ compare_models failed: {e}")
+                print("🔄 Falling back to simple linear regression...")
+                best_models = [create_model('lr')]
             
             # 단일 모델이 반환된 경우 리스트로 변환
             if not isinstance(best_models, list):
