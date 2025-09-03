@@ -12,88 +12,88 @@ class DashboardService:
                 "name": "기본 시나리오",
                 "description": "현재 경제 상황 기준",
                 "variables": {
-                    "wage_increase_bu_group": 3.0,
-                    "gdp_growth": 2.8,
-                    "unemployment_rate": 3.2,
-                    "market_size_growth_rate": 5.0,
-                    "hcroi_sbl": 1.5
+                    "operating_income": 5.2,
+                    "ev_growth_gl": 8.5,
+                    "exchange_rate_change_krw": 2.3,
+                    "labor_costs": 4.8,
+                    "v_growth_gl": 7.2
                 }
             },
             "optimistic": {
                 "name": "낙관적 시나리오",
-                "description": "호황 + 높은 그룹 인상률",
+                "description": "고성장 + 수익성 개선",
                 "variables": {
-                    "wage_increase_bu_group": 3.5,
-                    "gdp_growth": 3.5,
-                    "unemployment_rate": 2.8,
-                    "market_size_growth_rate": 10.0,
-                    "hcroi_sbl": 2.0
+                    "operating_income": 15.0,
+                    "ev_growth_gl": 20.0,
+                    "exchange_rate_change_krw": 5.0,
+                    "labor_costs": 8.0,
+                    "v_growth_gl": 18.0
                 }
             },
             "moderate": {
                 "name": "중립적 시나리오",
                 "description": "안정적 성장",
                 "variables": {
-                    "wage_increase_bu_group": 3.2,
-                    "gdp_growth": 3.0,
-                    "unemployment_rate": 3.0,
-                    "market_size_growth_rate": 7.0,
-                    "hcroi_sbl": 1.7
+                    "operating_income": 8.0,
+                    "ev_growth_gl": 12.0,
+                    "exchange_rate_change_krw": 3.5,
+                    "labor_costs": 6.0,
+                    "v_growth_gl": 10.0
                 }
             },
             "pessimistic": {
                 "name": "비관적 시나리오",
-                "description": "저성장 + 낮은 그룹 인상률",
+                "description": "저성장 + 수익성 악화",
                 "variables": {
-                    "wage_increase_bu_group": 2.5,
-                    "gdp_growth": 1.5,
-                    "unemployment_rate": 4.0,
-                    "market_size_growth_rate": 2.0,
-                    "hcroi_sbl": 1.2
+                    "operating_income": -5.0,
+                    "ev_growth_gl": 2.0,
+                    "exchange_rate_change_krw": -2.0,
+                    "labor_costs": 2.0,
+                    "v_growth_gl": 1.5
                 }
             }
         }
         
         self.variable_definitions = {
-            "wage_increase_bu_group": {
-                "name": "그룹 Base-up 인상률",
-                "description": "그룹사 기본 임금인상률 (%)",
-                "min_value": 1.0,
-                "max_value": 5.0,
+            "operating_income": {
+                "name": "영업이익",
+                "description": "전년 대비 영업이익 증가율 (%)",
+                "min_value": -20.0,
+                "max_value": 30.0,
                 "unit": "%",
-                "current_value": 3.0
+                "current_value": 5.2
             },
-            "gdp_growth": {
-                "name": "GDP 성장률",
-                "description": "실질 GDP 전년 대비 성장률 (%)",
-                "min_value": -2.0,
-                "max_value": 5.0,
+            "ev_growth_gl": {
+                "name": "기업가치 성장률",
+                "description": "글로벌 기업가치 증가율 (%)",
+                "min_value": -15.0,
+                "max_value": 25.0,
                 "unit": "%",
-                "current_value": 2.8
+                "current_value": 8.5
             },
-            "unemployment_rate": {
-                "name": "실업률",
-                "description": "경제활동인구 대비 실업자 비율 (%)",
-                "min_value": 2.0,
-                "max_value": 5.0,
-                "unit": "%",
-                "current_value": 3.2
-            },
-            "market_size_growth_rate": {
-                "name": "바이오산업 성장률",
-                "description": "바이오의약산업 시장 성장률 (%)",
-                "min_value": -5.0,
+            "exchange_rate_change_krw": {
+                "name": "환율 변동률",
+                "description": "원달러 환율 변동률 (%)",
+                "min_value": -10.0,
                 "max_value": 15.0,
                 "unit": "%",
-                "current_value": 5.0
+                "current_value": 2.3
             },
-            "hcroi_sbl": {
-                "name": "인적자본 투자수익률",
-                "description": "HCROI (Human Capital ROI)",
-                "min_value": 0.5,
-                "max_value": 3.0,
-                "unit": "배",
-                "current_value": 1.5
+            "labor_costs": {
+                "name": "인건비",
+                "description": "총 인건비 증가율 (%)",
+                "min_value": 0.0,
+                "max_value": 20.0,
+                "unit": "%",
+                "current_value": 4.8
+            },
+            "v_growth_gl": {
+                "name": "매출 성장률",
+                "description": "글로벌 매출 성장률 (%)",
+                "min_value": -10.0,
+                "max_value": 25.0,
+                "unit": "%",
+                "current_value": 7.2
             }
         }
     

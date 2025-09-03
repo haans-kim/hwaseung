@@ -394,10 +394,10 @@ export const Dashboard: React.FC = () => {
         beginAtZero: true,
         title: {
           display: true,
-          text: '임금인상률 (%)'
+          text: '인원수 (명)'
         },
         ticks: {
-          callback: (value: any) => `${value}%`
+          callback: (value: any) => `${value}명`
         }
       },
       x: {
@@ -546,7 +546,7 @@ export const Dashboard: React.FC = () => {
         beginAtZero: true,
         title: {
           display: true,
-          text: '임금인상률 기여도 (%p)'
+          text: '인원수 기여도'
         },
         ticks: {
           callback: (value: any) => {
@@ -769,7 +769,7 @@ export const Dashboard: React.FC = () => {
                 트렌드 분석
               </CardTitle>
               <CardDescription>
-                과거 임금인상률 추이 및 향후 전망
+                과거 인원수 추이 및 향후 전망
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -796,7 +796,7 @@ export const Dashboard: React.FC = () => {
                 영향 요인 분석
               </CardTitle>
               <CardDescription>
-                주요 경제 변수의 임금인상률 영향도
+                주요 경제 변수의 인원수 영향도
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -839,7 +839,7 @@ export const Dashboard: React.FC = () => {
               시나리오 분석 결과
             </CardTitle>
             <CardDescription>
-              다양한 시나리오별 임금인상률 예측 비교
+              다양한 시나리오별 적정인력 예측 비교
             </CardDescription>
           </CardHeader>
           <CardContent>
