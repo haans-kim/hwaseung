@@ -12,240 +12,263 @@ class DashboardService:
                 "name": "기본 시나리오",
                 "description": "현재 경제 상황 기준",
                 "variables": {
-                    "operating_income": 5.2,
-                    "ev_growth_gl": 8.5,
-                    "exchange_rate_change_krw": 2.3,
-                    "labor_costs": 4.8,
-                    "v_growth_gl": 7.2
+                    "oil_gl": -13.7,
+                    "exchange_rate_change_krw": 4.2,
+                    "vp_export_kr": -0.14,
+                    "cpi_kr": 1.8,
+                    "v_export_kr": 20.0
                 }
             },
             "optimistic": {
                 "name": "낙관적 시나리오",
-                "description": "고성장 + 수익성 개선",
+                "description": "고유가 + 수출 증가",
                 "variables": {
-                    "operating_income": 15.0,
-                    "ev_growth_gl": 20.0,
-                    "exchange_rate_change_krw": 5.0,
-                    "labor_costs": 8.0,
-                    "v_growth_gl": 18.0
+                    "oil_gl": 30.0,
+                    "exchange_rate_change_krw": 10.0,
+                    "vp_export_kr": 20.0,
+                    "cpi_kr": 5.0,
+                    "v_export_kr": 25.0
                 }
             },
             "moderate": {
                 "name": "중립적 시나리오",
-                "description": "안정적 성장",
+                "description": "안정적 경제 성장",
                 "variables": {
-                    "operating_income": 8.0,
-                    "ev_growth_gl": 12.0,
-                    "exchange_rate_change_krw": 3.5,
-                    "labor_costs": 6.0,
-                    "v_growth_gl": 10.0
+                    "oil_gl": 0.0,
+                    "exchange_rate_change_krw": 2.0,
+                    "vp_export_kr": 5.0,
+                    "cpi_kr": 3.0,
+                    "v_export_kr": 10.0
                 }
             },
             "pessimistic": {
                 "name": "비관적 시나리오",
-                "description": "저성장 + 수익성 악화",
+                "description": "저유가 + 수출 감소",
                 "variables": {
-                    "operating_income": -5.0,
-                    "ev_growth_gl": 2.0,
-                    "exchange_rate_change_krw": -2.0,
-                    "labor_costs": 2.0,
-                    "v_growth_gl": 1.5
+                    "oil_gl": -30.0,
+                    "exchange_rate_change_krw": -10.0,
+                    "vp_export_kr": -20.0,
+                    "cpi_kr": 0.5,
+                    "v_export_kr": -15.0
                 }
             }
         }
         
-        self.variable_definitions = {
-            "operating_income": {
-                "name": "영업이익",
-                "description": "전년 대비 영업이익 증가율 (%)",
-                "min_value": -20.0,
-                "max_value": 30.0,
-                "unit": "%",
-                "current_value": 5.2
-            },
-            "ev_growth_gl": {
-                "name": "기업가치 성장률",
-                "description": "글로벌 기업가치 증가율 (%)",
-                "min_value": -15.0,
-                "max_value": 25.0,
-                "unit": "%",
-                "current_value": 8.5
-            },
-            "exchange_rate_change_krw": {
-                "name": "환율 변동률",
-                "description": "원달러 환율 변동률 (%)",
-                "min_value": -10.0,
-                "max_value": 15.0,
-                "unit": "%",
-                "current_value": 2.3
-            },
-            "labor_costs": {
-                "name": "인건비",
-                "description": "총 인건비 증가율 (%)",
-                "min_value": 0.0,
-                "max_value": 20.0,
-                "unit": "%",
-                "current_value": 4.8
-            },
-            "v_growth_gl": {
-                "name": "매출 성장률",
-                "description": "글로벌 매출 성장률 (%)",
-                "min_value": -10.0,
-                "max_value": 25.0,
-                "unit": "%",
-                "current_value": 7.2
+        # Feature importance기반 상위 변수들 동적 선정
+        self.variable_definitions = self._build_variable_definitions()
+    
+    def _build_variable_definitions(self) -> Dict[str, Dict[str, Any]]:
+        """기반 Importance와 실제 데이터를 기반으로 변수 정의 동적 생성"""
+        try:
+            # 1. Feature importance 가져오기
+            top_features = self._get_top_features()
+            
+            # 2. 2025년 실제 데이터 가져오기
+            actual_values = self._get_2025_actual_data()
+            
+            # 3. 변수 정의 생성
+            variable_defs = {}
+            
+            # 변수별 메타 정보 매핑
+            feature_meta = {
+                'oil_gl': {
+                    'name': '글로벌 유가',
+                    'description': '국제 유가 변동률 (%)',
+                    'min_value': -50.0, 'max_value': 50.0, 'unit': '%'
+                },
+                'exchange_rate_change_krw': {
+                    'name': '환율 변동률',
+                    'description': '원달러 환율 변동률 (%)',
+                    'min_value': -15.0, 'max_value': 20.0, 'unit': '%'
+                },
+                'vp_export_kr': {
+                    'name': '수출 변동률',
+                    'description': '한국 수출 변동률 (%)',
+                    'min_value': -30.0, 'max_value': 30.0, 'unit': '%'
+                },
+                'cpi_kr': {
+                    'name': '소비자물가지수',
+                    'description': '한국 소비자물가지수 증가율 (%)',
+                    'min_value': -2.0, 'max_value': 8.0, 'unit': '%'
+                },
+                'v_export_kr': {
+                    'name': '수출액',
+                    'description': '한국 수출액 증가율 (%)',
+                    'min_value': -25.0, 'max_value': 25.0, 'unit': '%'
+                },
+                'v_growth_gl': {
+                    'name': '글로벌 매출 성장',
+                    'description': '글로벌 매출 성장률 (%)',
+                    'min_value': -20.0, 'max_value': 30.0, 'unit': '%'
+                },
+                'ev_growth_gl': {
+                    'name': '글로벌 기업가치',
+                    'description': '글로벌 기업가치 성장률 (%)',
+                    'min_value': -15.0, 'max_value': 25.0, 'unit': '%'
+                },
+                'gdp_growth_kr': {
+                    'name': 'GDP 성장률',
+                    'description': '한국 GDP 성장률 (%)',
+                    'min_value': -5.0, 'max_value': 8.0, 'unit': '%'
+                },
+                'scm_index_gl': {
+                    'name': '공급망 지수',
+                    'description': '글로벌 공급망 지수',
+                    'min_value': 500, 'max_value': 2000, 'unit': ''
+                },
+                'production_capa': {
+                    'name': '생산 능력',
+                    'description': '생산 능력 지수',
+                    'min_value': 0.5, 'max_value': 2.0, 'unit': ''
+                }
             }
-        }
+            
+            # 상위 feature들에 대해 변수 정의 생성
+            for feature in top_features:
+                if feature in feature_meta and feature in actual_values:
+                    meta = feature_meta[feature]
+                    variable_defs[feature] = {
+                        'name': meta['name'],
+                        'description': meta['description'],
+                        'min_value': meta['min_value'],
+                        'max_value': meta['max_value'],
+                        'unit': meta['unit'],
+                        'current_value': actual_values[feature]  # 실제 2025년 데이터
+                    }
+            
+            print(f"✅ Built {len(variable_defs)} variable definitions from top features: {list(variable_defs.keys())}")
+            return variable_defs
+            
+        except Exception as e:
+            print(f"⚠️ Failed to build variable definitions: {e}")
+            # 폴백: 기본 5개 변수
+            return {
+                'oil_gl': {'name': '글로벌 유가', 'description': '유가 변동률', 'min_value': -50, 'max_value': 50, 'unit': '%', 'current_value': -13.7}
+            }
+    
+    def _get_top_features(self) -> List[str]:
+        """현재 모델에서 Feature importance 기반 상위 5개 변수 반환"""
+        try:
+            from app.services.data_service import data_service
+            from sklearn.inspection import permutation_importance
+            from app.services.modeling_service import modeling_service
+            
+            # 모델과 데이터 로드
+            model = modeling_service.current_model
+            if model is None:
+                raise ValueError("No model loaded")
+                
+            df = data_service.current_data
+            if df is None:
+                raise ValueError("No data available")
+            
+            # Feature와 target 준비
+            feature_cols = [col for col in df.columns if col not in ['headcount', 'eng']]
+            X = df[feature_cols].copy()
+            y = df['headcount'].copy()
+            
+            # 결측값 처리
+            for col in X.columns:
+                X[col] = pd.to_numeric(X[col], errors='coerce').fillna(0)
+            y = pd.to_numeric(y, errors='coerce').fillna(0)
+            
+            # Permutation importance 계산
+            perm_importance = permutation_importance(
+                model, X, y, 
+                scoring='neg_mean_squared_error',
+                n_repeats=3,
+                random_state=42
+            )
+            
+            # 상위 5개 변수 선정
+            importance_scores = list(zip(feature_cols, perm_importance.importances_mean))
+            importance_scores.sort(key=lambda x: x[1], reverse=True)
+            
+            top_5_features = [feat for feat, score in importance_scores[:5]]
+            print(f"✅ Top 5 features by importance: {top_5_features}")
+            
+            return top_5_features
+            
+        except Exception as e:
+            print(f"⚠️ Failed to calculate feature importance: {e}")
+            # 폴백: 기본 5개
+            return ['oil_gl', 'exchange_rate_change_krw', 'vp_export_kr', 'cpi_kr', 'v_export_kr']
+    
+    def _get_2025_actual_data(self) -> Dict[str, float]:
+        """실제 2025년 데이터에서 값들 추출"""
+        try:
+            from app.services.data_service import data_service
+            
+            if data_service.current_data is None:
+                raise ValueError("No data available")
+                
+            df = data_service.current_data
+            year_2025_data = df[df['eng'] == 2025]
+            
+            if len(year_2025_data) == 0:
+                raise ValueError("No 2025 data found")
+            
+            row = year_2025_data.iloc[0]
+            result = {}
+            
+            # 모든 feature 컴럼에 대해 값 추출
+            for col in df.columns:
+                if col not in ['headcount', 'eng']:
+                    value = pd.to_numeric(row[col], errors='coerce')
+                    if pd.notna(value):
+                        result[col] = float(value)
+                    else:
+                        result[col] = 0.0
+            
+            print(f"✅ Extracted 2025 actual data for {len(result)} features")
+            return result
+            
+        except Exception as e:
+            print(f"⚠️ Failed to get 2025 actual data: {e}")
+            return {}
     
     def _prepare_model_input(self, variables: Dict[str, float]) -> pd.DataFrame:
-        """모델 입력용 데이터 준비 - PyCaret 모델에 맞게 수정"""
+        """실제 데이터 구조에 맞는 모델 입력 준비"""
         try:
-            # PyCaret 모델의 feature names 가져오기
-            from app.services.modeling_service import modeling_service
-            from pycaret.regression import get_config
+            from app.services.data_service import data_service
             
-            # PyCaret 설정에서 feature 정보 가져오기
-            try:
-                # 먼저 모델링 서비스에서 feature names 가져오기 (가장 정확함)
-                if hasattr(modeling_service, 'feature_names') and modeling_service.feature_names:
-                    feature_columns = modeling_service.feature_names
-                    print(f"✅ Using feature names from modeling_service: {len(feature_columns)} features")
-                else:
-                    # PyCaret config에서 직접 가져오기
-                    X_train = get_config('X_train')
-                    if X_train is not None:
-                        feature_columns = list(X_train.columns)
-                        print(f"✅ Using feature names from PyCaret config: {len(feature_columns)} features")
-                    else:
-                        # 기본 feature 리스트 (실제 데이터 기반)
-                        feature_columns = [
-                            'gdp_growth_kr', 'cpi_kr', 'unemployment_rate_kr', 'minimum_wage_increase_kr',
-                            'gdp_growth_usa', 'cpi_usa', 'esi_usa', 'exchange_rate_change_krw',
-                            'revenue_growth_sbl', 'op_profit_growth_sbl', 'labor_cost_rate_sbl',
-                            'labor_cost_ratio_change_sbl', 'labor_cost_per_employee_sbl', 'labor_to_revenue_sbl',
-                            'revenue_per_employee_sbl', 'op_profit_per_employee_sbl', 'hcroi_sbl', 'hcva_sbl',
-                            'wage_increase_ce', 'revenue_growth_ce', 'op_profit_growth_ce', 'hcroi_ce', 'hcva_ce',
-                            'market_size_growth_rate', 'compensation_competitiveness', 'wage_increase_bu_group',
-                            'wage_increase_mi_group', 'wage_increase_total_group', 'public_sector_wage_increase'
-                        ]
-                        print(f"⚠️ Using default feature list: {len(feature_columns)} features")
-            except Exception as e:
-                print(f"Warning: Could not get PyCaret config: {e}")
-                # 기본 feature 리스트 사용
-                feature_columns = [
-                    'gdp_growth_kr', 'cpi_kr', 'unemployment_rate_kr', 'minimum_wage_increase_kr',
-                    'gdp_growth_usa', 'cpi_usa', 'esi_usa', 'exchange_rate_change_krw',
-                    'revenue_growth_sbl', 'op_profit_growth_sbl', 'labor_cost_rate_sbl',
-                    'labor_cost_ratio_change_sbl', 'labor_cost_per_employee_sbl', 'labor_to_revenue_sbl',
-                    'revenue_per_employee_sbl', 'op_profit_per_employee_sbl', 'hcroi_sbl', 'hcva_sbl',
-                    'wage_increase_ce', 'revenue_growth_ce', 'op_profit_growth_ce', 'hcroi_ce', 'hcva_ce',
-                    'market_size_growth_rate', 'compensation_competitiveness', 'wage_increase_bu_group',
-                    'wage_increase_mi_group', 'wage_increase_total_group', 'public_sector_wage_increase'
-                ]
+            # 실제 데이터의 컬럼 구조 사용 (headcount 제외)
+            if data_service.current_data is None:
+                raise ValueError("No data available")
+                
+            all_columns = list(data_service.current_data.columns)
+            feature_columns = [col for col in all_columns if col not in ['headcount', 'eng']]
             
-            # 변수 매핑: Dashboard 변수 → 실제 데이터 컬럼
-            # 영향요인 분석 결과 기반으로 가장 중요한 변수들 매핑
-            variable_mapping = {
-                'wage_increase_bu_group': ('wage_increase_bu_group', 0.01),  # 3.0% → 0.03 (가장 중요!)
-                'gdp_growth': ('gdp_growth_kr', 0.01),      # 2.8% → 0.028
-                'unemployment_rate': ('unemployment_rate_kr', 0.01),  # 3.2% → 0.032
-                'market_size_growth_rate': ('market_size_growth_rate', 0.01),  # 5.0% → 0.05
-                'hcroi_sbl': ('hcroi_sbl', 1.0)  # 1.5배 → 1.5 (비율이므로 그대로)
-            }
+            print(f"✅ Using actual data columns: {feature_columns}")
             
-            # 데이터에서 수치형 값들의 평균값 계산 (결측값과 '-' 제외)
-            df_clean = None
-            if data_service.current_data is not None:
-                df_clean = data_service.current_data.copy()
-                for col in df_clean.columns:
-                    if df_clean[col].dtype == 'object':  # 문자열 컬럼
-                        df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
+            # 실제 데이터에서 최신값 가져오기
+            df = data_service.current_data.copy()
+            latest_row = df.iloc[-1]  # 최신 데이터 (2024년)
             
             input_data = {}
             
             for col in feature_columns:
-                # 매핑된 변수가 있으면 사용자 입력값 적용
-                mapped_variable = None
-                scale_factor = 1.0
-                
-                for dash_var, (data_col, scale) in variable_mapping.items():
-                    if data_col == col and dash_var in variables:
-                        mapped_variable = dash_var
-                        scale_factor = scale
-                        break
-                
-                if mapped_variable:
-                    input_data[col] = variables[mapped_variable] * scale_factor
+                if col in variables:
+                    # 사용자가 조정한 변수 사용
+                    input_data[col] = variables[col]
+                    print(f"  ✅ Using user input for {col}: {variables[col]}")
                 else:
-                    # 해당 컬럼의 평균값 사용 (결측값 제외)
-                    if df_clean is not None and col in df_clean.columns:
-                        col_mean = df_clean[col].mean()
-                        if pd.notna(col_mean):
-                            input_data[col] = col_mean
-                        else:
-                            # 컬럼별 기본값 설정
-                            if 'wage' in col or 'increase' in col:
-                                input_data[col] = 0.03  # 임금 관련은 3%
-                            elif 'growth' in col:
-                                input_data[col] = 0.02  # 성장률 관련은 2%
-                            elif 'rate' in col or 'ratio' in col:
-                                input_data[col] = 0.1  # 비율 관련은 10%
-                            else:
-                                input_data[col] = 0.0
+                    # 최신 데이터값 사용
+                    value = pd.to_numeric(latest_row[col], errors='coerce')
+                    if pd.notna(value):
+                        input_data[col] = value
                     else:
-                        # 컬럼별 기본값 설정
-                        if 'wage' in col or 'increase' in col:
-                            input_data[col] = 0.03
-                        elif 'growth' in col:
-                            input_data[col] = 0.02
-                        elif 'rate' in col or 'ratio' in col:
-                            input_data[col] = 0.1
-                        else:
-                            input_data[col] = 0.0
+                        # 기본값
+                        input_data[col] = 0.0
             
-            print(f"📊 Model input prepared with {len(input_data)} features")
-            
-            # DataFrame 생성 시 컬럼 순서 보장
             result_df = pd.DataFrame([input_data], columns=feature_columns)
-            print(f"✅ DataFrame shape: {result_df.shape}, columns: {list(result_df.columns)[:5]}...")
+            print(f"✅ Model input shape: {result_df.shape}")
+            print(f"   Adjustable variables: {[k for k in variables.keys() if k in feature_columns]}")
             return result_df
-                
+            
         except Exception as e:
-            logging.error(f"Error preparing model input: {str(e)}")
-            print(f"❌ Error details: {e}")
-            
-            # 폴백: 29개 feature로 기본 DataFrame 생성
-            default_features = [
-                'gdp_growth_kr', 'cpi_kr', 'unemployment_rate_kr', 'minimum_wage_increase_kr',
-                'gdp_growth_usa', 'cpi_usa', 'esi_usa', 'exchange_rate_change_krw',
-                'revenue_growth_sbl', 'op_profit_growth_sbl', 'labor_cost_rate_sbl',
-                'labor_cost_ratio_change_sbl', 'labor_cost_per_employee_sbl', 'labor_to_revenue_sbl',
-                'revenue_per_employee_sbl', 'op_profit_per_employee_sbl', 'hcroi_sbl', 'hcva_sbl',
-                'wage_increase_ce', 'revenue_growth_ce', 'op_profit_growth_ce', 'hcroi_ce', 'hcva_ce',
-                'market_size_growth_rate', 'compensation_competitiveness', 'wage_increase_bu_group',
-                'wage_increase_mi_group', 'wage_increase_total_group', 'public_sector_wage_increase'
-            ]
-            
-            default_data = {}
-            for col in default_features:
-                if col == 'wage_increase_bu_group':
-                    default_data[col] = variables.get('wage_increase_bu_group', 3.0) * 0.01
-                elif col == 'gdp_growth_kr':
-                    default_data[col] = variables.get('gdp_growth', 2.8) * 0.01
-                elif col == 'unemployment_rate_kr':
-                    default_data[col] = variables.get('unemployment_rate', 3.2) * 0.01
-                elif col == 'market_size_growth_rate':
-                    default_data[col] = variables.get('market_size_growth_rate', 5.0) * 0.01
-                elif col == 'hcroi_sbl':
-                    default_data[col] = variables.get('hcroi_sbl', 1.5)  # 비율이므로 그대로
-                elif col == 'cpi_kr':
-                    default_data[col] = 0.025  # 기본 인플레이션 2.5%
-                elif col == 'minimum_wage_increase_kr':
-                    default_data[col] = 0.025  # 기본 최저임금인상률 2.5%
-                else:
-                    default_data[col] = 0.02  # 기본값
-            
-            return pd.DataFrame([default_data])
+            print(f"❌ Error in _prepare_model_input: {e}")
+            raise e
     
     def _predict_performance_trend(self) -> float:
         """과거 성과 인상률 데이터를 기반으로 2026년 성과 인상률 예측
@@ -425,21 +448,39 @@ class DashboardService:
             for _, row in headcount_data.iterrows():
                 print(f"   Year {int(row['year'])}: {int(row['headcount'])} people")
             
-            # 선형회귀 모델 학습
-            X = headcount_data[['year']].values
-            y = headcount_data['headcount'].values
+            # 안정적인 예측을 위해 최근 트렌드 중심으로 계산
+            recent_data = headcount_data.tail(3)  # 최근 3년 데이터만 사용
             
-            lr_model = LinearRegression()
-            lr_model.fit(X, y)
-            
-            # 회귀 계수 출력
-            print(f"   Regression coefficient (slope): {lr_model.coef_[0]:.2f}")
-            print(f"   Regression intercept: {lr_model.intercept_:.2f}")
-            
-            # 2026년 예측
-            prediction_year = np.array([[2026]])
-            predicted_headcount = lr_model.predict(prediction_year)[0]
-            predicted_headcount = max(0, round(predicted_headcount))  # 음수 방지 및 반올림
+            if len(recent_data) >= 2:
+                # 최근 데이터로 선형회귀
+                X_recent = recent_data[['year']].values
+                y_recent = recent_data['headcount'].values
+                
+                lr_model = LinearRegression()
+                lr_model.fit(X_recent, y_recent)
+                
+                print(f"   Recent trend coefficient (slope): {lr_model.coef_[0]:.2f}")
+                print(f"   Recent trend intercept: {lr_model.intercept_:.2f}")
+                
+                # 기본 2026년 예측
+                prediction_year = np.array([[2026]])
+                base_prediction = lr_model.predict(prediction_year)[0]
+                
+                # 보수적 조정: 급격한 변화 방지
+                latest_headcount = recent_data.iloc[-1]['headcount']
+                
+                # 최대 ±20% 변동 제한
+                max_change = latest_headcount * 0.2
+                min_prediction = latest_headcount - max_change
+                max_prediction = latest_headcount + max_change
+                
+                predicted_headcount = np.clip(base_prediction, min_prediction, max_prediction)
+                predicted_headcount = max(400, round(predicted_headcount))  # 최소 400명 보장
+            else:
+                # 데이터가 부족한 경우 최근 값 기준으로 보수적 예측
+                latest_headcount = headcount_data.iloc[-1]['headcount']
+                predicted_headcount = round(latest_headcount * 1.02)  # 2% 성장 가정
+                lr_model = None
             
             print(f"📊 Headcount prediction for 2026: {predicted_headcount} people")
             
@@ -448,6 +489,7 @@ class DashboardService:
                 latest_headcount = headcount_data.iloc[-1]['headcount']
                 growth_rate = (predicted_headcount - latest_headcount) / latest_headcount
                 print(f"   Growth vs latest year: {growth_rate*100:.1f}%")
+                print(f"📊 Final headcount prediction for 2026: {predicted_headcount} people")
             else:
                 growth_rate = 0
             
@@ -456,9 +498,10 @@ class DashboardService:
                 "growth_rate": float(growth_rate),
                 "historical_data": headcount_data.to_dict('records'),
                 "model_info": {
-                    "slope": float(lr_model.coef_[0]),
-                    "intercept": float(lr_model.intercept_),
-                    "data_points": len(headcount_data)
+                    "slope": float(lr_model.coef_[0]) if lr_model else 0.0,
+                    "intercept": float(lr_model.intercept_) if lr_model else 0.0,
+                    "data_points": len(headcount_data),
+                    "recent_data_points": len(recent_data) if 'recent_data' in locals() else len(headcount_data)
                 }
             }
             
@@ -466,8 +509,8 @@ class DashboardService:
             print(f"⚠️ Error predicting headcount: {e}")
             # 기본값 반환
             return {
-                "predicted_headcount": 700,  # 기본 예상값
-                "growth_rate": 0.05,  # 5% 성장 가정
+                "predicted_headcount": 620,  # 현실적인 기본값 (현재 600명 + 약간 성장)
+                "growth_rate": 0.03,  # 3% 성장 가정
                 "historical_data": [],
                 "model_info": {"error": str(e)}
             }
@@ -522,66 +565,36 @@ class DashboardService:
                 # 폴백: 직접 예측 시도
                 prediction = model.predict(model_input)[0]
             
-            # 성과 인상률은 적정인력 산정에서 사용하지 않음
-            performance_rate = 0.0
+            # PyCaret 모델의 예측값 그대로 사용
+            predicted_headcount = round(float(prediction))
             
-            # 2026년 headcount 예측 추가
-            headcount_prediction = self._predict_headcount_2026()
-            
-            # 반올림 처리를 위해 소수점 4자리까지만 유지
-            raw_prediction = round(float(prediction), 4)
-            performance_rate = round(performance_rate, 4)
-            
-            # 최근 트렌드 반영한 조정
-            # 최근 2년이 5.3%, 5.6%로 높은 인상률을 보임
+            # 현재 headcount 대비 성장률 계산
             from app.services.data_service import data_service
+            growth_rate = 0.0
             
-            # 그룹 Base-up의 논리적 영향 반영
-            # 그룹 Base-up이 높으면 SBL 임금도 높아야 함 (상식적 관계)
-            if isinstance(input_data, dict) and 'wage_increase_bu_group' in input_data:
-                group_baseup_input = input_data['wage_increase_bu_group']
-                # 기준값(3.0%)과의 차이를 계산
-                baseup_diff = (group_baseup_input - 3.0) * 0.01
-                # 양의 관계로 조정 (그룹 base-up 1%p 증가 → 예측값 0.3%p 증가)
-                logical_adjustment = baseup_diff * 0.3
-                prediction_value = round(raw_prediction + logical_adjustment, 4)
-            else:
-                prediction_value = raw_prediction
+            if data_service.current_data is not None and 'headcount' in data_service.current_data.columns:
+                current_headcount_data = data_service.current_data['headcount'].dropna()
+                if len(current_headcount_data) > 0:
+                    latest_headcount = current_headcount_data.iloc[-1]
+                    growth_rate = (predicted_headcount - latest_headcount) / latest_headcount
+                    print(f"📊 PyCaret model prediction: {predicted_headcount} people")
+                    print(f"📊 Growth vs latest year ({latest_headcount}): {growth_rate*100:.1f}%")
             
-            print(f"🔍 Debug - Raw model prediction: {raw_prediction:.4f} ({raw_prediction*100:.2f}%)")
-            print(f"🔍 Debug - Adjusted prediction (60% model + 40% trend): {prediction_value:.4f} ({prediction_value*100:.2f}%)")
-            print(f"🔍 Debug - Performance rate (from trend): {performance_rate:.4f} ({performance_rate*100:.2f}%)")
+            # headcount 예측 정보 구성
+            headcount_prediction = {
+                "predicted_headcount": int(predicted_headcount),
+                "growth_rate": float(growth_rate),
+                "historical_data": [],
+                "model_info": {
+                    "model_type": "PyCaret ML Model",
+                    "features_used": len(model_input.columns)
+                }
+            }
             
-            # Base-up = 총 인상률 - 성과 인상률
-            base_up_rate = round(prediction_value - performance_rate, 4)
-            print(f"🔍 Debug - Base-up (total - performance): {base_up_rate:.4f} ({base_up_rate*100:.2f}%)")
+            # PyCaret 모델의 원본 예측값 사용
+            print(f"🔍 Final ML model prediction: {predicted_headcount} people for 2026")
             
-            # Base-up이 음수인 경우 - 성과 인상률은 변경하지 않고 base_up만 조정
-            if base_up_rate < 0:
-                print(f"⚠️ Debug - Base-up negative ({base_up_rate:.4f}), setting to 0")
-                base_up_rate = 0
-                # 성과 인상률은 트렌드 예측값 그대로 유지
-            
-            # 성과 인상률이 총 예측값보다 큰 경우 - 성과 인상률은 유지하고 base_up을 0으로
-            if performance_rate > prediction_value:
-                print(f"⚠️ Debug - Performance ({performance_rate:.4f}) > Total ({prediction_value:.4f})")
-                print(f"⚠️ Debug - Keeping performance rate as is, setting base_up to 0")
-                base_up_rate = 0
-                # 성과 인상률은 트렌드 예측값 그대로 유지
-            
-            # 최종 검증: 합계가 총 예측값과 일치하도록 조정
-            calculated_total = round(base_up_rate + performance_rate, 4)
-            if abs(calculated_total - prediction_value) > 0.0001:
-                # 차이가 있으면 base_up_rate로 조정
-                base_up_rate = round(prediction_value - performance_rate, 4)
-            
-            print(f"✅ Debug - FINAL VALUES:")
-            print(f"   Performance: {performance_rate:.4f} ({performance_rate*100:.2f}%)")
-            print(f"   Base-up: {base_up_rate:.4f} ({base_up_rate*100:.2f}%)")
-            print(f"   Total: {prediction_value:.4f} ({prediction_value*100:.2f}%)")
-            print(f"   Sum check: {base_up_rate + performance_rate:.4f} vs {prediction_value:.4f}")
-            
-            # 신뢰구간 계산 (간단한 방법 - 잔차 기반)
+            # headcount 예측의 신뢰구간 계산
             try:
                 from pycaret.regression import get_config
                 X_train = get_config('X_train')
@@ -592,59 +605,36 @@ class DashboardService:
                     residuals = y_train - train_predictions
                     residual_std = np.std(residuals)
                     
-                    # 신뢰구간
                     from scipy import stats
                     alpha = 1 - confidence_level
                     z_score = stats.norm.ppf(1 - alpha/2)
                     margin_error = z_score * residual_std
                     
                     confidence_interval = [
-                        float(prediction - margin_error),
-                        float(prediction + margin_error)
+                        int(max(0, predicted_headcount - margin_error)),
+                        int(predicted_headcount + margin_error)
                     ]
                 else:
-                    # PyCaret config가 없으면 간단한 신뢰구간 계산
+                    # PyCaret config가 없으면 간단한 신뢰구간 (±10%)
                     confidence_interval = [
-                        round(prediction_value * 0.95, 4),
-                        round(prediction_value * 1.05, 4)
+                        int(predicted_headcount * 0.9),
+                        int(predicted_headcount * 1.1)
                     ]
             except:
                 confidence_interval = [
-                    round(prediction_value * 0.95, 4),
-                    round(prediction_value * 1.05, 4)
+                    int(predicted_headcount * 0.9),
+                    int(predicted_headcount * 1.1)
                 ]
             
             return {
-                "message": "Wage increase prediction completed",
-                "prediction": prediction_value,
-                "base_up_rate": base_up_rate,
-                "performance_rate": performance_rate,
+                "message": "Headcount prediction completed",
+                "prediction": predicted_headcount,  # headcount 예측값
                 "confidence_interval": confidence_interval,
                 "confidence_level": confidence_level,
                 "input_variables": input_data,
                 "prediction_date": datetime.now().strftime("%Y-%m-%d"),
                 "model_type": type(model).__name__,
-                "headcount_prediction": headcount_prediction,  # 2026년 headcount 예측 추가
-                "breakdown": {
-                    "base_up": {
-                        "rate": base_up_rate,
-                        "percentage": round(base_up_rate * 100, 2),
-                        "description": "기본 인상분",
-                        "calculation": "총 인상률 - 성과 인상률"
-                    },
-                    "performance": {
-                        "rate": performance_rate,
-                        "percentage": round(performance_rate * 100, 2),
-                        "description": "과거 10년 성과급 추세 기반 예측",
-                        "calculation": "선형회귀 분석으로 예측"
-                    },
-                    "total": {
-                        "rate": prediction_value,
-                        "percentage": round(prediction_value * 100, 2),
-                        "description": "2026년 총 임금 인상률 예측",
-                        "verification": f"{round(base_up_rate * 100, 2)}% + {round(performance_rate * 100, 2)}% = {round(prediction_value * 100, 2)}%"
-                    }
-                }
+                "headcount_prediction": headcount_prediction  # 상세 정보
             }
             
         except Exception as e:
@@ -815,12 +805,15 @@ class DashboardService:
                         if pd.notna(value):
                             # headcount는 절대값이므로 그대로 사용
                             display_value = int(float(value))
-                            actual_year = int(year)
+                            input_year = int(year)  # 입력 데이터 연도
+                            prediction_year = input_year + 1  # 예측 대상 연도
                             
+                            # 2021년 데이터 → 2022년 예측, 2022년 데이터 → 2023년 예측 ...
                             data_point = {
-                                "year": actual_year,
+                                "year": prediction_year,  # 예측 대상 연도로 표시
                                 "value": display_value,
-                                "type": "historical"
+                                "type": "historical",
+                                "input_year": input_year  # 참조용
                             }
                             
                             historical_data.append(data_point)
@@ -832,19 +825,39 @@ class DashboardService:
                     from app.services.modeling_service import modeling_service
                     if modeling_service.current_model and not has_2026:
                         try:
-                            # 실제 모델 예측 수행
-                            default_input = {
-                                'wage_increase_bu_group': 3.0,
-                                'gdp_growth': 2.8,
-                                'unemployment_rate': 3.2,
-                                'market_size_growth_rate': 5.0,
-                                'hcroi_sbl': 1.5
-                            }
+                            # 2025년 데이터로 PyCaret 모델 예측 수행
+                            # 2025년 행(마지막 행)의 실제 데이터 사용
+                            year_2025_data = df[df[year_col] == 2025]
                             
-                            # 예측 수행
+                            if len(year_2025_data) > 0:
+                                # 2025년 데이터에서 feature 값들 추출
+                                row_2025 = year_2025_data.iloc[0]
+                                feature_columns = [col for col in df.columns if col not in ['headcount', year_col]]
+                                
+                                model_input = {}
+                                for col in feature_columns:
+                                    value = pd.to_numeric(row_2025[col], errors='coerce')
+                                    if pd.notna(value):
+                                        model_input[col] = value
+                                    else:
+                                        model_input[col] = 0.0
+                                        
+                                print(f"✅ Using 2025 data for prediction: {list(model_input.keys())[:5]}...")
+                            else:
+                                # 2025년 데이터가 없으면 기본값 사용
+                                model_input = {
+                                    'operating_income': 5.2,
+                                    'ev_growth_gl': 8.5,
+                                    'exchange_rate_change_krw': 2.3,
+                                    'labor_costs': 4.8,
+                                    'v_growth_gl': 7.2
+                                }
+                                print(f"⚠️ No 2025 data found, using default values")
+                            
+                            # PyCaret 모델로 2026년 headcount 예측
                             prediction_result = self.predict_wage_increase(
                                 modeling_service.current_model,
-                                default_input,
+                                model_input,
                                 confidence_level=0.95
                             )
                             
@@ -853,34 +866,25 @@ class DashboardService:
                             base_up = prediction_result.get("base_up_rate", 0)
                             perf = prediction_result.get("performance_rate", 0)
                             
-                            # 비정상적인 값 체크 (예: 100% 이상 또는 음수)
-                            if abs(pred_value) > 1.0 or pred_value < 0:
-                                print(f"⚠️ Abnormal prediction value: {pred_value}")
-                                raise ValueError("Abnormal prediction value")
+                            # headcount 예측값은 절대값이므로 정상 범위 체크 수정
+                            # 예측값이 0보다 작거나 너무 큰 경우만 비정상으로 처리
+                            if pred_value < 0 or pred_value > 10000:
+                                print(f"⚠️ Abnormal headcount prediction value: {pred_value}")
+                                raise ValueError(f"Abnormal headcount prediction: {pred_value}")
                             
-                            # 예측 결과를 퍼센트로 변환하여 추가
+                            # headcount 예측 결과 추가 (절대값으로 사용)
                             prediction_data = {
                                 "year": 2026,
-                                "value": round(pred_value * 100, 2),
-                                "base_up": round(base_up * 100, 2),
-                                "performance": round(perf * 100, 2),
-                                "type": "prediction"
+                                "value": int(round(pred_value)),  # headcount는 절대값
+                                "type": "prediction",
+                                "input_year": 2025  # 2025년 데이터로 예측
                             }
                             historical_data.append(prediction_data)
                             
-                            # Base-up 데이터도 별도로 추가 (차트에서 사용)
-                            if hasbaseup and 'baseup_data' in locals():
-                                baseup_pred = {
-                                    "year": 2026,
-                                    "value": round(prediction_result.get("base_up_rate", 0) * 100, 2),
-                                    "type": "prediction"
-                                }
-                                baseup_data.append(baseup_pred)
-                            
-                            print(f"✅ Added 2026 prediction: Total={prediction_data['value']}%, Base-up={prediction_data['base_up']}%")
+                            print(f"✅ Added 2026 headcount prediction: {prediction_data['value']}명 (from 2025 data)")
                         except Exception as e:
                             print(f"⚠️ Could not generate prediction: {e}")
-                            # 오류 시에는 추가하지 않음 (중복 방지)
+                            # 오류 시 ML 예측값을 추가하지 않음
                             pass
                     
                     return {

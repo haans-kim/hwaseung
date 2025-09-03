@@ -713,7 +713,7 @@ export const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {availableVariables
-                .filter(v => ['operating_income', 'ev_growth_gl', 'exchange_rate_change_krw', 'labor_costs', 'v_growth_gl'].includes(v.name))
+                .filter(v => ['oil_gl', 'exchange_rate_change_krw', 'vp_export_kr', 'cpi_kr', 'v_export_kr'].includes(v.name))
                 .map((variable) => (
                 <div key={variable.name} className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -738,23 +738,45 @@ export const Dashboard: React.FC = () => {
                 </div>
               ))}
 
-              <Button 
-                onClick={handleCustomPrediction}
-                disabled={loading === 'custom-prediction'}
-                className="w-full"
-              >
-                {loading === 'custom-prediction' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    예측 중...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    적정인력 예측
-                  </>
-                )}
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleCustomPrediction}
+                  disabled={loading === 'custom-prediction'}
+                  className="w-full"
+                >
+                  {loading === 'custom-prediction' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      예측 중...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      적정인력 예측
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    // 슬라이더 초기화: 기본값으로 리셋
+                    const resetVariables: Record<string, number> = {};
+                    availableVariables
+                      .filter(v => ['oil_gl', 'exchange_rate_change_krw', 'vp_export_kr', 'cpi_kr', 'v_export_kr'].includes(v.name))
+                      .forEach(variable => {
+                        resetVariables[variable.name] = variable.current_value;
+                      });
+                    setCustomVariables(resetVariables);
+                    // 자동으로 예측 수행
+                    handleCustomPrediction();
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  초기값으로 리셋
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
