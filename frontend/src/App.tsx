@@ -6,6 +6,7 @@ import { Modeling } from './pages/Modeling';
 import Analysis from './pages/Analysis';
 import { Dashboard } from './pages/Dashboard';
 import { Effects } from './pages/Effects';
+import PositionAnalysis from './pages/PositionAnalysis';
 import { ExplainerDashboard } from './pages/ExplainerDashboard';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="modeling" element={<Modeling />} />
           <Route path="analysis" element={<Analysis />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="position-analysis" element={<PositionAnalysis />} />
           <Route path="effects" element={<Effects />} />
           <Route path="explainer" element={<ExplainerDashboard />} />
         </Route>

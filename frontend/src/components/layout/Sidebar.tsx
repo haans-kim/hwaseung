@@ -5,7 +5,7 @@ import {
   Settings, 
   BarChart3, 
   Activity, 
-  TrendingUp,
+  Users,
   Moon,
   Sun,
   LineChart
@@ -22,7 +22,7 @@ const navigation = [
   { name: '모델링', href: '/modeling', icon: Settings },
   { name: 'Analysis', href: '/analysis', icon: BarChart3 },
   { name: '적정인력', href: '/dashboard', icon: Activity },
-  { name: '기대효과', href: '/effects', icon: TrendingUp },
+  { name: '직급별 분석', href: '/position-analysis', icon: Users },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) => {
