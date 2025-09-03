@@ -129,3 +129,23 @@ docker-compose logs -f  # View logs
 - Frontend: React Testing Library (`npm test`)
 - Backend: Manual testing via API endpoints
 - No automated backend tests currently implemented
+
+## Critical Coding Standards
+
+### Absolute Prohibitions
+1. **DEFAULT 값 사용 금지**: Values must fail explicitly or return undefined/null
+   - ❌ `const value = data?.value || 'default'`
+   - ❌ `const value = data?.value ?? 'fallback'`
+   - ✅ `const value = data?.value; if (!value) throw new Error('Value not found')`
+   - ✅ `const value = data?.value; // undefined if not exists`
+
+2. **빈 객체/배열 기본값 금지**
+   - ❌ `const items = response?.items || []`
+   - ❌ `const config = settings || {}`
+   - ✅ `const items = response?.items; if (!items) throw new Error('Items not found')`
+
+3. **try-catch에서 에러 숨기기 금지**
+   - ❌ `try { ... } catch { return defaultValue }`
+   - ✅ `try { ... } catch (error) { console.error(error); throw error }`
+
+Values must be explicitly validated - if they don't exist, make it clear rather than masking with defaults.
