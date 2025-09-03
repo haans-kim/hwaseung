@@ -251,10 +251,10 @@ class DashboardService:
         """과거 성과 인상률 데이터를 기반으로 2026년 성과 인상률 예측
         
         데이터 구조:
-        - 2015-2024년: 각 연도의 경제지표 + 다음 해 임금인상률
+        - 2021-2024년: 각 연도의 경제지표 + 다음 해 임금인상률
         - 2025년: 경제지표만 있음 (2026년 임금인상률이 예측 대상)
         
-        성과 인상률 트렌드는 2016-2025년 임금인상률을 기반으로 2026년 예측
+        성과 인상률 트렌드는 2022-2025년 임금인상률을 기반으로 2026년 예측
         """
         try:
             from app.services.data_service import data_service
@@ -310,8 +310,8 @@ class DashboardService:
                 # eng 컬럼이 연도 데이터인 경우
                 year_col = 'eng'
             else:
-                # 연도 컬럼이 없으면 인덱스 사용
-                df['year'] = range(2016, 2016 + len(df))
+                # 연도 컬럼이 없으면 실제 데이터 시작 연도부터 인덱스 사용
+                df['year'] = range(2021, 2021 + len(df))
                 year_col = 'year'
             
             # 데이터 정리
@@ -341,7 +341,7 @@ class DashboardService:
                 # 데이터가 너무 적으면 에러
                 raise ValueError("Insufficient data for trend analysis")
             
-            # 최근 10년 데이터만 사용 (2015-2024)
+            # 실제 데이터 기간 사용 (2021-2025)
             trend_data = trend_data.sort_values('year').tail(10)
             
             # 선형회귀 모델 학습
@@ -405,8 +405,8 @@ class DashboardService:
             elif 'eng' in df.columns:
                 year_col = 'eng'
             else:
-                # 연도 컬럼이 없으면 인덱스로 연도 생성
-                df['year'] = range(2015, 2015 + len(df))
+                # 연도 컬럼이 없으면 실제 데이터 시작 연도부터 인덱스로 연도 생성
+                df['year'] = range(2021, 2021 + len(df))
                 year_col = 'year'
             
             # 데이터 정리

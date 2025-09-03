@@ -115,9 +115,25 @@ class ExplainerDashboardService:
             # 인덱스를 연도로 설정
             num_samples = len(X_test_copy)
             if num_samples <= 10:
-                # 원본 데이터만 있는 경우
-                start_year = 2016  # 실제 데이터 시작 연도
-                years = [f"{start_year + i}년" for i in range(num_samples)]
+                # 원본 데이터만 있는 경우 - 실제 데이터에서 연도 추출
+                actual_years = None
+                try:
+                    # data_service에서 실제 연도 데이터 가져오기
+                    if hasattr(data_service, 'master_data') and data_service.master_data is not None:
+                        # 'eng' 컬럼에 연도가 있는 경우
+                        if 'eng' in data_service.master_data.columns:
+                            year_values = data_service.master_data['eng'].dropna().tolist()
+                            if all(isinstance(y, (int, float)) and 2020 <= y <= 2030 for y in year_values):
+                                actual_years = year_values[:num_samples]
+                except Exception as e:
+                    logger.warning(f"Could not extract actual years from data: {e}")
+                
+                if actual_years and len(actual_years) == num_samples:
+                    years = [f"{int(year)}년" for year in actual_years]
+                else:
+                    # 기본값으로 2021부터 시작 (실제 데이터 시작 연도)
+                    start_year = 2021
+                    years = [f"{start_year + i}년" for i in range(num_samples)]
             else:
                 # 여전히 많은 데이터가 있는 경우
                 years = [f"데이터_{i+1}" for i in range(num_samples)]
