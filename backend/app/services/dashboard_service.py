@@ -380,6 +380,98 @@ class DashboardService:
             # 오류 시 에러 발생
             raise
     
+    def _predict_headcount_2026(self) -> Dict[str, Any]:
+        """PyCaret을 사용하여 2026년 headcount 예측"""
+        try:
+            from app.services.data_service import data_service
+            from sklearn.linear_model import LinearRegression
+            
+            if data_service.current_data is None:
+                raise ValueError("No data available for headcount prediction")
+            
+            # master_data가 있으면 사용, 없으면 current_data 사용
+            if hasattr(data_service, 'master_data') and data_service.master_data is not None:
+                df = data_service.master_data.copy()
+            else:
+                df = data_service.current_data.copy()
+            
+            # headcount와 year 컬럼 확인
+            if 'headcount' not in df.columns:
+                raise ValueError("No headcount data available")
+            
+            # 연도 컬럼 찾기
+            if 'year' in df.columns:
+                year_col = 'year'
+            elif 'eng' in df.columns:
+                year_col = 'eng'
+            else:
+                # 연도 컬럼이 없으면 인덱스로 연도 생성
+                df['year'] = range(2015, 2015 + len(df))
+                year_col = 'year'
+            
+            # 데이터 정리
+            headcount_data = df[[year_col, 'headcount']].copy()
+            headcount_data.columns = ['year', 'headcount']
+            
+            # 수치형으로 변환 및 결측값 제거
+            headcount_data['year'] = pd.to_numeric(headcount_data['year'], errors='coerce')
+            headcount_data['headcount'] = pd.to_numeric(headcount_data['headcount'], errors='coerce')
+            headcount_data = headcount_data.dropna()
+            
+            if len(headcount_data) < 2:
+                raise ValueError("Insufficient headcount data for prediction")
+            
+            print(f"📊 Headcount data for prediction:")
+            for _, row in headcount_data.iterrows():
+                print(f"   Year {int(row['year'])}: {int(row['headcount'])} people")
+            
+            # 선형회귀 모델 학습
+            X = headcount_data[['year']].values
+            y = headcount_data['headcount'].values
+            
+            lr_model = LinearRegression()
+            lr_model.fit(X, y)
+            
+            # 회귀 계수 출력
+            print(f"   Regression coefficient (slope): {lr_model.coef_[0]:.2f}")
+            print(f"   Regression intercept: {lr_model.intercept_:.2f}")
+            
+            # 2026년 예측
+            prediction_year = np.array([[2026]])
+            predicted_headcount = lr_model.predict(prediction_year)[0]
+            predicted_headcount = max(0, round(predicted_headcount))  # 음수 방지 및 반올림
+            
+            print(f"📊 Headcount prediction for 2026: {predicted_headcount} people")
+            
+            # 성장률 계산 (최근년도 대비)
+            if len(headcount_data) > 0:
+                latest_headcount = headcount_data.iloc[-1]['headcount']
+                growth_rate = (predicted_headcount - latest_headcount) / latest_headcount
+                print(f"   Growth vs latest year: {growth_rate*100:.1f}%")
+            else:
+                growth_rate = 0
+            
+            return {
+                "predicted_headcount": int(predicted_headcount),
+                "growth_rate": float(growth_rate),
+                "historical_data": headcount_data.to_dict('records'),
+                "model_info": {
+                    "slope": float(lr_model.coef_[0]),
+                    "intercept": float(lr_model.intercept_),
+                    "data_points": len(headcount_data)
+                }
+            }
+            
+        except Exception as e:
+            print(f"⚠️ Error predicting headcount: {e}")
+            # 기본값 반환
+            return {
+                "predicted_headcount": 700,  # 기본 예상값
+                "growth_rate": 0.05,  # 5% 성장 가정
+                "historical_data": [],
+                "model_info": {"error": str(e)}
+            }
+
     def predict_wage_increase(self, model, input_data: Dict[str, float], confidence_level: float = 0.95) -> Dict[str, Any]:
         """2026년 임금인상률 예측
         
@@ -432,6 +524,9 @@ class DashboardService:
             
             # 과거 10개년 성과 인상률 데이터를 기반으로 선형회귀 예측
             performance_rate = self._predict_performance_trend()
+            
+            # 2026년 headcount 예측 추가
+            headcount_prediction = self._predict_headcount_2026()
             
             # 반올림 처리를 위해 소수점 4자리까지만 유지
             raw_prediction = round(float(prediction), 4)
@@ -529,6 +624,7 @@ class DashboardService:
                 "input_variables": input_data,
                 "prediction_date": datetime.now().strftime("%Y-%m-%d"),
                 "model_type": type(model).__name__,
+                "headcount_prediction": headcount_prediction,  # 2026년 headcount 예측 추가
                 "breakdown": {
                     "base_up": {
                         "rate": base_up_rate,

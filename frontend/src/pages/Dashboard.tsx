@@ -70,6 +70,12 @@ interface PredictionResult {
   confidence_interval: [number, number];
   confidence_level: number;
   input_variables: Record<string, number>;
+  headcount_prediction?: {
+    predicted_headcount: number;
+    growth_rate: number;
+    historical_data: any[];
+    model_info: any;
+  };
   breakdown?: {
     base_up: {
       rate: number;
@@ -666,27 +672,28 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* 경제 지표 */}
+        {/* 2026년 예상 직원수 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">주요 경제지표</CardTitle>
+            <CardTitle className="text-sm font-medium">2026년 예상 직원수</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">GDP:</span>
-                <span className="font-medium">{economicIndicators.gdp_growth?.value || '-'}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">인플레:</span>
-                <span className="font-medium">{economicIndicators.inflation_rate?.value || '-'}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">실업률:</span>
-                <span className="font-medium">{economicIndicators.unemployment_rate?.value || '-'}%</span>
-              </div>
+            <div className="text-2xl font-bold text-purple-600">
+              {currentPrediction?.headcount_prediction ? 
+                `${currentPrediction.headcount_prediction.predicted_headcount.toLocaleString()}명` : 
+                '-명'
+              }
             </div>
+            {currentPrediction?.headcount_prediction && (
+              <div className="text-xs text-muted-foreground mt-1">
+                <div className="mb-1">
+                  성장률: {currentPrediction.headcount_prediction.growth_rate >= 0 ? '+' : ''}
+                  {(currentPrediction.headcount_prediction.growth_rate * 100).toFixed(1)}%
+                </div>
+                <div className="font-mono text-[10px]">선형회귀 트렌드 분석</div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
