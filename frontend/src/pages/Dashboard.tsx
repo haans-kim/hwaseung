@@ -712,9 +712,7 @@ export const Dashboard: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {availableVariables
-                .filter(v => ['oil_gl', 'exchange_rate_change_krw', 'vp_export_kr', 'cpi_kr', 'v_export_kr'].includes(v.name))
-                .map((variable) => (
+              {availableVariables.map((variable) => (
                 <div key={variable.name} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="text-sm font-medium">{variable.display_name}</label>

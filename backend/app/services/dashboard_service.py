@@ -120,6 +120,11 @@ class DashboardService:
                     'name': '생산 능력',
                     'description': '생산 능력 지수',
                     'min_value': 0.5, 'max_value': 2.0, 'unit': ''
+                },
+                'operating_income': {
+                    'name': '영업이익 증가율',
+                    'description': '영업이익 증가율 (%)',
+                    'min_value': -30.0, 'max_value': 50.0, 'unit': '%'
                 }
             }
             
@@ -141,58 +146,42 @@ class DashboardService:
             
         except Exception as e:
             print(f"⚠️ Failed to build variable definitions: {e}")
-            # 폴백: 기본 5개 변수
-            return {
-                'oil_gl': {'name': '글로벌 유가', 'description': '유가 변동률', 'min_value': -50, 'max_value': 50, 'unit': '%', 'current_value': -13.7}
-            }
+            # 오류 발생 시 빈 딕셔너리 반환 - 하드코딩 금지
+            return {}
     
     def _get_top_features(self) -> List[str]:
-        """현재 모델에서 Feature importance 기반 상위 5개 변수 반환"""
+        """현재 모델에서 SHAP Feature importance 기반 상위 5개 변수 반환"""
         try:
-            from app.services.data_service import data_service
-            from sklearn.inspection import permutation_importance
+            from app.services.analysis_service import analysis_service
             from app.services.modeling_service import modeling_service
             
-            # 모델과 데이터 로드
-            model = modeling_service.current_model
-            if model is None:
+            # 모델 확인
+            if modeling_service.current_model is None:
                 raise ValueError("No model loaded")
-                
-            df = data_service.current_data
-            if df is None:
-                raise ValueError("No data available")
             
-            # Feature와 target 준비
-            feature_cols = [col for col in df.columns if col not in ['headcount', 'eng']]
-            X = df[feature_cols].copy()
-            y = df['headcount'].copy()
-            
-            # 결측값 처리
-            for col in X.columns:
-                X[col] = pd.to_numeric(X[col], errors='coerce').fillna(0)
-            y = pd.to_numeric(y, errors='coerce').fillna(0)
-            
-            # Permutation importance 계산
-            perm_importance = permutation_importance(
-                model, X, y, 
-                scoring='neg_mean_squared_error',
-                n_repeats=3,
-                random_state=42
+            # SHAP Feature Importance 가져오기 (차트와 동일한 소스)
+            feature_importance_result = analysis_service.get_feature_importance(
+                model=modeling_service.current_model,
+                method='shap',
+                top_n=10
             )
             
-            # 상위 5개 변수 선정
-            importance_scores = list(zip(feature_cols, perm_importance.importances_mean))
-            importance_scores.sort(key=lambda x: x[1], reverse=True)
+            if 'feature_importance' not in feature_importance_result:
+                raise ValueError("Failed to get feature importance")
             
-            top_5_features = [feat for feat, score in importance_scores[:5]]
-            print(f"✅ Top 5 features by importance: {top_5_features}")
+            # 상위 5개 feature 추출
+            top_5_features = [
+                item['feature'] 
+                for item in feature_importance_result['feature_importance'][:5]
+            ]
             
+            print(f"✅ Top 5 features by SHAP importance: {top_5_features}")
             return top_5_features
             
         except Exception as e:
-            print(f"⚠️ Failed to calculate feature importance: {e}")
-            # 폴백: 기본 5개
-            return ['oil_gl', 'exchange_rate_change_krw', 'vp_export_kr', 'cpi_kr', 'v_export_kr']
+            print(f"⚠️ Failed to calculate SHAP feature importance: {e}")
+            # 오류 발생 시 빈 리스트 반환하여 변수 정의를 생성하지 않음
+            return []
     
     def _get_2025_actual_data(self) -> Dict[str, float]:
         """실제 2025년 데이터에서 값들 추출"""
