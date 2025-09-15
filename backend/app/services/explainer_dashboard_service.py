@@ -127,7 +127,7 @@ class ExplainerDashboardService:
                                 actual_years = year_values[:num_samples]
                 except Exception as e:
                     logger.warning(f"Could not extract actual years from data: {e}")
-                
+
                 if actual_years and len(actual_years) == num_samples:
                     years = [f"{int(year)}년" for year in actual_years]
                 else:
@@ -138,12 +138,30 @@ class ExplainerDashboardService:
                 # 여전히 많은 데이터가 있는 경우
                 years = [f"데이터_{i+1}" for i in range(num_samples)]
             X_test_copy.index = years
-            
+
+            # y_test가 singleton array가 되지 않도록 보장
+            if y_test is not None:
+                if isinstance(y_test, pd.Series):
+                    # Series 그대로 사용
+                    y_test_for_explainer = y_test
+                elif isinstance(y_test, np.ndarray):
+                    # numpy array를 Series로 변환
+                    y_test_for_explainer = pd.Series(y_test, index=X_test_copy.index)
+                else:
+                    # 다른 타입이면 Series로 변환
+                    y_test_for_explainer = pd.Series(y_test, index=X_test_copy.index)
+
+                # 싱글톤 체크 - 1개 값이라도 Series로 유지
+                if len(y_test_for_explainer) == 1:
+                    logger.info(f"Single test sample detected, ensuring proper Series format")
+            else:
+                y_test_for_explainer = None
+
             # Explainer 생성 (회귀 모델) - 기본 파라미터만 사용
             explainer = RegressionExplainer(
-                wrapped_model,  # 래핑된 모델 사용 
+                wrapped_model,  # 래핑된 모델 사용
                 X_test_copy,  # 복사본 사용
-                y_test,
+                y_test_for_explainer,  # 변환된 y_test 사용
                 units='%'  # 단위 설정
             )
             

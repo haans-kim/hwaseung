@@ -47,32 +47,84 @@ class AnalysisService:
         self._last_model_id = None
         
     def _get_training_data(self):
-        """PyCaret 환경에서 학습 데이터 가져오기"""
+        """PyCaret 환경에서 학습 데이터 가져오기 또는 현재 데이터에서 생성"""
         try:
             from pycaret.regression import get_config
-            
+
             # PyCaret에서 데이터 가져오기
             X_train = get_config('X_train')
             y_train = get_config('y_train')
-            X_test = get_config('X_test') 
+            X_test = get_config('X_test')
             y_test = get_config('y_test')
-            
+
             self.train_data = (X_train, y_train)
             self.test_data = (X_test, y_test)
             self.feature_names = list(X_train.columns)
-            
+
             # 한글 컬럼명 매핑 가져오기
             self.feature_display_names = data_service.get_display_names(self.feature_names)
-            
+
             return X_train, y_train, X_test, y_test
-            
+
         except Exception as e:
             logging.warning(f"Could not get PyCaret data: {str(e)}")
-            # Fallback to data_service
+
+            # Fallback: 현재 데이터에서 train/test split 생성
             if data_service.current_data is not None:
-                # 임시로 현재 데이터 사용 (실제 구현에서는 타겟 컬럼 정보 필요)
-                data = data_service.current_data
-                return data, None, None, None
+                from sklearn.model_selection import train_test_split
+
+                data = data_service.current_data.copy()
+
+                # 타겟 컬럼 찾기 (headcount 또는 wage 관련 컬럼)
+                target_columns = ['headcount', 'wage_increase_total_sbl', 'wage_increase_rate_sbl']
+                target_col = None
+                for col in target_columns:
+                    if col in data.columns:
+                        target_col = col
+                        break
+
+                if target_col:
+                    # 타겟 컬럼이 있는 행만 사용
+                    data_clean = data.dropna(subset=[target_col])
+
+                    # feature와 target 분리
+                    exclude_cols = ['eng', 'year', 'kor', target_col]
+                    feature_cols = [col for col in data_clean.columns if col not in exclude_cols]
+
+                    X = data_clean[feature_cols]
+                    y = data_clean[target_col]
+
+                    # Train/test split - 작은 데이터셋도 처리
+                    if len(X) >= 4:  # 최소 4개 샘플이면 처리
+                        if len(X) >= 10:
+                            # 충분한 데이터가 있으면 정상적인 split
+                            X_train, X_test, y_train, y_test = train_test_split(
+                                X, y, test_size=0.2, random_state=42
+                            )
+                        else:
+                            # 데이터가 적으면 전체를 train으로, 일부를 test로도 사용
+                            X_train = X
+                            y_train = y
+                            # ExplainerDashboard는 최소 2개의 테스트 샘플이 필요
+                            # 테스트 데이터로 마지막 40% 또는 최소 2개 사용
+                            test_size = max(2, len(X) // 5 * 2)  # 최소 2개, 보통 40%
+                            if test_size >= len(X) - 1:  # 테스트가 너무 많으면 조정
+                                test_size = max(2, len(X) // 2)  # 최대 50%
+                            X_test = X.iloc[-test_size:]
+                            y_test = y.iloc[-test_size:]
+                            logging.warning(f"Small dataset: using {len(X_train)} samples for training, {len(X_test)} for testing")
+
+                        self.train_data = (X_train, y_train)
+                        self.test_data = (X_test, y_test)
+                        self.feature_names = list(X_train.columns)
+                        self.feature_display_names = data_service.get_display_names(self.feature_names)
+
+                        return X_train, y_train, X_test, y_test
+
+                # 타겟 컬럼이 없거나 데이터가 너무 적은 경우
+                logging.warning(f"Insufficient data for train/test split: only {len(X) if target_col else 0} samples")
+                return None, None, None, None
+
             return None, None, None, None
     
     def get_shap_analysis(self, model, sample_index: Optional[int] = None, top_n: int = 10) -> Dict[str, Any]:
