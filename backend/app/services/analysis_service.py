@@ -222,12 +222,43 @@ class AnalysisService:
             else:
                 importance_scores = np.abs(shap_values[0]).mean(axis=0) if len(shap_values) > 0 else []
             
-            # 값이 모두 0인지 확인
+            # 값이 모두 0인지 확인하고 실제 모델에서 importance 추출
             if np.all(importance_scores == 0):
-                print("⚠️ All importance scores are zero, generating fallback values")
-                # 랜덤하게 중요도 생성 (실제 분석이 실패한 경우)
-                np.random.seed(42)
-                importance_scores = np.random.exponential(0.01, len(self.feature_names))
+                print("⚠️ All SHAP scores are zero, trying to extract from model directly")
+
+                # 모델에서 직접 feature importance 추출 시도
+                try:
+                    # Pipeline인 경우 실제 모델 추출
+                    actual_model = model
+                    if hasattr(model, 'steps'):
+                        actual_model = model.steps[-1][1]
+
+                    # Linear 모델의 경우 계수 사용
+                    if hasattr(actual_model, 'coef_'):
+                        importance_scores = np.abs(actual_model.coef_)
+                        print(f"✅ Using linear model coefficients as importance scores")
+                    # Tree 기반 모델의 경우 feature_importances_ 사용
+                    elif hasattr(actual_model, 'feature_importances_'):
+                        importance_scores = actual_model.feature_importances_
+                        print(f"✅ Using tree model feature importances")
+                    else:
+                        # 최후의 수단: Permutation importance 계산
+                        print("⚠️ Trying permutation importance as last resort")
+                        from sklearn.inspection import permutation_importance
+
+                        # 작은 데이터셋이므로 적은 반복 횟수 사용
+                        perm_imp = permutation_importance(
+                            model, analysis_data, test_y[:len(analysis_data)],
+                            n_repeats=5, random_state=42
+                        )
+                        importance_scores = perm_imp.importances_mean
+                        print(f"✅ Using permutation importance scores")
+
+                except Exception as e:
+                    print(f"⚠️ Failed to extract importance from model: {e}")
+                    # 마지막 fallback: 균등한 중요도 부여
+                    importance_scores = np.ones(len(self.feature_names)) / len(self.feature_names)
+                    print("⚠️ Using uniform importance as final fallback")
             
             # Top N features
             feature_importance = []
