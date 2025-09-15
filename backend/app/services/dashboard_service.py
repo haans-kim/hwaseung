@@ -69,42 +69,22 @@ class DashboardService:
             # 3. 변수 정의 생성
             variable_defs = {}
             
-            # 변수별 메타 정보 매핑
+            # 변수별 메타 정보 매핑 (상위 10개 모두 포함)
             feature_meta = {
-                'oil_gl': {
-                    'name': '글로벌 유가',
-                    'description': '국제 유가 변동률 (%)',
-                    'min_value': -50.0, 'max_value': 50.0, 'unit': '%'
+                'operating_income': {
+                    'name': '영업이익 증가율',
+                    'description': '영업이익 증가율 (%)',
+                    'min_value': -30.0, 'max_value': 50.0, 'unit': '%'
                 },
                 'exchange_rate_change_krw': {
                     'name': '환율 변동률',
                     'description': '원달러 환율 변동률 (%)',
                     'min_value': -15.0, 'max_value': 20.0, 'unit': '%'
                 },
-                'vp_export_kr': {
-                    'name': '수출 변동률',
-                    'description': '한국 수출 변동률 (%)',
-                    'min_value': -30.0, 'max_value': 30.0, 'unit': '%'
-                },
-                'cpi_kr': {
-                    'name': '소비자물가지수',
-                    'description': '한국 소비자물가지수 증가율 (%)',
-                    'min_value': -2.0, 'max_value': 8.0, 'unit': '%'
-                },
-                'v_export_kr': {
-                    'name': '수출액',
-                    'description': '한국 수출액 증가율 (%)',
-                    'min_value': -25.0, 'max_value': 25.0, 'unit': '%'
-                },
-                'v_growth_gl': {
-                    'name': '글로벌 매출 성장',
-                    'description': '글로벌 매출 성장률 (%)',
-                    'min_value': -20.0, 'max_value': 30.0, 'unit': '%'
-                },
-                'ev_growth_gl': {
-                    'name': '글로벌 기업가치',
-                    'description': '글로벌 기업가치 성장률 (%)',
-                    'min_value': -15.0, 'max_value': 25.0, 'unit': '%'
+                'oil_gl': {
+                    'name': '글로벌 유가',
+                    'description': '국제 유가 변동률 (%)',
+                    'min_value': -50.0, 'max_value': 50.0, 'unit': '%'
                 },
                 'gdp_growth_kr': {
                     'name': 'GDP 성장률',
@@ -116,14 +96,49 @@ class DashboardService:
                     'description': '글로벌 공급망 지수',
                     'min_value': 500, 'max_value': 2000, 'unit': ''
                 },
+                'ev_growth_gl': {
+                    'name': '글로벌 EV시장 성장률',
+                    'description': '글로벌 전기차 시장 성장률 (%)',
+                    'min_value': -15.0, 'max_value': 25.0, 'unit': '%'
+                },
+                'vp_export_kr': {
+                    'name': '자동차부품 수출 증가율',
+                    'description': '한국 자동차부품 수출액 증가율 (%)',
+                    'min_value': -30.0, 'max_value': 30.0, 'unit': '%'
+                },
+                'v_growth_gl': {
+                    'name': '글로벌 자동차시장 성장률',
+                    'description': '글로벌 자동차 시장 성장률 (%)',
+                    'min_value': -20.0, 'max_value': 30.0, 'unit': '%'
+                },
+                'v_export_kr': {
+                    'name': '자동차 수출 증가율',
+                    'description': '한국 자동차 수출액 증가율 (%)',
+                    'min_value': -25.0, 'max_value': 25.0, 'unit': '%'
+                },
+                'revenue': {
+                    'name': '매출액 증가율',
+                    'description': '기업 매출액 증가율 (%)',
+                    'min_value': -30.0, 'max_value': 50.0, 'unit': '%'
+                },
+                'cpi_kr': {
+                    'name': '소비자물가지수',
+                    'description': '한국 소비자물가지수 증가율 (%)',
+                    'min_value': -2.0, 'max_value': 8.0, 'unit': '%'
+                },
                 'production_capa': {
                     'name': '생산 능력',
                     'description': '생산 능력 지수',
                     'min_value': 0.5, 'max_value': 2.0, 'unit': ''
                 },
-                'operating_income': {
-                    'name': '영업이익 증가율',
-                    'description': '영업이익 증가율 (%)',
+                'labor_costs': {
+                    'name': '인건비 증가율',
+                    'description': '총 인건비 증가율 (%)',
+                    'min_value': -20.0, 'max_value': 30.0, 'unit': '%'
+                },
+                'rnd_cost': {
+                    'name': 'R&D 투자 증가율',
+                    'description': '연구개발비 증가율 (%)',
                     'min_value': -30.0, 'max_value': 50.0, 'unit': '%'
                 }
             }
@@ -169,14 +184,14 @@ class DashboardService:
             if 'feature_importance' not in feature_importance_result:
                 raise ValueError("Failed to get feature importance")
             
-            # 상위 5개 feature 추출
-            top_5_features = [
-                item['feature'] 
-                for item in feature_importance_result['feature_importance'][:5]
+            # 상위 10개 feature 추출 (더 많은 변수 조정 가능)
+            top_features = [
+                item['feature']
+                for item in feature_importance_result['feature_importance'][:10]
             ]
-            
-            print(f"✅ Top 5 features by SHAP importance: {top_5_features}")
-            return top_5_features
+
+            print(f"✅ Top {len(top_features)} features by importance: {top_features}")
+            return top_features
             
         except Exception as e:
             print(f"⚠️ Failed to calculate SHAP feature importance: {e}")
