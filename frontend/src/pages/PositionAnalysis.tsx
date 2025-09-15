@@ -98,34 +98,28 @@ const PositionAnalysis: React.FC = () => {
     <div className="min-h-screen bg-white p-6">
       {/* 헤더 */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-2">직급별 분석</h1>
-        <p className="text-sm text-muted-foreground">직급별 적정인원 도출</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">직급별 분석</h1>
+        <p className="text-muted-foreground">직급별 적정인원 도출</p>
       </div>
 
-      {/* 전체 개요 버튼 */}
-      <div className="mb-6">
-        <Button variant="outline" className="w-full py-2 px-6 text-base">
-          전체 개요
-        </Button>
-      </div>
 
       {/* 통계 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="p-4 text-center border shadow-sm">
-          <div className="text-2xl font-bold text-blue-600 mb-2">600</div>
-          <div className="text-xs text-muted-foreground">총 분석 인원</div>
+        <Card className="p-4 text-center border shadow-sm bg-white">
+          <div className="text-2xl font-bold text-black mb-2">600</div>
+          <div className="text-sm text-gray-600">총 분석 인원</div>
         </Card>
-        <Card className="p-4 text-center border shadow-sm">
-          <div className="text-2xl font-bold text-blue-600 mb-2">5명</div>
-          <div className="text-xs text-muted-foreground">선임 충원 필요</div>
+        <Card className="p-4 text-center border shadow-sm bg-white">
+          <div className="text-2xl font-bold text-black mb-2">5명</div>
+          <div className="text-sm text-gray-600">선임 충원 필요</div>
         </Card>
-        <Card className="p-4 text-center border shadow-sm">
-          <div className="text-2xl font-bold text-blue-600 mb-2">10명</div>
-          <div className="text-xs text-muted-foreground">책임 충원 필요</div>
+        <Card className="p-4 text-center border shadow-sm bg-white">
+          <div className="text-2xl font-bold text-black mb-2">10명</div>
+          <div className="text-sm text-gray-600">책임 충원 필요</div>
         </Card>
-        <Card className="p-4 text-center border shadow-sm">
-          <div className="text-2xl font-bold text-blue-600 mb-2">18명</div>
-          <div className="text-xs text-muted-foreground">사원 충원 필요</div>
+        <Card className="p-4 text-center border shadow-sm bg-white">
+          <div className="text-2xl font-bold text-black mb-2">18명</div>
+          <div className="text-sm text-gray-600">사원 충원 필요</div>
         </Card>
       </div>
 
@@ -137,12 +131,11 @@ const PositionAnalysis: React.FC = () => {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             {/* 헤더 */}
-            <div className="grid grid-cols-10 border-b">
-              <div className="py-3 px-4 font-medium text-muted-foreground text-sm">구분</div>
-              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">구부</div>
-              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">SL제로팀</div>
-              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">FL제로팀</div>
-              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">인더스트리얼...</div>
+            <div className="grid grid-cols-9 border-b">
+              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center flex items-center justify-center">구분</div>
+              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">SL재료팀</div>
+              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">FL재료팀</div>
+              <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">인더스트리얼재료팀</div>
               <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">SPECIALTY...</div>
               <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">선행개발팀</div>
               <div className="py-3 px-4 font-medium text-muted-foreground text-sm text-center border-l">성능개발팀</div>
@@ -151,13 +144,8 @@ const PositionAnalysis: React.FC = () => {
             </div>
 
             {/* 선임 행 */}
-            <div className="grid grid-cols-10 border-b">
-              <div className="py-4 px-4 font-medium text-muted-foreground text-sm">선임</div>
-              <div className="py-4 px-4 text-center border-l">
-                <div className="inline-flex items-center justify-center w-24 px-3 py-2 rounded-lg border-2 border-green-200 bg-green-50 text-green-800 text-sm font-medium">
-                  1 ●
-                </div>
-              </div>
+            <div className="grid grid-cols-9 border-b">
+              <div className="py-4 px-4 font-medium text-muted-foreground text-sm text-center flex items-center justify-center">선임</div>
               <div className="py-4 px-4 text-center border-l">
                 <div className="inline-flex items-center justify-center w-24 px-3 py-2 rounded-lg border-2 border-green-200 bg-green-50 text-green-800 text-sm font-medium">
                   2 ●
@@ -201,13 +189,8 @@ const PositionAnalysis: React.FC = () => {
             </div>
 
             {/* 책임 행 */}
-            <div className="grid grid-cols-10 border-b">
-              <div className="py-4 px-4 font-medium text-muted-foreground text-sm">책임</div>
-              <div className="py-4 px-4 text-center border-l">
-                <div className="inline-flex items-center justify-center w-24 px-3 py-2 rounded-lg border-2 border-green-200 bg-green-50 text-green-800 text-sm font-medium">
-                  2 ●
-                </div>
-              </div>
+            <div className="grid grid-cols-9 border-b">
+              <div className="py-4 px-4 font-medium text-muted-foreground text-sm text-center flex items-center justify-center">책임</div>
               <div className="py-4 px-4 text-center border-l">
                 <div className="inline-flex items-center justify-center w-24 px-3 py-2 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-800 text-sm font-medium">
                   1 ▼
@@ -251,13 +234,8 @@ const PositionAnalysis: React.FC = () => {
             </div>
 
             {/* 사원 행 */}
-            <div className="grid grid-cols-10">
-              <div className="py-4 px-4 font-medium text-muted-foreground text-sm">사원</div>
-              <div className="py-4 px-4 text-center border-l">
-                <div className="inline-flex items-center justify-center w-24 px-3 py-2 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-800 text-sm font-medium">
-                  2 ▼
-                </div>
-              </div>
+            <div className="grid grid-cols-9">
+              <div className="py-4 px-4 font-medium text-muted-foreground text-sm text-center flex items-center justify-center">사원</div>
               <div className="py-4 px-4 text-center border-l">
                 <div className="inline-flex items-center justify-center w-24 px-3 py-2 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-800 text-sm font-medium">
                   1 ▼
