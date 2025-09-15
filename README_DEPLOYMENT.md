@@ -19,7 +19,7 @@ Vercel 대시보드에서 다음 환경 변수 추가:
 ```
 REACT_APP_API_URL=https://your-backend-url.railway.app
 ```
-
+  
 ### 4. 배포
 - 자동 배포 활성화 시 main 브랜치 push 시 자동 배포
 - 수동 배포: Vercel 대시보드에서 "Redeploy" 클릭
