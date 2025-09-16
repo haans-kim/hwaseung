@@ -16,11 +16,9 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
-import { 
-  TrendingUp, 
-  BarChart3, 
-  Settings2, 
-  Play,
+import {
+  BarChart3,
+  Settings2,
   AlertTriangle,
   Loader2,
   Zap,
@@ -108,8 +106,8 @@ export const Dashboard: React.FC = () => {
   const [currentPrediction, setCurrentPrediction] = useState<PredictionResult | null>(null);
   const [scenarioTemplates, setScenarioTemplates] = useState<ScenarioTemplate[]>([]);
   const [availableVariables, setAvailableVariables] = useState<Variable[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [economicIndicators, setEconomicIndicators] = useState<Record<string, EconomicIndicator>>({});
-  const [selectedScenario, setSelectedScenario] = useState<string>('moderate');
   const [customVariables, setCustomVariables] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -169,10 +167,11 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleScenarioSelect = async (templateId: string) => {
-    setSelectedScenario(templateId);
+    // setSelectedScenario was removed, but keeping function structure for potential future use
     const template = scenarioTemplates.find(t => t.id === templateId);
-    
+
     if (template) {
       setCustomVariables(template.variables);
       setLoading('prediction');
@@ -210,6 +209,7 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRunScenarioAnalysis = async () => {
     setLoading('scenario-analysis');
     setError(null);
@@ -712,29 +712,54 @@ export const Dashboard: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {availableVariables.map((variable) => (
-                <div key={variable.name} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium">{variable.display_name}</label>
-                    <span className="text-sm text-muted-foreground">
-                      {formatNumber(customVariables[variable.name] || variable.current_value, 1)}{variable.unit}
-                    </span>
+              {(() => {
+                // Feature Importance에서 중요 변수들 가져오기
+                const importantFeatures = featureImportance?.feature_importance?.slice(0, 8) || [];
+                const importantFeatureNames = importantFeatures.map((f: any) => f.feature);
+
+                console.log('Feature Importance names:', importantFeatureNames);
+                console.log('Available variables:', availableVariables.map(v => v.name));
+
+                // availableVariables를 중요도 순으로 필터링 및 정렬
+                const filteredVariables = availableVariables
+                  .filter(v => importantFeatureNames.includes(v.name))
+                  .sort((a, b) => {
+                    const aIndex = importantFeatureNames.indexOf(a.name);
+                    const bIndex = importantFeatureNames.indexOf(b.name);
+                    return aIndex - bIndex;
+                  });
+
+                console.log('Filtered variables:', filteredVariables.map(v => v.name));
+
+                // 만약 feature importance가 없으면 기본 변수들 표시
+                const variablesToShow = filteredVariables.length > 0
+                  ? filteredVariables
+                  : availableVariables.slice(0, 5);
+
+                return variablesToShow.map((variable) => (
+                  <div key={variable.name} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium">{variable.display_name}</label>
+                      <span className="text-sm text-muted-foreground">
+                        {formatNumber(customVariables[variable.name] || variable.current_value, 1)}{variable.unit}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={variable.min_value}
+                      max={variable.max_value}
+                      step={0.1}
+                      value={customVariables[variable.name] || variable.current_value}
+                      onChange={(e) => handleVariableChange(variable.name, parseFloat(e.target.value))}
+                      className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{variable.min_value}{variable.unit}</span>
+                      <span>{variable.max_value}{variable.unit}</span>
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min={variable.min_value}
-                    max={variable.max_value}
-                    step={0.1}
-                    value={customVariables[variable.name] || variable.current_value}
-                    onChange={(e) => handleVariableChange(variable.name, parseFloat(e.target.value))}
-                    className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{variable.min_value}{variable.unit}</span>
-                    <span>{variable.max_value}{variable.unit}</span>
-                  </div>
-                </div>
-              ))}
+                ));
+              })()}
 
               <div className="space-y-2">
                 <Button 
@@ -755,15 +780,24 @@ export const Dashboard: React.FC = () => {
                   )}
                 </Button>
                 
-                <Button 
+                <Button
                   onClick={() => {
-                    // 슬라이더 초기화: 기본값으로 리셋
+                    // 슬라이더 초기화: Feature Importance 기반 변수들을 기본값으로 리셋
                     const resetVariables: Record<string, number> = {};
-                    availableVariables
-                      .filter(v => ['oil_gl', 'exchange_rate_change_krw', 'vp_export_kr', 'cpi_kr', 'v_export_kr'].includes(v.name))
-                      .forEach(variable => {
-                        resetVariables[variable.name] = variable.current_value;
-                      });
+
+                    // Feature Importance에서 중요 변수들 가져오기
+                    const importantFeatures = featureImportance?.feature_importance?.slice(0, 8) || [];
+                    const importantFeatureNames = importantFeatures.map((f: any) => f.feature);
+
+                    // 중요 변수들만 리셋 (없으면 모든 변수 리셋)
+                    const variablesToReset = importantFeatureNames.length > 0
+                      ? availableVariables.filter(v => importantFeatureNames.includes(v.name))
+                      : availableVariables;
+
+                    variablesToReset.forEach(variable => {
+                      resetVariables[variable.name] = variable.current_value;
+                    });
+
                     setCustomVariables(resetVariables);
                     // 자동으로 예측 수행
                     handleCustomPrediction();

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
 interface DepartmentData {
   name: string;
@@ -10,6 +9,7 @@ interface DepartmentData {
 }
 
 const PositionAnalysis: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [departmentData] = useState<DepartmentData[]>([
     {
       name: '구부',
@@ -67,6 +67,7 @@ const PositionAnalysis: React.FC = () => {
     }
   ]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getCellStyle = (type: 'up' | 'down' | 'same') => {
     switch (type) {
       case 'up':
@@ -78,6 +79,7 @@ const PositionAnalysis: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getIcon = (type: 'up' | 'down' | 'same') => {
     switch (type) {
       case 'up':
@@ -89,9 +91,13 @@ const PositionAnalysis: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getTotalCurrent = () => 600;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getTotalHireNeeded = () => 5;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getTotalPromoteNeeded = () => 10;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getTotalTransferNeeded = () => 18;
 
   return (

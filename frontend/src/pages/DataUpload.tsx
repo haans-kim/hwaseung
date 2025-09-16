@@ -94,14 +94,14 @@ export const DataUpload: React.FC = () => {
     setSuccess(null);
 
     try {
-      const result = await apiClient.loadDefaultData();
+      await apiClient.loadDefaultData();
       setSuccess("기본 데이터가 성공적으로 로드되었습니다.");
-      
+
       // 로드 후 실제 데이터 가져오기
       const currentData = await apiClient.getCurrentData(10, false);
       setSampleData(currentData);
       setShowDataPreview(true);
-      
+
       await checkDataStatus(); // 상태 새로고침
     } catch (error) {
       setError(error instanceof Error ? error.message : '기본 데이터 로드 중 오류가 발생했습니다.');

@@ -20,7 +20,7 @@ export const ExplainerDashboard: React.FC = () => {
 
   useEffect(() => {
     checkAndGenerateDashboard();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAndGenerateDashboard = async () => {
     setLoading(true);
