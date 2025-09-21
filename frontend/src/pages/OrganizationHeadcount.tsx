@@ -22,14 +22,19 @@ const ColumnPane = ({
   items,
   selectedValue,
   onSelect,
+  width,
 }: {
   title: string;
   items: string[];
   selectedValue: string | null;
   onSelect: (value: string) => void;
+  width: string;
 }) => {
   return (
-    <div className="flex-1 min-w-[200px] border-r border-gray-200 last:border-r-0">
+    <div
+      className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
+      style={{ width }}
+    >
       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
         <h3 className="text-sm font-medium text-gray-700">{title}</h3>
       </div>
@@ -271,13 +276,17 @@ const OrganizationHeadcount: React.FC = () => {
 
       {/* Miller Column */}
       <Card className="mb-6 overflow-hidden">
-        <div className="flex">
+        <div
+          className="flex overflow-x-auto"
+          style={{ minWidth: '1000px' }} // 최소 너비 설정으로 5개 컬럼 (200px * 5)
+        >
           {/* 회사 Column */}
           <ColumnPane
             title="회사"
             items={companies}
             selectedValue={selectedCompany}
             onSelect={setSelectedCompany}
+            width="200px"
           />
 
           {/* 본부 Column */}
@@ -287,6 +296,7 @@ const OrganizationHeadcount: React.FC = () => {
               items={departments}
               selectedValue={selectedDepartment}
               onSelect={setSelectedDepartment}
+              width="200px"
             />
           )}
 
@@ -297,6 +307,7 @@ const OrganizationHeadcount: React.FC = () => {
               items={divisions}
               selectedValue={selectedDivision}
               onSelect={setSelectedDivision}
+              width="240px" // 제목이 길어서 약간 넓게
             />
           )}
 
@@ -307,6 +318,7 @@ const OrganizationHeadcount: React.FC = () => {
               items={sections}
               selectedValue={selectedSection}
               onSelect={setSelectedSection}
+              width="200px"
             />
           )}
 
@@ -318,7 +330,34 @@ const OrganizationHeadcount: React.FC = () => {
               items={teams}
               selectedValue={selectedTeam}
               onSelect={setSelectedTeam}
+              width="200px"
             />
+          )}
+
+          {/* 빈 공간 채우기 - 선택되지 않은 컬럼 영역을 미리 확보 */}
+          {!selectedCompany && (
+            <>
+              <div className="w-[200px] flex-shrink-0" />
+              <div className="w-[240px] flex-shrink-0" />
+              <div className="w-[200px] flex-shrink-0" />
+              <div className="w-[200px] flex-shrink-0" />
+            </>
+          )}
+          {selectedCompany && !selectedDepartment && (
+            <>
+              <div className="w-[240px] flex-shrink-0" />
+              <div className="w-[200px] flex-shrink-0" />
+              <div className="w-[200px] flex-shrink-0" />
+            </>
+          )}
+          {selectedDepartment && !selectedDivision && (
+            <>
+              <div className="w-[200px] flex-shrink-0" />
+              <div className="w-[200px] flex-shrink-0" />
+            </>
+          )}
+          {selectedDivision && sections.length > 0 && !selectedSection && (
+            <div className="w-[200px] flex-shrink-0" />
           )}
         </div>
       </Card>
