@@ -7,6 +7,7 @@ import Analysis from './pages/Analysis';
 import { Dashboard } from './pages/Dashboard';
 import { Effects } from './pages/Effects';
 import PositionAnalysis from './pages/PositionAnalysis';
+import OrganizationHeadcount from './pages/OrganizationHeadcount';
 import { ExplainerDashboard } from './pages/ExplainerDashboard';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="analysis" element={<Analysis />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="position-analysis" element={<PositionAnalysis />} />
+          <Route path="organization-headcount" element={<OrganizationHeadcount />} />
           <Route path="effects" element={<Effects />} />
           <Route path="explainer" element={<ExplainerDashboard />} />
         </Route>

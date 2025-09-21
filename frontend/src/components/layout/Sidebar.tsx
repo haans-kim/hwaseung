@@ -1,14 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  Upload, 
-  Settings, 
-  BarChart3, 
-  Activity, 
+import {
+  Upload,
+  Settings,
+  BarChart3,
+  Activity,
   Users,
   Moon,
   Sun,
-  LineChart
+  LineChart,
+  Building2
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Analysis', href: '/analysis', icon: BarChart3 },
   { name: '적정인력', href: '/dashboard', icon: Activity },
   { name: '직급별 분석', href: '/position-analysis', icon: Users },
+  { name: '조직별 적정인원', href: '/organization-headcount', icon: Building2 },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) => {
