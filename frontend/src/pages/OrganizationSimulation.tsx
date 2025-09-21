@@ -53,6 +53,7 @@ const OrganizationSimulation: React.FC = () => {
   // 4개 예측 결과 (총, 책임, 선임, 사원)
   const [currentHeadcount, setCurrentHeadcount] = useState<{ [key: string]: number }>({});
   const [predictedHeadcount, setPredictedHeadcount] = useState<{ [key: string]: number }>({});
+  const [currentFTE, setCurrentFTE] = useState<{ [key: string]: number }>({});
 
   // SQLite 데이터 로드
   useEffect(() => {
@@ -292,6 +293,43 @@ const OrganizationSimulation: React.FC = () => {
       }
 
       setCurrentHeadcount(currentHeadcountData);
+
+      // FTE 데이터 로드 (실제 FTE 테이블에서 조회)
+      const currentFTEData: { [key: string]: number } = {};
+
+      try {
+        const fteResult = db.exec(`
+          SELECT FTE_전체, FTE_책임, FTE_선임, FTE_사원
+          FROM FTE
+          WHERE 팀명 = '${teamName}'
+          LIMIT 1
+        `);
+
+        if (fteResult.length > 0 && fteResult[0].values.length > 0) {
+          const fteRow = fteResult[0].values[0];
+          currentFTEData['총'] = fteRow[0] as number || 0;
+          currentFTEData['책임'] = fteRow[1] as number || 0;
+          currentFTEData['선임'] = fteRow[2] as number || 0;
+          currentFTEData['사원'] = fteRow[3] as number || 0;
+          console.log(`${teamName} FTE 데이터 로드:`, currentFTEData);
+        } else {
+          // FTE 데이터가 없으면 인원수 기반으로 계산 (정규직 풀타임 가정)
+          currentFTEData['총'] = currentHeadcountData['총'] || 0;
+          currentFTEData['책임'] = currentHeadcountData['책임'] || 0;
+          currentFTEData['선임'] = currentHeadcountData['선임'] || 0;
+          currentFTEData['사원'] = currentHeadcountData['사원'] || 0;
+          console.log(`${teamName} FTE 데이터 없음, 인원수로 대체:`, currentFTEData);
+        }
+      } catch (error) {
+        console.error('FTE 데이터 로드 오류:', error);
+        // 오류 시 인원수로 대체
+        currentFTEData['총'] = currentHeadcountData['총'] || 0;
+        currentFTEData['책임'] = currentHeadcountData['책임'] || 0;
+        currentFTEData['선임'] = currentHeadcountData['선임'] || 0;
+        currentFTEData['사원'] = currentHeadcountData['사원'] || 0;
+      }
+
+      setCurrentFTE(currentFTEData);
 
       db.close();
     } catch (error) {
@@ -600,8 +638,9 @@ const OrganizationSimulation: React.FC = () => {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 px-3 font-medium text-gray-700">구분</th>
-                      <th className="text-center py-2 px-3 font-medium text-gray-700">현재</th>
-                      <th className="text-center py-2 px-3 font-medium text-gray-700">예측</th>
+                      <th className="text-center py-2 px-3 font-medium text-gray-700">현재<br/>인원</th>
+                      <th className="text-center py-2 px-3 font-medium text-gray-700">현재<br/>FTE</th>
+                      <th className="text-center py-2 px-3 font-medium text-gray-700">예측<br/>인원</th>
                       <th className="text-center py-2 px-3 font-medium text-gray-700">변화</th>
                     </tr>
                   </thead>
@@ -609,6 +648,7 @@ const OrganizationSimulation: React.FC = () => {
                     <tr className="border-b hover:bg-gray-50">
                       <td className="py-2 px-3 font-medium text-blue-700">전체</td>
                       <td className="text-center py-2 px-3">{currentHeadcount['총'] || 0}명</td>
+                      <td className="text-center py-2 px-3 text-blue-600">{(currentFTE['총'] || 0).toFixed(1)}</td>
                       <td className="text-center py-2 px-3 text-blue-600 font-semibold">{predictedHeadcount['총'] || 0}명</td>
                       <td className={`text-center py-2 px-3 font-semibold ${getChangeColor((predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0))}`}>
                         {(predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0) > 0 ? '+' : ''}
@@ -618,6 +658,7 @@ const OrganizationSimulation: React.FC = () => {
                     <tr className="border-b hover:bg-gray-50">
                       <td className="py-2 px-3 font-medium text-green-700">책임</td>
                       <td className="text-center py-2 px-3">{currentHeadcount['책임'] || 0}명</td>
+                      <td className="text-center py-2 px-3 text-green-600">{(currentFTE['책임'] || 0).toFixed(1)}</td>
                       <td className="text-center py-2 px-3 text-green-600 font-semibold">{predictedHeadcount['책임'] || 0}명</td>
                       <td className={`text-center py-2 px-3 font-semibold ${getChangeColor((predictedHeadcount['책임'] || 0) - (currentHeadcount['책임'] || 0))}`}>
                         {(predictedHeadcount['책임'] || 0) - (currentHeadcount['책임'] || 0) > 0 ? '+' : ''}
@@ -627,6 +668,7 @@ const OrganizationSimulation: React.FC = () => {
                     <tr className="border-b hover:bg-gray-50">
                       <td className="py-2 px-3 font-medium text-orange-700">선임</td>
                       <td className="text-center py-2 px-3">{currentHeadcount['선임'] || 0}명</td>
+                      <td className="text-center py-2 px-3 text-orange-600">{(currentFTE['선임'] || 0).toFixed(1)}</td>
                       <td className="text-center py-2 px-3 text-orange-600 font-semibold">{predictedHeadcount['선임'] || 0}명</td>
                       <td className={`text-center py-2 px-3 font-semibold ${getChangeColor((predictedHeadcount['선임'] || 0) - (currentHeadcount['선임'] || 0))}`}>
                         {(predictedHeadcount['선임'] || 0) - (currentHeadcount['선임'] || 0) > 0 ? '+' : ''}
@@ -636,6 +678,7 @@ const OrganizationSimulation: React.FC = () => {
                     <tr className="hover:bg-gray-50">
                       <td className="py-2 px-3 font-medium text-purple-700">사원</td>
                       <td className="text-center py-2 px-3">{currentHeadcount['사원'] || 0}명</td>
+                      <td className="text-center py-2 px-3 text-purple-600">{(currentFTE['사원'] || 0).toFixed(1)}</td>
                       <td className="text-center py-2 px-3 text-purple-600 font-semibold">{predictedHeadcount['사원'] || 0}명</td>
                       <td className={`text-center py-2 px-3 font-semibold ${getChangeColor((predictedHeadcount['사원'] || 0) - (currentHeadcount['사원'] || 0))}`}>
                         {(predictedHeadcount['사원'] || 0) - (currentHeadcount['사원'] || 0) > 0 ? '+' : ''}
