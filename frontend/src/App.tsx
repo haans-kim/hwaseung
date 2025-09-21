@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Effects } from './pages/Effects';
 import PositionAnalysis from './pages/PositionAnalysis';
 import OrganizationHeadcount from './pages/OrganizationHeadcount';
+import OrganizationSimulation from './pages/OrganizationSimulation';
 import { ExplainerDashboard } from './pages/ExplainerDashboard';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="position-analysis" element={<PositionAnalysis />} />
           <Route path="organization-headcount" element={<OrganizationHeadcount />} />
+          <Route path="organization-simulation" element={<OrganizationSimulation />} />
           <Route path="effects" element={<Effects />} />
           <Route path="explainer" element={<ExplainerDashboard />} />
         </Route>

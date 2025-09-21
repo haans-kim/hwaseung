@@ -9,7 +9,8 @@ import {
   Moon,
   Sun,
   LineChart,
-  Building2
+  Building2,
+  SlidersHorizontal
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -25,6 +26,7 @@ const navigation = [
   { name: '적정인력', href: '/dashboard', icon: Activity },
   { name: '직급별 분석', href: '/position-analysis', icon: Users },
   { name: '조직별 적정인원', href: '/organization-headcount', icon: Building2 },
+  { name: '조직별 Simulation', href: '/organization-simulation', icon: SlidersHorizontal },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) => {
