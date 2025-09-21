@@ -330,7 +330,7 @@ const OrganizationSimulation: React.FC = () => {
           }
         });
 
-        prediction = prediction * 0.8; // 과적합 조정
+        prediction = prediction * 1.0; // 과적합 조정 제거
         predictions[modelType] = Math.max(0, Math.round(prediction));
         console.log(`${modelType} final prediction: ${predictions[modelType]}`);
       } else {
