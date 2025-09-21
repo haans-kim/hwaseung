@@ -492,8 +492,16 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
           </table>
         </div>
 
+        {/* FTE 설명 */}
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mt-6 mb-6">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold">FTE (Full-Time Equivalent)</span>: 정규직 환산 인원으로, 실제 근무시간을 정규직 기준 근무시간으로 나눈 값입니다.
+            예) FTE 1.2 = 정규직 대비 120% 근무, FTE 0.8 = 정규직 대비 80% 근무
+          </p>
+        </div>
+
         {/* 구분선 */}
-        <div className="my-6 border-t-2 border-gray-300"></div>
+        <div className="mb-6 border-t-2 border-gray-300"></div>
 
         {/* 범례 */}
         <div className="grid grid-cols-3 gap-4">
