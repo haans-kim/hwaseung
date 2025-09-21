@@ -49,7 +49,7 @@ def standardize_column_names(df):
 def main():
     # 데이터 파일 경로
     data_dir = '../data'
-    db_path = '../data/work_history.db'
+    db_path = '../hwaseung_RnD.db'
 
     # 파일 목록
     excel_files = [

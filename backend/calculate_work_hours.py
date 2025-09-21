@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore')
 
 def connect_db():
     """데이터베이스 연결"""
-    db_path = '../data/work_history.db'
+    db_path = '../hwaseung_RnD.db'
     return sqlite3.connect(db_path)
 
 def calculate_daily_work_hours():

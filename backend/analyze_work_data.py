@@ -8,7 +8,7 @@ from datetime import datetime
 
 def connect_db():
     """데이터베이스 연결"""
-    db_path = '../data/work_history.db'
+    db_path = '../hwaseung_RnD.db'
     return sqlite3.connect(db_path)
 
 def print_basic_stats():
@@ -249,7 +249,7 @@ def main():
 
     print("\n✨ 분석 완료!")
     print("\n💡 추가 분석을 원하시면 analyze_work_data.py 파일을 수정하거나")
-    print("   SQLite 데이터베이스 '../data/work_history.db'를 직접 쿼리하실 수 있습니다.")
+    print("   SQLite 데이터베이스 '../hwaseung_RnD.db'를 직접 쿼리하실 수 있습니다.")
 
 if __name__ == "__main__":
     main()
