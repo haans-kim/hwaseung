@@ -356,7 +356,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                     <td key={idx} className="text-center p-3">
                       <MetricCard
                         title="평균"
-                        value={avgRatio}
+                        value={totalFTE}
                         unit="FTE"
                         status={getStatus(avgRatio, '평균')}
                         icon={getIcon(getStatus(avgRatio, '평균'))}
@@ -372,7 +372,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-purple-600">★</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {statistics.avgFTEPerPerson.toFixed(1)}
+                          {statistics.totalFTE.toFixed(1)}
                         </div>
                         <span className="text-sm text-gray-600">FTE</span>
                       </div>
@@ -397,7 +397,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="책임"
-                      value={org.책임.ratio}
+                      value={org.책임.fte}
                       unit="FTE"
                       status={getStatus(org.책임.ratio, '책임')}
                       icon={getIcon(getStatus(org.책임.ratio, '책임'))}
@@ -412,9 +412,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-blue-600">●</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {(statistics.byPosition.책임.people > 0
-                            ? statistics.byPosition.책임.fte / statistics.byPosition.책임.people
-                            : 0).toFixed(1)}
+                          {statistics.byPosition.책임.fte.toFixed(1)}
                         </div>
                         <span className="text-sm text-gray-600">FTE</span>
                       </div>
@@ -434,7 +432,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="선임"
-                      value={org.선임.ratio}
+                      value={org.선임.fte}
                       unit="FTE"
                       status={getStatus(org.선임.ratio, '선임')}
                       icon={getIcon(getStatus(org.선임.ratio, '선임'))}
@@ -449,9 +447,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-blue-600">●</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {(statistics.byPosition.선임.people > 0
-                            ? statistics.byPosition.선임.fte / statistics.byPosition.선임.people
-                            : 0).toFixed(1)}
+                          {statistics.byPosition.선임.fte.toFixed(1)}
                         </div>
                         <span className="text-sm text-gray-600">FTE</span>
                       </div>
@@ -471,7 +467,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="사원"
-                      value={org.사원.ratio}
+                      value={org.사원.fte}
                       unit="FTE"
                       status={getStatus(org.사원.ratio, '사원')}
                       icon={getIcon(getStatus(org.사원.ratio, '사원'))}
@@ -486,9 +482,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-blue-600">●</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {(statistics.byPosition.사원.people > 0
-                            ? statistics.byPosition.사원.fte / statistics.byPosition.사원.people
-                            : 0).toFixed(1)}
+                          {statistics.byPosition.사원.fte.toFixed(1)}
                         </div>
                         <span className="text-sm text-gray-600">FTE</span>
                       </div>
