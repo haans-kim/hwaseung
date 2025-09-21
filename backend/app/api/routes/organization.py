@@ -8,7 +8,6 @@ import os
 import json
 
 router = APIRouter(
-    prefix="/organization",
     tags=["organization"],
     responses={404: {"description": "Not found"}},
 )
