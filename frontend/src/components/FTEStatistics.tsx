@@ -261,6 +261,14 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
   };
 
   const getStatus = (value: number, position: string) => {
+    // 평균값에 대한 판정
+    if (position === '평균') {
+      if (value >= 1.4) return 'high';
+      if (value <= 0.9) return 'low';
+      return 'normal';
+    }
+
+    // 직급별 판정
     if (!statistics || !statistics.thresholds[position]) return 'normal';
 
     const threshold = statistics.thresholds[position];
@@ -337,20 +345,14 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
 
                   return (
                     <td key={idx} className="text-center p-2">
-                      <div className="rounded-lg border-2 border-blue-400 bg-white p-3 min-w-[120px]">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1">
-                            <span className="text-lg text-blue-600">●</span>
-                            <div className="text-xl font-bold text-gray-900">
-                              {avgRatio.toFixed(1)}
-                            </div>
-                            <span className="text-sm text-gray-600">FTE</span>
-                          </div>
-                          <div className="text-base font-medium text-gray-700 px-1.5 py-0.5">
-                            {totalPeople}명
-                          </div>
-                        </div>
-                      </div>
+                      <MetricCard
+                        title="평균"
+                        value={avgRatio}
+                        unit="FTE"
+                        status={getStatus(avgRatio, '평균')}
+                        icon={getIcon(getStatus(avgRatio, '평균'))}
+                        people={totalPeople}
+                      />
                     </td>
                   );
                 })}
