@@ -28,6 +28,7 @@ interface FTEStatisticsProps {
   };
   organizationData: any[];
   fteData: FTEData[];
+  onDrillDown?: (orgName: string) => void;
 }
 
 interface MetricCardProps {
@@ -60,7 +61,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, ico
 
   return (
     <div className={cn(
-      "rounded-lg border-2 p-3 transition-all hover:shadow-md min-w-[120px]",
+      "rounded-lg border-2 p-3 transition-all hover:shadow-md w-full",
       getStatusColor()
     )}>
       <div className="flex items-center justify-between gap-2">
@@ -88,7 +89,8 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, ico
 export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
   selectedLevel,
   organizationData,
-  fteData
+  fteData,
+  onDrillDown
 }) => {
   const [statistics, setStatistics] = useState<any>(null);
 
@@ -294,9 +296,9 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-6">
       {/* 전체 요약 */}
-      <MagicCard className="p-6">
+      <MagicCard className="p-6 bg-white">
         <h3 className="text-lg font-semibold mb-4">인력 수준 적정성 분석</h3>
         <p className="text-sm text-gray-600 mb-4">
           현재 조직별/직급별 인력 수준 대비 근무기록 기반 FTE
@@ -325,12 +327,19 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <th className="text-left py-3 px-3 font-medium">구분</th>
                 <th className="border-l-2 border-gray-300"></th>
                 {statistics.subOrgStats.map((org: any, idx: number) => (
-                  <th key={idx} className="text-center py-3 px-2 min-w-[140px] font-medium">
+                  <th
+                    key={idx}
+                    className={cn(
+                      "text-center py-3 px-2 min-w-[160px] text-base font-semibold",
+                      onDrillDown && "cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors"
+                    )}
+                    onClick={() => onDrillDown && onDrillDown(org.name)}
+                  >
                     {org.name}
                   </th>
                 ))}
                 <th className="border-l-2 border-gray-300"></th>
-                <th className="text-center py-3 px-2 min-w-[140px] font-medium bg-gray-100">전체 평균</th>
+                <th className="text-center py-3 px-2 min-w-[160px] text-base font-semibold bg-gray-100">전체 평균</th>
               </tr>
             </thead>
             <tbody>
@@ -344,7 +353,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   const avgRatio = totalPeople > 0 ? totalFTE / totalPeople : 0;
 
                   return (
-                    <td key={idx} className="text-center p-2">
+                    <td key={idx} className="text-center p-3">
                       <MetricCard
                         title="평균"
                         value={avgRatio}
@@ -357,7 +366,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   );
                 })}
                 <td className="border-l-2 border-gray-300"></td>
-                <td className="text-center p-2 bg-gray-50">
+                <td className="text-center p-3 bg-gray-50">
                   <div className="rounded-lg border-2 border-purple-400 bg-purple-50 p-3 min-w-[120px]">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1">
@@ -385,7 +394,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <td className="py-3 px-3 font-medium text-gray-700">책임</td>
                 <td className="border-l-2 border-gray-300"></td>
                 {statistics.subOrgStats.map((org: any, idx: number) => (
-                  <td key={idx} className="text-center p-2">
+                  <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="책임"
                       value={org.책임.ratio}
@@ -397,7 +406,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   </td>
                 ))}
                 <td className="border-l-2 border-gray-300"></td>
-                <td className="text-center p-2 bg-gray-50">
+                <td className="text-center p-3 bg-gray-50">
                   <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-3 min-w-[120px]">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1">
@@ -422,7 +431,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <td className="py-3 px-3 font-medium text-gray-700">선임</td>
                 <td className="border-l-2 border-gray-300"></td>
                 {statistics.subOrgStats.map((org: any, idx: number) => (
-                  <td key={idx} className="text-center p-2">
+                  <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="선임"
                       value={org.선임.ratio}
@@ -434,7 +443,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   </td>
                 ))}
                 <td className="border-l-2 border-gray-300"></td>
-                <td className="text-center p-2 bg-gray-50">
+                <td className="text-center p-3 bg-gray-50">
                   <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-3 min-w-[120px]">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1">
@@ -459,7 +468,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <td className="py-3 px-3 font-medium text-gray-700">사원</td>
                 <td className="border-l-2 border-gray-300"></td>
                 {statistics.subOrgStats.map((org: any, idx: number) => (
-                  <td key={idx} className="text-center p-2">
+                  <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="사원"
                       value={org.사원.ratio}
@@ -471,7 +480,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   </td>
                 ))}
                 <td className="border-l-2 border-gray-300"></td>
-                <td className="text-center p-2 bg-gray-50">
+                <td className="text-center p-3 bg-gray-50">
                   <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-3 min-w-[120px]">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1">

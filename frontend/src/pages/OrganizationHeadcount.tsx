@@ -52,7 +52,7 @@ const ColumnPane = ({
       className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
       style={{ width }}
     >
-      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+      <div className="bg-white px-4 py-2 border-b border-gray-200">
         <h3 className="text-sm font-medium text-gray-700">{title}</h3>
       </div>
       <div className="overflow-y-auto h-[300px]">
@@ -85,17 +85,31 @@ const ColumnPane = ({
 };
 
 // Breadcrumb 컴포넌트
-const Breadcrumb = ({ items }: { items: BreadcrumbItem[] }) => {
+const Breadcrumb = ({
+  items,
+  onNavigate
+}: {
+  items: BreadcrumbItem[];
+  onNavigate: (level: string) => void;
+}) => {
   return (
     <nav className="flex items-center space-x-1 text-sm mb-4">
-      <div className="flex items-center hover:text-blue-600 transition-colors cursor-pointer">
+      <div
+        className="flex items-center hover:text-blue-600 transition-colors cursor-pointer"
+        onClick={() => onNavigate('home')}
+      >
         <Home className="w-4 h-4" />
       </div>
 
       {items.map((item, index) => (
         <div key={index} className="flex items-center">
           <ChevronRight className="w-4 h-4 mx-1 text-gray-400" />
-          <span className="text-gray-900 font-medium">{item.label}</span>
+          <span
+            className="text-gray-900 font-medium hover:text-blue-600 transition-colors cursor-pointer"
+            onClick={() => onNavigate(item.value)}
+          >
+            {item.label}
+          </span>
         </div>
       ))}
     </nav>
@@ -294,6 +308,71 @@ const OrganizationHeadcount: React.FC = () => {
     setSelectedTeam(null);
   }, [selectedSection, selectedDivision, selectedDepartment, selectedCompany, organizationData]);
 
+  // Breadcrumb 네비게이션 핸들러
+  const handleBreadcrumbNavigation = (level: string) => {
+    switch (level) {
+      case 'home':
+        setSelectedCompany('화승R&A');
+        setSelectedDepartment(null);
+        setSelectedDivision(null);
+        setSelectedSection(null);
+        setSelectedTeam(null);
+        break;
+      case 'company':
+        setSelectedDepartment(null);
+        setSelectedDivision(null);
+        setSelectedSection(null);
+        setSelectedTeam(null);
+        break;
+      case 'department':
+        setSelectedDivision(null);
+        setSelectedSection(null);
+        setSelectedTeam(null);
+        break;
+      case 'division':
+        setSelectedSection(null);
+        setSelectedTeam(null);
+        break;
+      case 'section':
+        setSelectedTeam(null);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // 드릴다운 핸들러
+  const handleDrillDown = (orgName: string) => {
+    // 현재 선택 레벨에 따라 다음 레벨로 이동
+    if (!selectedCompany) {
+      // 회사 선택
+      setSelectedCompany(orgName);
+    } else if (!selectedDepartment) {
+      // 본부 선택
+      setSelectedDepartment(orgName);
+    } else if (!selectedDivision) {
+      // 담당/사업단/센터 선택
+      setSelectedDivision(orgName);
+    } else if (!selectedSection) {
+      // 실 선택 - 실이 없는 경우도 있으므로 확인 필요
+      const hasSections = organizationData.some(
+        org => org.회사 === selectedCompany &&
+               org.본부 === selectedDepartment &&
+               org.담당_사업단_센터 === selectedDivision &&
+               org.실 && org.실 !== ''
+      );
+      if (hasSections) {
+        setSelectedSection(orgName);
+      } else {
+        // 실이 없으면 바로 팀으로
+        setSelectedTeam(orgName);
+      }
+    } else if (!selectedTeam) {
+      // 팀 선택
+      setSelectedTeam(orgName);
+    }
+  };
+
   // Breadcrumb items 생성
   const breadcrumbItems: BreadcrumbItem[] = [];
   if (selectedCompany) breadcrumbItems.push({ label: selectedCompany, value: 'company' });
@@ -325,9 +404,9 @@ const OrganizationHeadcount: React.FC = () => {
       </div>
 
       {/* Miller Column */}
-      <Card className="mb-4 overflow-hidden">
+      <Card className="mb-4 overflow-hidden bg-white">
         <div
-          className="flex overflow-x-auto"
+          className="flex overflow-x-auto bg-white"
           style={{ minWidth: '1000px' }} // 최소 너비 설정으로 5개 컬럼 (200px * 5)
         >
           {/* 회사 Column */}
@@ -414,8 +493,8 @@ const OrganizationHeadcount: React.FC = () => {
 
       {/* Breadcrumb */}
       {breadcrumbItems.length > 0 && (
-        <Card className="p-4">
-          <Breadcrumb items={breadcrumbItems} />
+        <Card className="p-4 bg-white mb-6">
+          <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNavigation} />
         </Card>
       )}
 
@@ -430,6 +509,7 @@ const OrganizationHeadcount: React.FC = () => {
         }}
         organizationData={organizationData}
         fteData={fteData}
+        onDrillDown={handleDrillDown}
       />
     </div>
   );

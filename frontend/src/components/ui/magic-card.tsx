@@ -16,8 +16,7 @@ export function MagicCard({
   return (
     <div
       className={cn(
-        'relative rounded-xl border border-gray-200 bg-gradient-to-br shadow-sm transition-all hover:shadow-md',
-        gradientColor,
+        'relative rounded-lg border shadow-sm transition-all hover:shadow-md',
         className
       )}
       {...props}
