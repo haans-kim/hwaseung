@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/card';
 import { ChevronRight, Home } from 'lucide-react';
 import initSqlJs from 'sql.js';
+import { FTEStatistics } from '../components/FTEStatistics';
 
 interface OrganizationNode {
   회사: string;
@@ -9,6 +10,22 @@ interface OrganizationNode {
   담당_사업단_센터: string;
   실: string;
   팀: string;
+}
+
+interface FTEData {
+  팀명: string;
+  FTE_전체: number;
+  FTE_책임: number;
+  FTE_선임: number;
+  FTE_사원: number;
+  인원수_전체: number;
+  인원수_책임: number;
+  인원수_선임: number;
+  인원수_사원: number;
+  FTE_per_인원_전체: number;
+  FTE_per_인원_책임: number;
+  FTE_per_인원_선임: number;
+  FTE_per_인원_사원: number;
 }
 
 interface BreadcrumbItem {
@@ -87,6 +104,7 @@ const Breadcrumb = ({ items }: { items: BreadcrumbItem[] }) => {
 
 const OrganizationHeadcount: React.FC = () => {
   const [organizationData, setOrganizationData] = useState<OrganizationNode[]>([]);
+  const [fteData, setFTEData] = useState<FTEData[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
   const [divisions, setDivisions] = useState<string[]>([]);
@@ -94,7 +112,7 @@ const OrganizationHeadcount: React.FC = () => {
   const [teams, setTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<string | null>('화승R&A');
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
@@ -117,14 +135,14 @@ const OrganizationHeadcount: React.FC = () => {
         const db = new SQL.Database(new Uint8Array(buffer));
 
         // 조직 데이터 조회
-        const result = db.exec(`
+        const orgResult = db.exec(`
           SELECT 회사, 본부, 담당_사업단_센터, 실, 팀
           FROM organization
           WHERE 팀 IS NOT NULL AND 팀 != ''
         `);
 
-        if (result.length > 0) {
-          const values = result[0].values;
+        if (orgResult.length > 0) {
+          const values = orgResult[0].values;
 
           const orgData: OrganizationNode[] = values.map((row: any[]) => ({
             회사: row[0],
@@ -141,6 +159,38 @@ const OrganizationHeadcount: React.FC = () => {
             new Set(orgData.map(org => org.회사).filter(Boolean))
           ) as string[];
           setCompanies(uniqueCompanies);
+        }
+
+        // FTE 데이터 조회
+        const fteResult = db.exec(`
+          SELECT
+            팀명,
+            FTE_전체, FTE_책임, FTE_선임, FTE_사원,
+            인원수_전체, 인원수_책임, 인원수_선임, 인원수_사원,
+            FTE_per_인원_전체, FTE_per_인원_책임, FTE_per_인원_선임, FTE_per_인원_사원
+          FROM fte
+        `);
+
+        if (fteResult.length > 0) {
+          const fteValues = fteResult[0].values;
+
+          const fteDataArray: FTEData[] = fteValues.map((row: any[]) => ({
+            팀명: row[0],
+            FTE_전체: row[1] || 0,
+            FTE_책임: row[2] || 0,
+            FTE_선임: row[3] || 0,
+            FTE_사원: row[4] || 0,
+            인원수_전체: row[5] || 0,
+            인원수_책임: row[6] || 0,
+            인원수_선임: row[7] || 0,
+            인원수_사원: row[8] || 0,
+            FTE_per_인원_전체: row[9] || 0,
+            FTE_per_인원_책임: row[10] || 0,
+            FTE_per_인원_선임: row[11] || 0,
+            FTE_per_인원_사원: row[12] || 0
+          }));
+
+          setFTEData(fteDataArray);
         }
 
         // 데이터베이스 연결 종료
@@ -267,15 +317,15 @@ const OrganizationHeadcount: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-white p-2">
       {/* 헤더 */}
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-3xl font-bold text-foreground mb-2">조직별 적정인원</h1>
         <p className="text-muted-foreground">FTE 분석 기반 적정인원 산출</p>
       </div>
 
       {/* Miller Column */}
-      <Card className="mb-6 overflow-hidden">
+      <Card className="mb-4 overflow-hidden">
         <div
           className="flex overflow-x-auto"
           style={{ minWidth: '1000px' }} // 최소 너비 설정으로 5개 컬럼 (200px * 5)
@@ -368,6 +418,19 @@ const OrganizationHeadcount: React.FC = () => {
           <Breadcrumb items={breadcrumbItems} />
         </Card>
       )}
+
+      {/* FTE 통계 */}
+      <FTEStatistics
+        selectedLevel={{
+          company: selectedCompany || undefined,
+          department: selectedDepartment || undefined,
+          division: selectedDivision || undefined,
+          section: selectedSection || undefined,
+          team: selectedTeam || undefined
+        }}
+        organizationData={organizationData}
+        fteData={fteData}
+      />
     </div>
   );
 };
