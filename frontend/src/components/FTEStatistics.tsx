@@ -38,9 +38,10 @@ interface MetricCardProps {
   status?: 'high' | 'low' | 'normal';
   icon?: string;
   people?: number;
+  fteValue?: number;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, icon, people }) => {
+const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, icon, people, fteValue }) => {
   const getStatusColor = () => {
     switch (status) {
       case 'high': return 'border-red-400 bg-red-50';
@@ -76,11 +77,18 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, ico
           </div>
           <span className="text-sm text-gray-600">{unit}</span>
         </div>
-        {people !== undefined && people > 0 && (
-          <div className="text-base font-medium text-gray-700 px-1.5 py-0.5">
-            {people}명
-          </div>
-        )}
+        <div className="text-right">
+          {people !== undefined && people > 0 && (
+            <div className="text-base font-medium text-gray-700">
+              {people}명
+            </div>
+          )}
+          {fteValue !== undefined && (
+            <div className="text-xs text-gray-500">
+              ({fteValue.toFixed(1)} FTE)
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -263,19 +271,9 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
   };
 
   const getStatus = (value: number, position: string) => {
-    // 평균값에 대한 판정
-    if (position === '평균') {
-      if (value >= 1.4) return 'high';
-      if (value <= 0.9) return 'low';
-      return 'normal';
-    }
-
-    // 직급별 판정
-    if (!statistics || !statistics.thresholds[position]) return 'normal';
-
-    const threshold = statistics.thresholds[position];
-    if (value >= threshold.high) return 'high';
-    if (value <= threshold.low) return 'low';
+    // 모든 경우에 동일한 고정 기준 적용
+    if (value >= 1.4) return 'high';
+    if (value <= 0.9) return 'low';
     return 'normal';
   };
 
@@ -356,11 +354,12 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                     <td key={idx} className="text-center p-3">
                       <MetricCard
                         title="평균"
-                        value={totalFTE}
-                        unit="FTE"
+                        value={avgRatio}
+                        unit=""
                         status={getStatus(avgRatio, '평균')}
                         icon={getIcon(getStatus(avgRatio, '평균'))}
                         people={totalPeople}
+                        fteValue={totalFTE}
                       />
                     </td>
                   );
@@ -372,12 +371,17 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-purple-600">★</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {statistics.totalFTE.toFixed(1)}
+                          {statistics.avgFTEPerPerson.toFixed(1)}
                         </div>
-                        <span className="text-sm text-gray-600">FTE</span>
+                        <span className="text-sm text-gray-600"></span>
                       </div>
-                      <div className="text-base font-medium text-gray-700 px-1.5 py-0.5">
-                        {statistics.totalPeople}명
+                      <div className="text-right">
+                        <div className="text-base font-medium text-gray-700">
+                          {statistics.totalPeople}명
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ({statistics.totalFTE.toFixed(1)} FTE)
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -397,11 +401,12 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="책임"
-                      value={org.책임.fte}
-                      unit="FTE"
+                      value={org.책임.ratio}
+                      unit=""
                       status={getStatus(org.책임.ratio, '책임')}
                       icon={getIcon(getStatus(org.책임.ratio, '책임'))}
                       people={org.책임.people}
+                      fteValue={org.책임.fte}
                     />
                   </td>
                 ))}
@@ -412,12 +417,19 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-blue-600">●</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {statistics.byPosition.책임.fte.toFixed(1)}
+                          {(statistics.byPosition.책임.people > 0
+                            ? statistics.byPosition.책임.fte / statistics.byPosition.책임.people
+                            : 0).toFixed(1)}
                         </div>
-                        <span className="text-sm text-gray-600">FTE</span>
+                        <span className="text-sm text-gray-600"></span>
                       </div>
-                      <div className="text-base font-medium text-gray-700 px-1.5 py-0.5">
-                        {statistics.byPosition.책임.people}명
+                      <div className="text-right">
+                        <div className="text-base font-medium text-gray-700">
+                          {statistics.byPosition.책임.people}명
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ({statistics.byPosition.책임.fte.toFixed(1)} FTE)
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -432,11 +444,12 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="선임"
-                      value={org.선임.fte}
-                      unit="FTE"
+                      value={org.선임.ratio}
+                      unit=""
                       status={getStatus(org.선임.ratio, '선임')}
                       icon={getIcon(getStatus(org.선임.ratio, '선임'))}
                       people={org.선임.people}
+                      fteValue={org.선임.fte}
                     />
                   </td>
                 ))}
@@ -447,12 +460,19 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-blue-600">●</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {statistics.byPosition.선임.fte.toFixed(1)}
+                          {(statistics.byPosition.선임.people > 0
+                            ? statistics.byPosition.선임.fte / statistics.byPosition.선임.people
+                            : 0).toFixed(1)}
                         </div>
-                        <span className="text-sm text-gray-600">FTE</span>
+                        <span className="text-sm text-gray-600"></span>
                       </div>
-                      <div className="text-base font-medium text-gray-700 px-1.5 py-0.5">
-                        {statistics.byPosition.선임.people}명
+                      <div className="text-right">
+                        <div className="text-base font-medium text-gray-700">
+                          {statistics.byPosition.선임.people}명
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ({statistics.byPosition.선임.fte.toFixed(1)} FTE)
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -467,11 +487,12 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   <td key={idx} className="text-center p-3">
                     <MetricCard
                       title="사원"
-                      value={org.사원.fte}
-                      unit="FTE"
+                      value={org.사원.ratio}
+                      unit=""
                       status={getStatus(org.사원.ratio, '사원')}
                       icon={getIcon(getStatus(org.사원.ratio, '사원'))}
                       people={org.사원.people}
+                      fteValue={org.사원.fte}
                     />
                   </td>
                 ))}
@@ -482,12 +503,19 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-blue-600">●</span>
                         <div className="text-xl font-bold text-gray-900">
-                          {statistics.byPosition.사원.fte.toFixed(1)}
+                          {(statistics.byPosition.사원.people > 0
+                            ? statistics.byPosition.사원.fte / statistics.byPosition.사원.people
+                            : 0).toFixed(1)}
                         </div>
-                        <span className="text-sm text-gray-600">FTE</span>
+                        <span className="text-sm text-gray-600"></span>
                       </div>
-                      <div className="text-base font-medium text-gray-700 px-1.5 py-0.5">
-                        {statistics.byPosition.사원.people}명
+                      <div className="text-right">
+                        <div className="text-base font-medium text-gray-700">
+                          {statistics.byPosition.사원.people}명
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ({statistics.byPosition.사원.fte.toFixed(1)} FTE)
+                        </div>
                       </div>
                     </div>
                   </div>
