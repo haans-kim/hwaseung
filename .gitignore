@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# lib/  # frontend/src/lib 폴더를 위해 주석 처리
+# lib64/  # frontend에 영향을 주지 않도록 주석 처리
 parts/
 sdist/
 var/
