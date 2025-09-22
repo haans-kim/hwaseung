@@ -689,6 +689,97 @@ const OrganizationSimulation: React.FC = () => {
                 </table>
               </div>
             </Card>
+
+            {/* 디버깅 정보 패널 */}
+            <Card className="p-6 bg-gray-50 border-2 border-gray-300 shadow-lg">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                🔍 회귀 분석 디버깅 정보
+              </h3>
+
+              {['총', '책임', '선임', '사원'].map((position) => {
+                const paramsArray = regressionParameters[position];
+                if (!paramsArray || paramsArray.length === 0) return null;
+
+                // intercept 찾기
+                const interceptParam = paramsArray.find(p => p.parameter_name === 'intercept');
+                const intercept = interceptParam?.coefficient || 0;
+
+                // intercept를 제외한 다른 파라미터들
+                const otherParams = paramsArray.filter(p => p.parameter_name !== 'intercept');
+
+                // 계산 과정
+                let calculation = intercept;
+                const terms: string[] = [];
+
+                return (
+                  <div key={position} className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                    <h4 className={`font-semibold mb-3 ${
+                      position === '총' ? 'text-blue-700' :
+                      position === '책임' ? 'text-green-700' :
+                      position === '선임' ? 'text-orange-700' :
+                      'text-purple-700'
+                    }`}>
+                      {position} 모델
+                    </h4>
+
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <span className="font-medium">Y절편 (Intercept):</span>
+                        <span className="ml-2 font-mono">{intercept.toFixed(4)}</span>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <span className="font-medium">회귀 계수:</span>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                        {otherParams.map((param) => {
+                          const coef = param.coefficient;
+                          const value = adjustedMetrics[param.parameter_name] || 0;
+                          const contribution = coef * value;
+
+                          if (coef !== 0) {
+                            terms.push(`${coef.toFixed(5)} × ${value.toFixed(2)}`);
+                            calculation += contribution;
+                          }
+
+                          return (
+                            <div key={param.parameter_name} className="font-mono p-2 bg-gray-50 rounded">
+                              <div className="text-xs text-gray-600">{param.parameter_name}:</div>
+                              <div className={coef !== 0 ? 'text-blue-600' : 'text-gray-400'}>
+                                계수: {coef.toFixed(5)}
+                              </div>
+                              <div className="text-xs">
+                                현재값: {value.toFixed(2)}
+                              </div>
+                              {coef !== 0 && (
+                                <div className="text-xs text-green-600">
+                                  기여도: {contribution.toFixed(4)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <div className="font-medium mb-2">계산식:</div>
+                      <div className="font-mono text-sm break-all">
+                        Y = {intercept.toFixed(4)}
+                        {terms.length > 0 && ' + '}
+                        {terms.join(' + ')}
+                      </div>
+                      <div className="mt-2 font-semibold text-blue-700">
+                        = {calculation.toFixed(4)} → 반올림: {Math.round(calculation)}명
+                      </div>
+                      <div className="mt-1 text-sm text-gray-600">
+                        실제 예측값: {predictedHeadcount[position] || 0}명
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </Card>
           </div>
         </div>
       )}
