@@ -14,7 +14,7 @@ router = APIRouter(
 
 def get_db_connection():
     """데이터베이스 연결"""
-    # /Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db
+    # 프로젝트 루트 폴더의 DB 파일 사용
     db_path = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
 
     if not os.path.exists(db_path):
