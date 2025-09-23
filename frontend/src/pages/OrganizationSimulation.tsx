@@ -31,7 +31,7 @@ interface TeamMetric {
 
 const OrganizationSimulation: React.FC = () => {
   const [organizationData, setOrganizationData] = useState<OrganizationData[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<string | null>('화승R&A');
+  const [selectedCompany, setSelectedCompany] = useState<string | null>('화승 R&A');
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
@@ -79,11 +79,11 @@ const OrganizationSimulation: React.FC = () => {
           }));
           setOrganizationData(orgData);
 
-          // 초기 본부 설정
+          // 초기 본부 설정 (선택된 회사에 맞춰서)
           if (orgData.length > 0) {
             const uniqueDepartments = Array.from(new Set(
               orgData
-                .filter(org => org.회사 === '화승R&A')
+                .filter(org => org.회사 === '화승 R&A')  // 공백 추가
                 .map(org => org.본부)
             ));
             setDepartments(uniqueDepartments);
@@ -111,6 +111,19 @@ const OrganizationSimulation: React.FC = () => {
 
     loadData();
   }, []);
+
+  // 회사 선택 시 본부 목록 업데이트
+  useEffect(() => {
+    if (selectedCompany && organizationData.length > 0) {
+      const uniqueDepartments = Array.from(new Set(
+        organizationData
+          .filter(org => org.회사 === selectedCompany)
+          .map(org => org.본부)
+      ));
+      setDepartments(uniqueDepartments);
+      setSelectedDepartment(null);  // 회사 변경시 본부 선택 초기화
+    }
+  }, [selectedCompany, organizationData]);
 
   // 부서별 조직 구조 업데이트
   useEffect(() => {
@@ -410,14 +423,24 @@ const OrganizationSimulation: React.FC = () => {
           <h3 className="font-medium text-gray-700 mb-3 text-center">회사</h3>
           <div className="space-y-2">
             <button
-              onClick={() => setSelectedCompany('화승R&A')}
+              onClick={() => setSelectedCompany('화승 R&A')}
               className={`w-full px-3 py-2 text-left rounded text-sm ${
-                selectedCompany === '화승R&A'
+                selectedCompany === '화승 R&A'
                   ? 'bg-blue-100 text-blue-800 border border-blue-300'
                   : 'hover:bg-gray-50 border border-gray-200'
               }`}
             >
-              화승R&A
+              화승 R&A
+            </button>
+            <button
+              onClick={() => setSelectedCompany('화승 Corp.')}
+              className={`w-full px-3 py-2 text-left rounded text-sm ${
+                selectedCompany === '화승 Corp.'
+                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                  : 'hover:bg-gray-50 border border-gray-200'
+              }`}
+            >
+              화승 Corp.
             </button>
           </div>
         </Card>

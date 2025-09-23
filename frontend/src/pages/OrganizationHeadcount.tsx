@@ -126,7 +126,7 @@ const OrganizationHeadcount: React.FC = () => {
   const [teams, setTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedCompany, setSelectedCompany] = useState<string | null>('화승R&A');
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);  // 초기 선택 없음
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
@@ -312,7 +312,7 @@ const OrganizationHeadcount: React.FC = () => {
   const handleBreadcrumbNavigation = (level: string) => {
     switch (level) {
       case 'home':
-        setSelectedCompany('화승R&A');
+        setSelectedCompany(null);
         setSelectedDepartment(null);
         setSelectedDivision(null);
         setSelectedSection(null);
@@ -400,7 +400,9 @@ const OrganizationHeadcount: React.FC = () => {
       {/* 헤더 */}
       <div className="mb-4">
         <h1 className="text-3xl font-bold text-foreground mb-2">조직별 적정인원</h1>
-        <p className="text-muted-foreground">FTE 분석 기반 적정인원 산출</p>
+        <p className="text-muted-foreground">
+          FTE 분석 기반 적정인원 산출 {!selectedCompany && '- 전체 회사'}
+        </p>
       </div>
 
       {/* Miller Column */}

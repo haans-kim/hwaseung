@@ -109,10 +109,12 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
   const calculateStatistics = () => {
     // 현재 선택된 레벨의 하위 조직들 찾기
     let filteredTeams: string[] = [];
+    let isCompanyGrouped = false;
 
     if (!selectedLevel.company) {
-      // 아무것도 선택하지 않았을 때는 전체 데이터
+      // 아무것도 선택하지 않았을 때는 전체 데이터를 회사별로 표시
       filteredTeams = fteData.map(f => f.팀명);
+      isCompanyGrouped = true;
     } else {
       // 선택된 레벨에 따라 필터링
       const filtered = organizationData.filter(org => {
@@ -183,27 +185,59 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
     // 하위 조직별 통계 - 중복 제거하고 그룹핑
     const groupedStats: { [key: string]: any } = {};
 
-    filteredFTEData.forEach(team => {
-      const orgInfo = organizationData.find(org => org.팀 === team.팀명);
-      const displayName = getSubOrgName(orgInfo) || team.팀명;
+    if (isCompanyGrouped) {
+      // 회사별로 그룹핑 - organization 테이블에 있는 팀만 처리
+      filteredFTEData.forEach(team => {
+        const orgInfo = organizationData.find(org => org.팀 === team.팀명);
 
-      if (!groupedStats[displayName]) {
-        groupedStats[displayName] = {
-          name: displayName,
-          책임: { fte: 0, people: 0, ratio: 0 },
-          선임: { fte: 0, people: 0, ratio: 0 },
-          사원: { fte: 0, people: 0, ratio: 0 }
-        };
-      }
+        // organization 테이블에 없는 팀은 제외
+        if (!orgInfo) {
+          return;
+        }
 
-      // FTE와 인원수 누적
-      groupedStats[displayName].책임.fte += team.FTE_책임;
-      groupedStats[displayName].책임.people += team.인원수_책임;
-      groupedStats[displayName].선임.fte += team.FTE_선임;
-      groupedStats[displayName].선임.people += team.인원수_선임;
-      groupedStats[displayName].사원.fte += team.FTE_사원;
-      groupedStats[displayName].사원.people += team.인원수_사원;
-    });
+        const companyName = orgInfo.회사;
+
+        if (!groupedStats[companyName]) {
+          groupedStats[companyName] = {
+            name: companyName,
+            책임: { fte: 0, people: 0, ratio: 0 },
+            선임: { fte: 0, people: 0, ratio: 0 },
+            사원: { fte: 0, people: 0, ratio: 0 }
+          };
+        }
+
+        // FTE와 인원수 누적
+        groupedStats[companyName].책임.fte += team.FTE_책임;
+        groupedStats[companyName].책임.people += team.인원수_책임;
+        groupedStats[companyName].선임.fte += team.FTE_선임;
+        groupedStats[companyName].선임.people += team.인원수_선임;
+        groupedStats[companyName].사원.fte += team.FTE_사원;
+        groupedStats[companyName].사원.people += team.인원수_사원;
+      });
+    } else {
+      // 기존 로직: 선택된 레벨에 따라 그룹핑
+      filteredFTEData.forEach(team => {
+        const orgInfo = organizationData.find(org => org.팀 === team.팀명);
+        const displayName = getSubOrgName(orgInfo) || team.팀명;
+
+        if (!groupedStats[displayName]) {
+          groupedStats[displayName] = {
+            name: displayName,
+            책임: { fte: 0, people: 0, ratio: 0 },
+            선임: { fte: 0, people: 0, ratio: 0 },
+            사원: { fte: 0, people: 0, ratio: 0 }
+          };
+        }
+
+        // FTE와 인원수 누적
+        groupedStats[displayName].책임.fte += team.FTE_책임;
+        groupedStats[displayName].책임.people += team.인원수_책임;
+        groupedStats[displayName].선임.fte += team.FTE_선임;
+        groupedStats[displayName].선임.people += team.인원수_선임;
+        groupedStats[displayName].사원.fte += team.FTE_사원;
+        groupedStats[displayName].사원.people += team.인원수_사원;
+      });
+    }
 
     // 비율 계산
     Object.values(groupedStats).forEach((stat: any) => {
