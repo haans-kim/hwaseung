@@ -9,7 +9,7 @@ start:
 start-fixed:
 	@echo "🚀 고정 포트로 서비스 시작..."
 	@cd backend && source venv/bin/activate && python run.py &
-	@cd frontend && npm start
+	@bash -c "source ~/.nvm/nvm.sh && nvm use 22.15.0 && cd frontend && npm start"
 
 # 강제 시작 (기존 프로세스 종료 후)
 start-force:
@@ -52,7 +52,7 @@ stop:
 install:
 	@echo "📦 의존성 설치 중..."
 	@cd backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
-	@cd frontend && npm install
+	@bash -c "source ~/.nvm/nvm.sh && nvm use 22.15.0 && cd frontend && npm install"
 	@echo "✅ 설치 완료"
 
 # 로그 확인
