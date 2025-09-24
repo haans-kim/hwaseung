@@ -62,7 +62,8 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, ico
 
   return (
     <div className={cn(
-      "rounded-lg border-2 p-3 transition-all hover:shadow-md w-full",
+      "rounded-lg border-2 p-3 transition-all hover:shadow-md",
+      "min-w-[140px] w-full", // 최소 너비 설정
       getStatusColor()
     )}>
       <div className="flex items-center justify-between gap-2">
@@ -77,14 +78,14 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, ico
           </div>
           <span className="text-sm text-gray-600">{unit}</span>
         </div>
-        <div className="text-right">
+        <div className="text-right min-w-[60px]"> {/* 오른쪽 영역 최소 너비 */}
           {people !== undefined && people > 0 && (
             <div className="text-base font-medium text-gray-700">
               {people}명
             </div>
           )}
           {fteValue !== undefined && (
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 whitespace-nowrap">
               ({fteValue.toFixed(1)} FTE)
             </div>
           )}
@@ -251,6 +252,25 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
     // 상위 20%, 하위 20% 계산 - subOrgStats 기준으로
     const thresholds = calculateThresholds(subOrgStats);
 
+    // 디버깅용 로그
+    console.log('=== Unified Threshold Calculation ===');
+    console.log('Single threshold for all values:', thresholds);
+    console.log('SubOrgStats values:', subOrgStats.map(org => ({
+      name: org.name,
+      avgRatio: ((org.책임.fte + org.선임.fte + org.사원.fte) / (org.책임.people + org.선임.people + org.사원.people)).toFixed(2),
+      책임: org.책임.ratio.toFixed(2),
+      선임: org.선임.ratio.toFixed(2),
+      사원: org.사원.ratio.toFixed(2)
+    })));
+
+    // 각 값에 대한 판정 결과 확인 - 이제 모든 position에서 동일해야 함
+    const testValues = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5];
+    console.log('Test status for common values (should be same across all positions):');
+    testValues.forEach(val => {
+      const status = getStatus(val, 'any'); // position 파라미터는 더 이상 사용되지 않음
+      console.log(`Value ${val}: ${status}`);
+    });
+
     setStatistics({
       totalPeople,
       totalFTE,
@@ -281,59 +301,68 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
   };
 
   const calculateThresholds = (subOrgStats: any[]) => {
-    const positions = ['책임', '선임', '사원', '전체'];
-    const thresholds: any = {};
+    // 화면에 보이는 모든 카드의 값을 수집 (조직별 평균 + 모든 직급별 값)
+    let allValues: number[] = [];
 
-    positions.forEach(position => {
-      let values: number[] = [];
-
-      if (position === '전체') {
-        // 전체 평균 계산
-        values = subOrgStats.map(org => {
-          const totalPeople = org.책임.people + org.선임.people + org.사원.people;
-          const totalFTE = org.책임.fte + org.선임.fte + org.사원.fte;
-          return totalPeople > 0 ? totalFTE / totalPeople : 0;
-        }).filter(v => v > 0);
-      } else {
-        // 각 직급별 계산
-        values = subOrgStats
-          .map(org => org[position].ratio)
-          .filter(v => v > 0);
+    subOrgStats.forEach(org => {
+      // 조직별 평균 추가
+      const totalPeople = org.책임.people + org.선임.people + org.사원.people;
+      const totalFTE = org.책임.fte + org.선임.fte + org.사원.fte;
+      if (totalPeople > 0) {
+        const avgRatio = totalFTE / totalPeople;
+        allValues.push(avgRatio);
       }
 
-      values.sort((a, b) => a - b);
-
-      if (values.length > 0) {
-        const lowIndex = Math.floor(values.length * 0.2) - 1;
-        const highIndex = Math.ceil(values.length * 0.8) - 1;
-
-        thresholds[position] = {
-          low: values[Math.max(0, lowIndex)] || values[0],
-          high: values[Math.min(values.length - 1, highIndex)] || values[values.length - 1]
-        };
-      } else {
-        // 기본값 설정
-        thresholds[position] = {
-          low: 0.9,
-          high: 1.4
-        };
+      // 각 직급별 값 추가
+      if (org.책임.people > 0) {
+        allValues.push(org.책임.ratio);
+      }
+      if (org.선임.people > 0) {
+        allValues.push(org.선임.ratio);
+      }
+      if (org.사원.people > 0) {
+        allValues.push(org.사원.ratio);
       }
     });
 
-    return thresholds;
+    // 값이 있는 것들만 필터링하고 정렬
+    allValues = allValues.filter(v => v > 0);
+    allValues.sort((a, b) => a - b);
+
+    if (allValues.length > 0) {
+      // 정확한 20%, 80% 퍼센타일 계산
+      const lowIndex = Math.floor(allValues.length * 0.2);
+      const highIndex = Math.floor(allValues.length * 0.8);
+
+      // 하위 20% = 20 퍼센타일 이하
+      // 상위 20% = 80 퍼센타일 이상
+      return {
+        low: allValues[Math.min(lowIndex, allValues.length - 1)],
+        high: allValues[Math.min(highIndex, allValues.length - 1)]
+      };
+    } else {
+      // 기본값 설정
+      return {
+        low: 0.9,
+        high: 1.3
+      };
+    }
   };
 
   const getStatus = (value: number, position: string) => {
-    if (!statistics || !statistics.thresholds || !statistics.thresholds[position]) {
+    // 모든 값에 대해 통합된 임계값 사용
+    if (!statistics || !statistics.thresholds) {
       // 기본값 사용
-      if (value >= 1.4) return 'high';
-      if (value <= 0.9) return 'low';
+      if (value >= 1.3) return 'high';
+      if (value <= 1.0) return 'low';
       return 'normal';
     }
 
-    const threshold = statistics.thresholds[position];
-    if (value > threshold.high) return 'high';
-    if (value < threshold.low) return 'low';
+    // 상위 20% 이상
+    if (value >= statistics.thresholds.high) return 'high';
+    // 하위 20% 이하
+    if (value <= statistics.thresholds.low) return 'low';
+    // 중간 60%
     return 'normal';
   };
 
@@ -379,7 +408,16 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
 
         {/* 전체 현황 테이블 - 조직이 가로, 직급이 세로 */}
         <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col className="w-24" />
+              <col className="w-2" />
+              {statistics.subOrgStats.map((_: any, idx: number) => (
+                <col key={idx} className="w-44" />
+              ))}
+              <col className="w-2" />
+              <col className="w-44" />
+            </colgroup>
             <thead>
               <tr className="text-sm text-gray-600 border-b-2 border-gray-300">
                 <th className="text-left py-3 px-3 font-medium">구분</th>
@@ -388,7 +426,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   <th
                     key={idx}
                     className={cn(
-                      "text-center py-3 px-2 min-w-[160px] text-base font-semibold",
+                      "text-center py-3 px-2 text-base font-semibold",
                       onDrillDown && "cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors"
                     )}
                     onClick={() => onDrillDown && onDrillDown(org.name)}
@@ -416,8 +454,8 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                         title="평균"
                         value={avgRatio}
                         unit=""
-                        status={getStatus(avgRatio, '전체')}
-                        icon={getIcon(getStatus(avgRatio, '전체'))}
+                        status={getStatus(avgRatio, '평균')}
+                        icon={getIcon(getStatus(avgRatio, '평균'))}
                         people={totalPeople}
                         fteValue={totalFTE}
                       />
@@ -426,25 +464,15 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 })}
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
-                  <div className="rounded-lg border-2 border-purple-400 bg-purple-50 p-3 min-w-[120px]">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg text-purple-600">★</span>
-                        <div className="text-xl font-bold text-gray-900">
-                          {statistics.avgFTEPerPerson.toFixed(1)}
-                        </div>
-                        <span className="text-sm text-gray-600"></span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-medium text-gray-700">
-                          {statistics.totalPeople}명
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ({statistics.totalFTE.toFixed(1)} FTE)
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <MetricCard
+                    title="전체평균"
+                    value={statistics.avgFTEPerPerson}
+                    unit=""
+                    status={getStatus(statistics.avgFTEPerPerson, '평균')}
+                    icon={getIcon(getStatus(statistics.avgFTEPerPerson, '평균'))}
+                    people={statistics.totalPeople}
+                    fteValue={statistics.totalFTE}
+                  />
                 </td>
               </tr>
 
@@ -472,27 +500,25 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 ))}
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
-                  <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-3 min-w-[120px]">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg text-blue-600">●</span>
-                        <div className="text-xl font-bold text-gray-900">
-                          {(statistics.byPosition.책임.people > 0
-                            ? statistics.byPosition.책임.fte / statistics.byPosition.책임.people
-                            : 0).toFixed(1)}
-                        </div>
-                        <span className="text-sm text-gray-600"></span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-medium text-gray-700">
-                          {statistics.byPosition.책임.people}명
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ({statistics.byPosition.책임.fte.toFixed(1)} FTE)
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <MetricCard
+                    title="책임평균"
+                    value={statistics.byPosition.책임.people > 0
+                      ? statistics.byPosition.책임.fte / statistics.byPosition.책임.people
+                      : 0}
+                    unit=""
+                    status={getStatus(
+                      statistics.byPosition.책임.people > 0
+                        ? statistics.byPosition.책임.fte / statistics.byPosition.책임.people
+                        : 0, '책임'
+                    )}
+                    icon={getIcon(getStatus(
+                      statistics.byPosition.책임.people > 0
+                        ? statistics.byPosition.책임.fte / statistics.byPosition.책임.people
+                        : 0, '책임'
+                    ))}
+                    people={statistics.byPosition.책임.people}
+                    fteValue={statistics.byPosition.책임.fte}
+                  />
                 </td>
               </tr>
 
@@ -515,27 +541,25 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 ))}
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
-                  <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-3 min-w-[120px]">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg text-blue-600">●</span>
-                        <div className="text-xl font-bold text-gray-900">
-                          {(statistics.byPosition.선임.people > 0
-                            ? statistics.byPosition.선임.fte / statistics.byPosition.선임.people
-                            : 0).toFixed(1)}
-                        </div>
-                        <span className="text-sm text-gray-600"></span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-medium text-gray-700">
-                          {statistics.byPosition.선임.people}명
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ({statistics.byPosition.선임.fte.toFixed(1)} FTE)
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <MetricCard
+                    title="선임평균"
+                    value={statistics.byPosition.선임.people > 0
+                      ? statistics.byPosition.선임.fte / statistics.byPosition.선임.people
+                      : 0}
+                    unit=""
+                    status={getStatus(
+                      statistics.byPosition.선임.people > 0
+                        ? statistics.byPosition.선임.fte / statistics.byPosition.선임.people
+                        : 0, '선임'
+                    )}
+                    icon={getIcon(getStatus(
+                      statistics.byPosition.선임.people > 0
+                        ? statistics.byPosition.선임.fte / statistics.byPosition.선임.people
+                        : 0, '선임'
+                    ))}
+                    people={statistics.byPosition.선임.people}
+                    fteValue={statistics.byPosition.선임.fte}
+                  />
                 </td>
               </tr>
 
@@ -558,27 +582,25 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 ))}
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
-                  <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-3 min-w-[120px]">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg text-blue-600">●</span>
-                        <div className="text-xl font-bold text-gray-900">
-                          {(statistics.byPosition.사원.people > 0
-                            ? statistics.byPosition.사원.fte / statistics.byPosition.사원.people
-                            : 0).toFixed(1)}
-                        </div>
-                        <span className="text-sm text-gray-600"></span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-medium text-gray-700">
-                          {statistics.byPosition.사원.people}명
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ({statistics.byPosition.사원.fte.toFixed(1)} FTE)
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <MetricCard
+                    title="사원평균"
+                    value={statistics.byPosition.사원.people > 0
+                      ? statistics.byPosition.사원.fte / statistics.byPosition.사원.people
+                      : 0}
+                    unit=""
+                    status={getStatus(
+                      statistics.byPosition.사원.people > 0
+                        ? statistics.byPosition.사원.fte / statistics.byPosition.사원.people
+                        : 0, '사원'
+                    )}
+                    icon={getIcon(getStatus(
+                      statistics.byPosition.사원.people > 0
+                        ? statistics.byPosition.사원.fte / statistics.byPosition.사원.people
+                        : 0, '사원'
+                    ))}
+                    people={statistics.byPosition.사원.people}
+                    fteValue={statistics.byPosition.사원.fte}
+                  />
                 </td>
               </tr>
             </tbody>
@@ -603,7 +625,9 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
               <span className="text-red-600 text-3xl">▲</span>
               <div className="flex-1">
                 <div className="font-semibold text-lg text-gray-900">과부하 가능성 존재</div>
-                <div className="text-sm text-gray-600">상위 20% ({statistics.thresholds?.전체?.high ? `≥${statistics.thresholds.전체.high.toFixed(1)}` : '≥1.4'})</div>
+                <div className="text-sm text-gray-600">
+                  상위 20% (현재 화면 기준 {statistics.thresholds?.high ? `≥${statistics.thresholds.high.toFixed(2)}` : '≥1.3'})
+                </div>
               </div>
             </div>
           </div>
@@ -613,7 +637,10 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
               <span className="text-green-600 text-3xl">●</span>
               <div className="flex-1">
                 <div className="font-semibold text-lg text-gray-900">적정 인력 수준</div>
-                <div className="text-sm text-gray-600">중간 60% ({statistics.thresholds?.전체 ? `${statistics.thresholds.전체.low.toFixed(1)}~${statistics.thresholds.전체.high.toFixed(1)}` : '0.9~1.3'})</div>
+                <div className="text-sm text-gray-600">
+                  중간 60% (현재 화면 기준 {statistics.thresholds ?
+                    `${(statistics.thresholds.low + 0.01).toFixed(2)}~${(statistics.thresholds.high - 0.01).toFixed(2)}` : '1.01~1.29'})
+                </div>
               </div>
             </div>
           </div>
@@ -623,7 +650,9 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
               <span className="text-blue-600 text-3xl">▼</span>
               <div className="flex-1">
                 <div className="font-semibold text-lg text-gray-900">인력 과다 가능성 존재</div>
-                <div className="text-sm text-gray-600">하위 20% ({statistics.thresholds?.전체?.low ? `≤${statistics.thresholds.전체.low.toFixed(1)}` : '≤0.9'})</div>
+                <div className="text-sm text-gray-600">
+                  하위 20% (현재 화면 기준 {statistics.thresholds?.low ? `≤${statistics.thresholds.low.toFixed(2)}` : '≤1.0'})
+                </div>
               </div>
             </div>
           </div>
