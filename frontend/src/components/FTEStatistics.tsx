@@ -248,8 +248,8 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
 
     const subOrgStats = Object.values(groupedStats).slice(0, 10);
 
-    // 상위 20%, 하위 20% 계산
-    const thresholds = calculateThresholds(teamMetrics);
+    // 상위 20%, 하위 20% 계산 - subOrgStats 기준으로
+    const thresholds = calculateThresholds(subOrgStats);
 
     setStatistics({
       totalPeople,
@@ -280,23 +280,42 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
     return orgInfo.팀;
   };
 
-  const calculateThresholds = (teamMetrics: any[]) => {
-    const positions = ['책임', '선임', '사원'];
+  const calculateThresholds = (subOrgStats: any[]) => {
+    const positions = ['책임', '선임', '사원', '전체'];
     const thresholds: any = {};
 
     positions.forEach(position => {
-      const values = teamMetrics
-        .map(t => t[position])
-        .filter(v => v > 0)
-        .sort((a, b) => a - b);
+      let values: number[] = [];
+
+      if (position === '전체') {
+        // 전체 평균 계산
+        values = subOrgStats.map(org => {
+          const totalPeople = org.책임.people + org.선임.people + org.사원.people;
+          const totalFTE = org.책임.fte + org.선임.fte + org.사원.fte;
+          return totalPeople > 0 ? totalFTE / totalPeople : 0;
+        }).filter(v => v > 0);
+      } else {
+        // 각 직급별 계산
+        values = subOrgStats
+          .map(org => org[position].ratio)
+          .filter(v => v > 0);
+      }
+
+      values.sort((a, b) => a - b);
 
       if (values.length > 0) {
-        const lowIndex = Math.floor(values.length * 0.2);
-        const highIndex = Math.floor(values.length * 0.8);
+        const lowIndex = Math.floor(values.length * 0.2) - 1;
+        const highIndex = Math.ceil(values.length * 0.8) - 1;
 
         thresholds[position] = {
-          low: values[lowIndex] || values[0],
-          high: values[highIndex] || values[values.length - 1]
+          low: values[Math.max(0, lowIndex)] || values[0],
+          high: values[Math.min(values.length - 1, highIndex)] || values[values.length - 1]
+        };
+      } else {
+        // 기본값 설정
+        thresholds[position] = {
+          low: 0.9,
+          high: 1.4
         };
       }
     });
@@ -305,9 +324,16 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
   };
 
   const getStatus = (value: number, position: string) => {
-    // 모든 경우에 동일한 고정 기준 적용
-    if (value >= 1.4) return 'high';
-    if (value <= 0.9) return 'low';
+    if (!statistics || !statistics.thresholds || !statistics.thresholds[position]) {
+      // 기본값 사용
+      if (value >= 1.4) return 'high';
+      if (value <= 0.9) return 'low';
+      return 'normal';
+    }
+
+    const threshold = statistics.thresholds[position];
+    if (value > threshold.high) return 'high';
+    if (value < threshold.low) return 'low';
     return 'normal';
   };
 
@@ -390,8 +416,8 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                         title="평균"
                         value={avgRatio}
                         unit=""
-                        status={getStatus(avgRatio, '평균')}
-                        icon={getIcon(getStatus(avgRatio, '평균'))}
+                        status={getStatus(avgRatio, '전체')}
+                        icon={getIcon(getStatus(avgRatio, '전체'))}
                         people={totalPeople}
                         fteValue={totalFTE}
                       />
@@ -577,7 +603,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
               <span className="text-red-600 text-3xl">▲</span>
               <div className="flex-1">
                 <div className="font-semibold text-lg text-gray-900">과부하 가능성 존재</div>
-                <div className="text-sm text-gray-600">상위 20% (≥1.4)</div>
+                <div className="text-sm text-gray-600">상위 20% ({statistics.thresholds?.전체?.high ? `≥${statistics.thresholds.전체.high.toFixed(1)}` : '≥1.4'})</div>
               </div>
             </div>
           </div>
@@ -587,7 +613,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
               <span className="text-green-600 text-3xl">●</span>
               <div className="flex-1">
                 <div className="font-semibold text-lg text-gray-900">적정 인력 수준</div>
-                <div className="text-sm text-gray-600">중간 60% (0.9~1.3)</div>
+                <div className="text-sm text-gray-600">중간 60% ({statistics.thresholds?.전체 ? `${statistics.thresholds.전체.low.toFixed(1)}~${statistics.thresholds.전체.high.toFixed(1)}` : '0.9~1.3'})</div>
               </div>
             </div>
           </div>
@@ -597,7 +623,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
               <span className="text-blue-600 text-3xl">▼</span>
               <div className="flex-1">
                 <div className="font-semibold text-lg text-gray-900">인력 과다 가능성 존재</div>
-                <div className="text-sm text-gray-600">하위 20% (≤0.9)</div>
+                <div className="text-sm text-gray-600">하위 20% ({statistics.thresholds?.전체?.low ? `≤${statistics.thresholds.전체.low.toFixed(1)}` : '≤0.9'})</div>
               </div>
             </div>
           </div>
