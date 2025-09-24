@@ -41,6 +41,10 @@ BACKEND_PID=$!
 cd ../frontend
 echo "📦 프론트엔드 서버 시작 (포트: $FRONTEND_PORT)..."
 
+# Node.js 22.15 버전 사용
+source ~/.nvm/nvm.sh
+nvm use 22.15.0
+
 # React 앱에 백엔드 URL 전달
 export REACT_APP_API_URL=http://localhost:$BACKEND_PORT
 export PORT=$FRONTEND_PORT
