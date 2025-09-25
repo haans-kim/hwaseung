@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 
 interface FTEData {
   팀명: string;
+  회사: string;
   FTE_전체: number;
   FTE_책임: number;
   FTE_선임: number;
@@ -143,8 +144,25 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
       filteredTeams = Array.from(new Set(filtered.map(f => f.팀)));
     }
 
-    // FTE 데이터 필터링
-    const filteredFTEData = fteData.filter(f => filteredTeams.includes(f.팀명));
+    // FTE 데이터 필터링 - 팀명과 회사를 모두 확인
+    const filteredFTEData = fteData.filter(f => {
+      if (!filteredTeams.includes(f.팀명)) {
+        return false;
+      }
+
+      // 회사별로 필터링: organization 테이블에서 해당 팀의 회사와 FTE의 회사가 일치해야 함
+      const orgInfo = organizationData.find(org =>
+        org.팀 === f.팀명 &&
+        (!selectedLevel.company || org.회사 === selectedLevel.company)
+      );
+
+      if (!orgInfo) {
+        return false;
+      }
+
+      // FTE 데이터의 회사와 organization 데이터의 회사가 일치해야 함
+      return f.회사 === orgInfo.회사;
+    });
 
     if (filteredFTEData.length === 0) {
       setStatistics(null);

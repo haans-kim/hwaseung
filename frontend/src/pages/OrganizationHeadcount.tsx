@@ -14,6 +14,7 @@ interface OrganizationNode {
 
 interface FTEData {
   팀명: string;
+  회사: string;
   FTE_전체: number;
   FTE_책임: number;
   FTE_선임: number;
@@ -178,7 +179,7 @@ const OrganizationHeadcount: React.FC = () => {
         // FTE 데이터 조회
         const fteResult = db.exec(`
           SELECT
-            팀명,
+            팀명, 회사,
             FTE_전체, FTE_책임, FTE_선임, FTE_사원,
             인원수_전체, 인원수_책임, 인원수_선임, 인원수_사원,
             FTE_per_인원_전체, FTE_per_인원_책임, FTE_per_인원_선임, FTE_per_인원_사원
@@ -190,18 +191,19 @@ const OrganizationHeadcount: React.FC = () => {
 
           const fteDataArray: FTEData[] = fteValues.map((row: any[]) => ({
             팀명: row[0],
-            FTE_전체: row[1] || 0,
-            FTE_책임: row[2] || 0,
-            FTE_선임: row[3] || 0,
-            FTE_사원: row[4] || 0,
-            인원수_전체: row[5] || 0,
-            인원수_책임: row[6] || 0,
-            인원수_선임: row[7] || 0,
-            인원수_사원: row[8] || 0,
-            FTE_per_인원_전체: row[9] || 0,
-            FTE_per_인원_책임: row[10] || 0,
-            FTE_per_인원_선임: row[11] || 0,
-            FTE_per_인원_사원: row[12] || 0
+            회사: row[1],
+            FTE_전체: row[2] || 0,
+            FTE_책임: row[3] || 0,
+            FTE_선임: row[4] || 0,
+            FTE_사원: row[5] || 0,
+            인원수_전체: row[6] || 0,
+            인원수_책임: row[7] || 0,
+            인원수_선임: row[8] || 0,
+            인원수_사원: row[9] || 0,
+            FTE_per_인원_전체: row[10] || 0,
+            FTE_per_인원_책임: row[11] || 0,
+            FTE_per_인원_선임: row[12] || 0,
+            FTE_per_인원_사원: row[13] || 0
           }));
 
           setFTEData(fteDataArray);
