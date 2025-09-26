@@ -60,6 +60,7 @@ const OrganizationSimulation: React.FC = () => {
     const loadData = async () => {
       try {
         const SQL = await initSqlJs({
+          // CDN 사용 (외부 접속 지원)
           locateFile: (file: string) => `https://sql.js.org/dist/${file}`
         });
 
@@ -324,14 +325,14 @@ const OrganizationSimulation: React.FC = () => {
           currentFTEData['책임'] = fteRow[1] as number || 0;
           currentFTEData['선임'] = fteRow[2] as number || 0;
           currentFTEData['사원'] = fteRow[3] as number || 0;
-          console.log(`${teamName} FTE 데이터 로드:`, currentFTEData);
+          // console.log(`${teamName} FTE 데이터 로드:`, currentFTEData);
         } else {
           // FTE 데이터가 없으면 인원수 기반으로 계산 (정규직 풀타임 가정)
           currentFTEData['총'] = currentHeadcountData['총'] || 0;
           currentFTEData['책임'] = currentHeadcountData['책임'] || 0;
           currentFTEData['선임'] = currentHeadcountData['선임'] || 0;
           currentFTEData['사원'] = currentHeadcountData['사원'] || 0;
-          console.log(`${teamName} FTE 데이터 없음, 인원수로 대체:`, currentFTEData);
+          // console.log(`${teamName} FTE 데이터 없음, 인원수로 대체:`, currentFTEData);
         }
       } catch (error) {
         console.error('FTE 데이터 로드 오류:', error);
@@ -361,8 +362,8 @@ const OrganizationSimulation: React.FC = () => {
     const predictions: { [key: string]: number } = {};
     const modelTypes = ['총', '책임', '선임', '사원'];
 
-    console.log('Calculating predictions with adjustedMetrics:', adjustedMetrics);
-    console.log('Regression parameters available for:', Object.keys(regressionParameters));
+    // // console.log('Calculating predictions with adjustedMetrics:', adjustedMetrics);
+    // // console.log('Regression parameters available for:', Object.keys(regressionParameters));
 
     modelTypes.forEach(modelType => {
       if (regressionParameters[modelType]) {
@@ -370,33 +371,33 @@ const OrganizationSimulation: React.FC = () => {
         const intercept = regressionParameters[modelType].find(p => p.parameter_name === 'intercept');
         if (intercept) {
           prediction = intercept.coefficient;
-          console.log(`${modelType} - intercept: ${intercept.coefficient}`);
+          // // console.log(`${modelType} - intercept: ${intercept.coefficient}`);
         }
 
         regressionParameters[modelType].forEach(param => {
           if (param.parameter_name !== 'intercept' && adjustedMetrics[param.parameter_name]) {
             const contribution = param.coefficient * adjustedMetrics[param.parameter_name];
             prediction += contribution;
-            console.log(`${modelType} - ${param.parameter_name}: ${param.coefficient} * ${adjustedMetrics[param.parameter_name]} = ${contribution}`);
+            // console.log(`${modelType} - ${param.parameter_name}: ${param.coefficient} * ${adjustedMetrics[param.parameter_name]} = ${contribution}`);
           }
         });
 
         prediction = prediction * 1.0; // 과적합 조정 제거
         predictions[modelType] = Math.max(0, Math.round(prediction));
-        console.log(`${modelType} final prediction: ${predictions[modelType]}`);
+        // console.log(`${modelType} final prediction: ${predictions[modelType]}`);
       } else {
-        console.log(`No regression parameters found for ${modelType}`);
+        // console.log(`No regression parameters found for ${modelType}`);
       }
     });
 
-    console.log('Final predictions:', predictions);
+    // console.log('Final predictions:', predictions);
     setPredictedHeadcount(predictions);
   };
 
   const handleMetricChange = (metricName: string, value: number) => {
     const baseValue = teamMetrics[metricName] || 0;
     const adjustedValue = baseValue * (1 + value / 100);
-    console.log(`Adjusting ${metricName}: base=${baseValue}, adjustment=${value}%, new=${adjustedValue}`);
+    // console.log(`Adjusting ${metricName}: base=${baseValue}, adjustment=${value}%, new=${adjustedValue}`);
     setAdjustedMetrics(prev => ({
       ...prev,
       [metricName]: adjustedValue
