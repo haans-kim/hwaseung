@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line, Chart } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,7 +12,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
+// ChartDataLabels 제거 - 프로덕션 빌드 이슈
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
@@ -28,7 +28,7 @@ import {
   LineChart,
   Sliders
 } from 'lucide-react';
-import { apiClient } from '../lib/api';
+import { apiClient, API_BASE_URL } from '../lib/api';
 
 // Chart.js 구성 요소 등록
 ChartJS.register(
@@ -40,9 +40,10 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler,
-  ChartDataLabels
+  Filler
 );
+
+// ChartDataLabels는 필요한 차트에서만 개별적으로 사용
 
 interface ScenarioTemplate {
   id: string;
@@ -116,7 +117,15 @@ export const Dashboard: React.FC = () => {
   const [featureImportance, setFeatureImportance] = useState<any>(null);
 
   useEffect(() => {
+    // 컴포넌트 마운트 확인
+    console.log('Dashboard mounted, API URL:', API_BASE_URL);
+    console.log('Current location:', window.location.hostname);
+
     loadDashboardData();
+
+    return () => {
+      console.log('Dashboard unmounting...');
+    };
   }, []);
 
   const loadDashboardData = async () => {
@@ -155,12 +164,18 @@ export const Dashboard: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Dashboard data loading failed:', error);
-      
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+
       // 모델이 없는 경우 특별한 처리
       if (error?.response?.status === 404 && error?.response?.data?.detail?.error === "No trained model available") {
         setError('모델이 훈련되지 않았습니다. Analysis 페이지에서 먼저 모델을 훈련해주세요.');
       } else {
-        setError('대시보드 데이터를 불러오는 중 오류가 발생했습니다.');
+        setError(`대시보드 데이터를 불러오는 중 오류가 발생했습니다: ${error?.message || '알 수 없는 오류'}`);
       }
     } finally {
       setLoading(null);
@@ -523,23 +538,8 @@ export const Dashboard: React.FC = () => {
           }
         }
       },
-      datalabels: {
-        color: 'white',
-        font: {
-          weight: 'bold' as const,
-          size: 12
-        },
-        anchor: 'center' as const,
-        align: 'center' as const,
-        formatter: (value: any, context: any) => {
-          const dataIndex = context.dataIndex;
-          const featureData = featureImportance?.feature_importance[dataIndex];
-          if (featureData) {
-            return `${(featureData.importance * 100).toFixed(1)}%`;
-          }
-          return '';
-        }
-      }
+      // datalabels 플러그인 비활성화 (프로덕션 빌드 이슈 방지)
+      datalabels: false as any
     },
     scales: {
       x: {
@@ -578,8 +578,10 @@ export const Dashboard: React.FC = () => {
     }
   });
 
-  return (
-    <div className="space-y-6">
+  // 렌더링 중 에러 체크
+  try {
+    return (
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">적정인력 산정</h1>
@@ -861,10 +863,9 @@ export const Dashboard: React.FC = () => {
                 if (chartData) {
                   return (
                     <div className="h-64">
-                      <Chart 
-                        type='bar'
-                        data={chartData} 
-                        options={getWaterfallChartOptions()} 
+                      <Bar
+                        data={chartData}
+                        options={getWaterfallChartOptions()}
                       />
                     </div>
                   );
@@ -922,4 +923,22 @@ export const Dashboard: React.FC = () => {
       )}
     </div>
   );
+  } catch (renderError) {
+    console.error('Dashboard rendering error:', renderError);
+    return (
+      <div className="p-8">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>렌더링 오류</AlertTitle>
+          <AlertDescription>
+            Dashboard를 표시하는 중 오류가 발생했습니다.
+            콘솔을 확인하거나 페이지를 새로고침해주세요.
+            <div className="mt-2 text-xs">
+              API URL: {API_BASE_URL}
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 };
