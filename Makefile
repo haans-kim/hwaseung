@@ -5,11 +5,23 @@ start:
 	@chmod +x start_smart.sh
 	@./start_smart.sh
 
-# 일반 시작 (고정 포트)
+# 일반 시작 (고정 포트 - 로컬 개발용)
 start-fixed:
-	@echo "🚀 고정 포트로 서비스 시작..."
+	@echo "🚀 고정 포트로 서비스 시작 (로컬 개발)..."
 	@cd backend && source venv/bin/activate && python run.py &
 	@bash -c "source ~/.nvm/nvm.sh && nvm use 22.15.0 && cd frontend && npm start"
+
+# 프로덕션 모드 (외부 접속 가능)
+start-production:
+	@echo "🌐 프로덕션 모드로 시작 (외부 접속 가능)..."
+	@cd backend && source venv/bin/activate && NETWORK_MODE=external python run.py --host 0.0.0.0 --port 8000 &
+	@cd frontend && npm run build && npx serve -s build -l 3000 &
+	@sleep 2
+	@echo "✅ 서비스 실행 중:"
+	@echo "   Frontend: http://$(shell ipconfig getifaddr en0 2>/dev/null || echo localhost):3000"
+	@echo "   Backend:  http://$(shell ipconfig getifaddr en0 2>/dev/null || echo localhost):8000"
+	@echo ""
+	@echo "💡 외부에서 접속하려면 위 IP 주소를 사용하세요"
 
 # 강제 시작 (기존 프로세스 종료 후)
 start-force:
@@ -93,13 +105,28 @@ clean:
 	@rm -rf backend/app/__pycache__
 	@echo "✅ 정리 완료"
 
+# 프론트엔드 빌드
+build-frontend:
+	@echo "🔨 프론트엔드 빌드 중..."
+	@cd frontend && npm run build
+	@echo "✅ 빌드 완료 (frontend/build)"
+
+# 빌드된 프론트엔드 실행
+serve-frontend:
+	@echo "🌐 빌드된 프론트엔드 실행..."
+	@cd frontend && npx serve -s build -l 3000
+
 # 도움말
 help:
 	@echo "사용 가능한 명령어:"
-	@echo "  make start       - 스마트 포트 감지로 시작"
-	@echo "  make start-force - 강제로 포트 정리 후 시작"
-	@echo "  make stop        - 모든 서비스 중지"
-	@echo "  make install     - 의존성 설치"
-	@echo "  make logs        - 로그 확인"
-	@echo "  make check-ports - 포트 상태 확인"
-	@echo "  make clean       - 개발 환경 초기화"
+	@echo "  make start            - 스마트 포트 감지로 시작"
+	@echo "  make start-fixed      - 고정 포트로 시작 (로컬 개발)"
+	@echo "  make start-production - 프로덕션 모드 (외부 접속 가능)"
+	@echo "  make start-force      - 강제로 포트 정리 후 시작"
+	@echo "  make stop             - 모든 서비스 중지"
+	@echo "  make build-frontend   - 프론트엔드 빌드"
+	@echo "  make serve-frontend   - 빌드된 프론트엔드 실행"
+	@echo "  make install          - 의존성 설치"
+	@echo "  make logs             - 로그 확인"
+	@echo "  make check-ports      - 포트 상태 확인"
+	@echo "  make clean            - 개발 환경 초기화"

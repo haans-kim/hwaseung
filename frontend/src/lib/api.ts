@@ -1,3 +1,6 @@
+// 환경에 따라 다른 URL 사용
+// 개발: localhost:8000
+// 프로덕션: dashboard.insightgroup.biz:8000
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export interface DataUploadResponse {
