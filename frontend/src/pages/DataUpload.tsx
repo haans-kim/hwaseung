@@ -239,15 +239,15 @@ export const DataUpload: React.FC = () => {
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center mb-2">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-foreground">데이터 업로드</h1>
-          <p className="text-xs text-muted-foreground">Excel 파일을 업로드하여 분석을 시작하세요</p>
+          <h1 className="text-3xl font-bold text-foreground">데이터 업로드</h1>
+          <p className="text-muted-foreground">Excel 파일을 업로드하여 분석을 시작하세요</p>
         </div>
         {(uploadResult || sampleData) && (
-          <Button variant="outline" size="sm" onClick={clearData}>
-            <Trash2 className="mr-1 h-3 w-3" />
+          <Button variant="outline" onClick={clearData}>
+            <Trash2 className="mr-2 h-4 w-4" />
             초기화
           </Button>
         )}

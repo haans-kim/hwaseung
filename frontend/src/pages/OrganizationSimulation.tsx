@@ -411,10 +411,12 @@ const OrganizationSimulation: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">조직, 직급별 적정인력 산정</h1>
-        <p className="text-gray-600">조직, 직급별 적정인력 예측 및 Simulation</p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">조직, 직급별 적정인력 산정</h1>
+          <p className="text-muted-foreground">조직, 직급별 적정인력 예측 및 Simulation</p>
+        </div>
       </div>
 
       {/* Miller Column Navigation */}
