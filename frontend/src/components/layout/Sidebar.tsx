@@ -23,10 +23,10 @@ const navigation = [
   { name: 'Data 업로드', href: '/data', icon: Upload },
   { name: '모델링', href: '/modeling', icon: Settings },
   { name: 'Analysis', href: '/analysis', icon: BarChart3 },
-  { name: '적정인력', href: '/dashboard', icon: Activity },
-  { name: '직급별 분석', href: '/position-analysis', icon: Users },
-  { name: '조직별 적정인원', href: '/organization-headcount', icon: Building2 },
-  { name: '조직별 Simulation', href: '/organization-simulation', icon: SlidersHorizontal },
+  { name: '전사 적정인력 산정/예측', href: '/dashboard', icon: Activity },
+  { name: '조직, 직급별 적정인력 요약', href: '/position-analysis', icon: Users },
+  { name: '조직, 직급별 적정인력 산정/예측', href: '/organization-simulation', icon: SlidersHorizontal },
+  { name: '인력 수준 검토', href: '/organization-headcount', icon: Building2 },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) => {

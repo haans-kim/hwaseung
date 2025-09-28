@@ -413,8 +413,8 @@ const OrganizationSimulation: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">조직별 Simulation (4개 모델)</h1>
-        <p className="text-gray-600">조직별 인력 예측 시뮬레이션 - 전체/책임/선임/사원 모델</p>
+        <h1 className="text-2xl font-bold text-gray-900">조직, 직급별 적정인력 산정</h1>
+        <p className="text-gray-600">조직, 직급별 적정인력 예측 및 Simulation</p>
       </div>
 
       {/* Miller Column Navigation */}

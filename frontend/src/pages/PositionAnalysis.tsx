@@ -104,8 +104,8 @@ const PositionAnalysis: React.FC = () => {
     <div className="min-h-screen bg-white p-6">
       {/* 헤더 */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">직급별 분석</h1>
-        <p className="text-muted-foreground">직급별 적정인원 도출</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">조직, 직급별 적정인력 산정</h1>
+        <p className="text-muted-foreground">조직, 직급별 적정인력 산정 요약</p>
       </div>
 
 

@@ -387,8 +387,8 @@ const OrganizationHeadcount: React.FC = () => {
     return (
       <div className="min-h-screen bg-white p-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">조직별 적정인원</h1>
-          <p className="text-muted-foreground">FTE 분석 기반 적정인원 산출</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">인력 수준 검토</h1>
+          <p className="text-muted-foreground">근무기록 기반 FTE 분석</p>
         </div>
         <div className="flex justify-center items-center h-64">
           <div className="text-gray-500">데이터베이스 로딩 중...</div>
@@ -401,9 +401,9 @@ const OrganizationHeadcount: React.FC = () => {
     <div className="min-h-screen bg-white p-2">
       {/* 헤더 */}
       <div className="mb-4">
-        <h1 className="text-3xl font-bold text-foreground mb-2">조직별 적정인원</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">인력 수준 검토</h1>
         <p className="text-muted-foreground">
-          FTE 분석 기반 적정인원 산출 {!selectedCompany && '- 전체 회사'}
+          근무기록 기반 FTE 분석 {!selectedCompany && '- 전체 회사'}
         </p>
       </div>
 

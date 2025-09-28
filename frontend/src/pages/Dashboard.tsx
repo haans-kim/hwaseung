@@ -584,8 +584,8 @@ export const Dashboard: React.FC = () => {
       <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">적정인력 산정</h1>
-          <p className="text-muted-foreground">2026년 적정인력 예측 및 시나리오 분석</p>
+          <h1 className="text-3xl font-bold text-foreground">전사 적정인력 산정</h1>
+          <p className="text-muted-foreground">전사 적정인력 예측 및 Simulation</p>
         </div>
         <Button onClick={loadDashboardData} disabled={loading === 'initial'}>
           {loading === 'initial' ? (
