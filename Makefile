@@ -9,7 +9,7 @@ start:
 start-fixed:
 	@echo "🚀 고정 포트로 서비스 시작 (로컬 개발)..."
 	@cd backend && source venv/bin/activate && python run.py &
-	@bash -c "source ~/.nvm/nvm.sh && nvm use 22.15.0 && cd frontend && npm start"
+	@cd frontend && npm start
 
 # 프로덕션 모드 (외부 접속 가능)
 start-production:
@@ -64,7 +64,7 @@ stop:
 install:
 	@echo "📦 의존성 설치 중..."
 	@cd backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
-	@bash -c "source ~/.nvm/nvm.sh && nvm use 22.15.0 && cd frontend && npm install"
+	@cd frontend && npm install
 	@echo "✅ 설치 완료"
 
 # 로그 확인

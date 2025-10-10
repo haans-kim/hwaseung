@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 import {
   Upload,
   Settings,
-  BarChart3,
   Activity,
   Users,
   Moon,
@@ -22,8 +21,8 @@ interface SidebarProps {
 const navigation = [
   { name: 'Data 업로드', href: '/data', icon: Upload },
   { name: '모델링', href: '/modeling', icon: Settings },
-  { name: 'Analysis', href: '/analysis', icon: BarChart3 },
-  { name: '전사 적정인력 산정/예측', href: '/dashboard', icon: Activity },
+  { name: '전사 적정인력 산정/예측 (R&A)', href: '/dashboard/rna', icon: Activity },
+  { name: '전사 적정인력 산정/예측 (통합기술본부)', href: '/dashboard/tonggibon', icon: Activity },
   { name: '조직, 직급별 적정인력 요약', href: '/position-analysis', icon: Users },
   { name: '조직, 직급별 적정인력 산정/예측', href: '/organization-simulation', icon: SlidersHorizontal },
   { name: '인력 수준 검토', href: '/organization-headcount', icon: Building2 },

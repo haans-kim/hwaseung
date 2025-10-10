@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Layout } from './components/layout/Layout';
 import { DataUpload } from './pages/DataUpload';
 import { Modeling } from './pages/Modeling';
-import Analysis from './pages/Analysis';
 import { Dashboard } from './pages/Dashboard';
 import { Effects } from './pages/Effects';
 import PositionAnalysis from './pages/PositionAnalysis';
@@ -19,8 +18,8 @@ function App() {
           <Route index element={<Navigate to="/data" replace />} />
           <Route path="data" element={<DataUpload />} />
           <Route path="modeling" element={<Modeling />} />
-          <Route path="analysis" element={<Analysis />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard/rna" element={<Dashboard />} />
+          <Route path="dashboard/tonggibon" element={<Dashboard />} />
           <Route path="position-analysis" element={<PositionAnalysis />} />
           <Route path="organization-headcount" element={<OrganizationHeadcount />} />
           <Route path="organization-simulation" element={<OrganizationSimulation />} />
