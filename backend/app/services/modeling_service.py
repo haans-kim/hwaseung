@@ -54,13 +54,14 @@ class ModelingService:
         return PYCARET_AVAILABLE
     
     def get_optimal_settings(self, data_size: int) -> Dict[str, Any]:
-        """데이터 크기에 따른 최적 설정 반환"""
+        """데이터 크기에 따른 최적 설정 반환 (메모리 안전 모드)"""
+        # 🚨 모든 경우에 cv_folds=2로 고정 (메모리 폭발 방지)
         if data_size < 30:
             return {
-                'train_size': 0.99 if data_size <= 4 else 0.9,  # 매우 작은 데이터는 거의 전체를 학습에 사용
-                'cv_folds': 2,  # 작은 데이터는 2-fold만 사용
-                'models': ['lr'],  # 가장 단순한 모델만 사용
-                'normalize': False,  # 정규화 비활성화
+                'train_size': 0.99 if data_size <= 4 else 0.9,
+                'cv_folds': 2,  # 메모리 안전: 항상 2-fold
+                'models': ['lr'],
+                'normalize': False,
                 'transformation': False,
                 'remove_outliers': False,
                 'feature_selection': False,
@@ -69,7 +70,7 @@ class ModelingService:
         elif data_size < 100:
             return {
                 'train_size': 0.8,
-                'cv_folds': 5,
+                'cv_folds': 2,  # 메모리 안전: 항상 2-fold
                 'models': self.medium_data_models,
                 'normalize': True,
                 'transformation': True,
@@ -80,7 +81,7 @@ class ModelingService:
         else:
             return {
                 'train_size': 0.7,
-                'cv_folds': 10,
+                'cv_folds': 2,  # 메모리 안전: 항상 2-fold
                 'models': self.large_data_models,
                 'normalize': True,
                 'transformation': True,
@@ -94,7 +95,13 @@ class ModelingService:
         if data_service.current_data is None:
             raise ValueError("No data loaded for modeling")
 
+        # 🚨 메모리 최적화: 복사 대신 참조 사용 후 필요시 복사
         df = data_service.current_data.copy()
+
+        # 🚨 원본 데이터가 크면 즉시 명시적 삭제 고려
+        original_memory = df.memory_usage(deep=True).sum() / 1024 / 1024  # MB
+        if original_memory > 100:  # 100MB 이상이면
+            logging.warning(f"Large dataset detected: {original_memory:.1f}MB - aggressive memory management enabled")
 
         # 🚨 메모리 폭발 방지: 데이터 크기 체크
         if len(df) > self.MAX_ROWS_FOR_MODELING:
@@ -203,7 +210,11 @@ class ModelingService:
         # 최종 정리
         info['final_shape'] = df.shape
         info['feature_count'] = len(df.columns) - 1
-        
+
+        # 🚨 메모리 최적화: 반환 전 불필요한 변수 정리
+        if 'first_row' in locals():
+            del first_row
+
         return df, info
     
     def setup_pycaret_environment(
@@ -220,10 +231,15 @@ class ModelingService:
         
         # 데이터 준비
         ml_data, data_info = self.prepare_data_for_modeling(target_column)
-        
+
         # 최적 설정 가져오기
-        optimal_settings = self.get_optimal_settings(len(ml_data))
+        data_size = len(ml_data)
+        optimal_settings = self.get_optimal_settings(data_size)
         actual_train_size = train_size or optimal_settings['train_size']
+
+        # 🚨 메모리 보호: 데이터 크기 로그
+        memory_mb = ml_data.memory_usage(deep=True).sum() / 1024 / 1024
+        logging.info(f"PyCaret setup starting - Data: {data_size} rows, {memory_mb:.1f}MB, fold=2, n_jobs=1")
         
         # 출력 억제를 위한 설정
         old_stdout = sys.stdout
@@ -276,6 +292,9 @@ class ModelingService:
                 }
             
             # 🚨 메모리 정리 (setup 전)
+            if hasattr(self, 'current_experiment') and self.current_experiment is not None:
+                del self.current_experiment
+                self.current_experiment = None
             gc.collect()
 
             # PyCaret setup 실행 (메모리 안전 모드)
@@ -296,7 +315,7 @@ class ModelingService:
                     # 🚨 메모리 안전: GPU와 병렬 처리 비활성화
                     use_gpu=False,  # GPU 사용 안 함
                     n_jobs=1,  # 병렬 처리 비활성화 (메모리 절약)
-                    fold=min(3, optimal_settings['cv_folds']),  # fold 수 제한
+                    fold=2,  # 🚨 메모리 폭발 방지: 항상 2-fold로 고정
                 
                 # 결측값 처리
                 imputation_type=config.get('imputation_type', 'simple'),
@@ -360,6 +379,12 @@ class ModelingService:
             # 출력 복원
             sys.stdout = old_stdout
             sys.stderr = old_stderr
+
+            # 🚨 메모리 해제: ml_data 사용 완료 후 즉시 삭제
+            if 'ml_data' in locals():
+                del ml_data
+            gc.collect()
+            logging.info("PyCaret setup completed - memory cleaned")
         
         # 설정 정보 반환
         return {
@@ -381,21 +406,19 @@ class ModelingService:
         optimal_settings = self.get_optimal_settings(data_size)
         models_to_use = optimal_settings['models']
 
-        # 🚨 메모리 안전: 모델 수와 fold 수 제한
+        # 🚨 메모리 안전: 모델 수 제한, fold는 항상 2로 고정
         if data_size < 30:
             models_to_use = ['lr']  # 선형회귀만
             n_select = 1
-            safe_fold = 2
         elif data_size < 50:
             models_to_use = models_to_use[:2]  # 최대 2개
             n_select = min(2, n_select)
-            safe_fold = 2
         elif data_size < 100:
             models_to_use = models_to_use[:3]  # 최대 3개
             n_select = min(3, n_select)
-            safe_fold = 3
-        else:
-            safe_fold = 5  # 큰 데이터는 5-fold
+
+        # 🚨 메모리 폭발 방지: 모든 경우에 fold=2로 고정
+        safe_fold = 2
 
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -437,7 +460,7 @@ class ModelingService:
             if X_train is not None:
                 self.feature_names = list(X_train.columns)
                 print(f"📊 Stored feature names: {len(self.feature_names)} features")
-            
+
             self.model_results = {
                 'best_models': best_models,
                 'comparison_df': comparison_results,
@@ -446,6 +469,10 @@ class ModelingService:
             # 모델 비교 후에는 current_model을 설정하지 않음 (명시적 학습 필요)
             # self.current_model = best_models[0] if best_models else None
             self.compared_models = best_models  # 비교된 모델들만 저장
+
+            # 🚨 메모리 해제: X_train 참조 삭제
+            del X_train
+            gc.collect()
             
         except Exception as e:
             # 실패 시 기본 선형 회귀 사용

@@ -410,9 +410,35 @@ class DataService:
         """Target 컬럼을 제외하고 나머지 데이터에 대해서 10배수로 증강"""
         if self.current_data is None:
             raise ValueError("No data loaded for augmentation")
-        
+
+        # 🚨 메모리 폭발 방지: 원본 데이터가 크면 증강 비활성화
+        original_size = len(self.current_data)
+        original_memory = self.current_data.memory_usage(deep=True).sum() / 1024 / 1024  # MB
+
+        MAX_ORIGINAL_SIZE_FOR_AUGMENTATION = 50  # 최대 50행까지만 증강 허용
+        MAX_MEMORY_FOR_AUGMENTATION = 10  # 최대 10MB까지만 증강 허용
+
+        if original_size > MAX_ORIGINAL_SIZE_FOR_AUGMENTATION:
+            logging.warning(f"Data too large for augmentation: {original_size} rows > {MAX_ORIGINAL_SIZE_FOR_AUGMENTATION} limit")
+            return {
+                "message": f"Augmentation skipped - data too large ({original_size} rows)",
+                "original_size": original_size,
+                "augmented_size": original_size,
+                "augmentation_applied": False,
+                "reason": "Data size exceeds safe limit for augmentation"
+            }
+
+        if original_memory > MAX_MEMORY_FOR_AUGMENTATION:
+            logging.warning(f"Data memory too large for augmentation: {original_memory:.1f}MB > {MAX_MEMORY_FOR_AUGMENTATION}MB limit")
+            return {
+                "message": f"Augmentation skipped - memory too large ({original_memory:.1f}MB)",
+                "original_size": original_size,
+                "augmented_size": original_size,
+                "augmentation_applied": False,
+                "reason": "Memory usage exceeds safe limit for augmentation"
+            }
+
         original_df = self.current_data.copy()
-        original_size = len(original_df)
         
         # Target 컬럼 식별 (대소문자 무시하고 target이 포함된 컬럼 찾기)
         target_columns = [col for col in original_df.columns if 'target' in col.lower()]
@@ -449,7 +475,12 @@ class DataService:
         
         # 증강된 데이터프레임 생성
         augmented_df = pd.DataFrame(augmented_rows)
-        
+
+        # 🚨 메모리 해제: augmented_rows 리스트 삭제
+        del augmented_rows
+        import gc
+        gc.collect()
+
         # 년도 컬럼이 있는 경우 정렬
         year_columns = ['year', 'Year', 'YEAR', '년도', '연도']
         year_col = None
@@ -457,16 +488,20 @@ class DataService:
             if col in augmented_df.columns:
                 year_col = col
                 break
-        
+
         if year_col:
             augmented_df = augmented_df.sort_values(year_col).reset_index(drop=True)
-        
+
+        # 🚨 메모리 해제: original_df 삭제
+        del original_df
+        gc.collect()
+
         # 증강된 데이터로 업데이트
         self.current_data = augmented_df
         self.data_info = self._analyze_dataframe(augmented_df)
-        
+
         # pickle 파일로 저장
-        self._save_data_to_pickle()
+        self._save_working_data_to_pickle()
         
         actual_size = len(augmented_df)
         augmented_rows_count = actual_size - original_size
