@@ -4,8 +4,13 @@ from typing import Dict, Any, List, Optional, Tuple
 import warnings
 import io
 import sys
+import gc  # Garbage collector for memory management
 from contextlib import redirect_stdout, redirect_stderr
 import logging
+
+# 🚨 메모리 보호: pandas 메모리 사용량 제한
+pd.options.mode.chained_assignment = None  # 경고 비활성화
+pd.set_option('compute.use_numexpr', False)  # numexpr 비활성화로 메모리 절약
 
 # PyCaret 라이브러리 import with error handling
 try:
@@ -31,14 +36,18 @@ class ModelingService:
         self.feature_names = None  # Store feature names for prediction
         self.prediction_data = None  # 2025년 예측 대상 데이터
         self.prediction_features = []  # 예측에 사용할 feature 컬럼명
+
+        # 🚨 메모리 폭발 방지: 최대 데이터 크기 제한
+        self.MAX_ROWS_FOR_MODELING = 10000  # 최대 1만 행
+        self.MAX_FEATURES = 50  # 최대 50개 feature
         
         # 데이터 크기에 따른 모델 선택
         self.small_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt']
         self.medium_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt', 'rf', 'gbr']
         self.large_data_models = ['lr', 'ridge', 'lasso', 'en', 'dt', 'rf', 'gbr', 'xgboost', 'lightgbm']
-        
-        # 초기화 시 저장된 최신 모델 자동 로드 시도
-        self._load_latest_model_if_exists()
+
+        # 초기화 시 모델 자동 로드하지 않음 (메모리 절약)
+        # 필요할 때만 lazy loading: self._load_latest_model_if_exists()
     
     def check_pycaret_availability(self) -> bool:
         """PyCaret 사용 가능 여부 확인"""
@@ -81,11 +90,16 @@ class ModelingService:
             }
     
     def prepare_data_for_modeling(self, target_column: Optional[str] = None) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-        """모델링을 위한 데이터 준비"""
+        """모델링을 위한 데이터 준비 (메모리 안전)"""
         if data_service.current_data is None:
             raise ValueError("No data loaded for modeling")
-        
+
         df = data_service.current_data.copy()
+
+        # 🚨 메모리 폭발 방지: 데이터 크기 체크
+        if len(df) > self.MAX_ROWS_FOR_MODELING:
+            logging.warning(f"Dataset too large ({len(df)} rows). Sampling {self.MAX_ROWS_FOR_MODELING} rows.")
+            df = df.sample(n=self.MAX_ROWS_FOR_MODELING, random_state=42)
         
         # data_service에서 설정된 컬럼 정보 가져오기
         model_config = data_service.get_model_config()
@@ -261,7 +275,10 @@ class ModelingService:
                     'feature_selection': optimal_settings['feature_selection']
                 }
             
-            # PyCaret setup 실행 (자동 전처리 강화)
+            # 🚨 메모리 정리 (setup 전)
+            gc.collect()
+
+            # PyCaret setup 실행 (메모리 안전 모드)
             try:
                 exp = setup(
                     data=ml_data,
@@ -270,16 +287,16 @@ class ModelingService:
                     train_size=actual_train_size,
                     html=False,
                     verbose=False,
-                    
+
                     # 자동 데이터 타입 추론 및 전처리
                     numeric_features=None,  # PyCaret이 자동 감지
                     categorical_features=None,  # PyCaret이 자동 감지
                     ignore_features=None,
-                    
-                    # 작은 데이터셋을 위한 설정
+
+                    # 🚨 메모리 안전: GPU와 병렬 처리 비활성화
                     use_gpu=False,  # GPU 사용 안 함
-                    # fold_strategy='kfold',  # 기본값 사용
-                    fold=optimal_settings['cv_folds'],
+                    n_jobs=1,  # 병렬 처리 비활성화 (메모리 절약)
+                    fold=min(3, optimal_settings['cv_folds']),  # fold 수 제한
                 
                 # 결측값 처리
                 imputation_type=config.get('imputation_type', 'simple'),
@@ -363,23 +380,43 @@ class ModelingService:
         data_size = len(data_service.current_data)
         optimal_settings = self.get_optimal_settings(data_size)
         models_to_use = optimal_settings['models']
-        
+
+        # 🚨 메모리 안전: 모델 수와 fold 수 제한
+        if data_size < 30:
+            models_to_use = ['lr']  # 선형회귀만
+            n_select = 1
+            safe_fold = 2
+        elif data_size < 50:
+            models_to_use = models_to_use[:2]  # 최대 2개
+            n_select = min(2, n_select)
+            safe_fold = 2
+        elif data_size < 100:
+            models_to_use = models_to_use[:3]  # 최대 3개
+            n_select = min(3, n_select)
+            safe_fold = 3
+        else:
+            safe_fold = 5  # 큰 데이터는 5-fold
+
         old_stdout = sys.stdout
         old_stderr = sys.stderr
-        
+
         try:
             # 출력 억제
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
-            
-            # 모델 비교 실행
+
+            # 🚨 메모리 정리 (모델 학습 전)
+            gc.collect()
+
+            # 모델 비교 실행 (메모리 안전 모드)
             try:
                 best_models = compare_models(
                     include=models_to_use,
                     sort='R2',
                     n_select=min(n_select, len(models_to_use)),
                     verbose=False,
-                    fold=max(2, min(3, data_size // 2))  # 데이터 크기에 따른 동적 fold 수
+                    fold=safe_fold,  # 고정된 안전한 fold 수
+                    errors='ignore'  # 에러 발생 시 계속 진행
                 )
             except Exception as e:
                 # compare_models 실패시 단순한 선형회귀 모델 생성
@@ -421,12 +458,15 @@ class ModelingService:
                 'recommended_model': linear_model,
                 'fallback_used': True
             }
-            
+
         finally:
             # 출력 복원
             sys.stdout = old_stdout
             sys.stderr = old_stderr
-        
+
+            # 🚨 메모리 정리 (모델 학습 후)
+            gc.collect()
+
         return {
             'message': 'Model comparison completed',
             'models_compared': len(models_to_use),
@@ -472,17 +512,20 @@ class ModelingService:
                 final_model = tuned_model
             
             self.current_model = final_model
-            
+
             # 모델 자동 저장
             self._save_model(model_name)
-            
+
+            # 학습 후 메모리 정리
+            self.cleanup_after_training()
+
         except Exception as e:
             raise RuntimeError(f"Model training failed: {str(e)}")
         finally:
             # 출력 복원
             sys.stdout = old_stdout
             sys.stderr = old_stderr
-        
+
         return {
             'message': f'Model {model_name} trained and saved successfully',
             'model_type': type(self.current_model).__name__,
@@ -660,14 +703,57 @@ class ModelingService:
     
     def clear_models(self) -> Dict[str, Any]:
         """모든 모델 및 실험 초기화"""
+        # 명시적으로 메모리 해제
+        import gc
+
+        # 모델 객체 삭제
+        if self.current_model is not None:
+            del self.current_model
+        if self.compared_models is not None:
+            del self.compared_models
+        if self.model_results is not None:
+            if 'best_models' in self.model_results:
+                del self.model_results['best_models']
+            del self.model_results
+        if self.current_experiment is not None:
+            del self.current_experiment
+        if self.prediction_data is not None:
+            del self.prediction_data
+
+        # 초기화
         self.current_experiment = None
         self.current_model = None
         self.model_results = None
+        self.compared_models = None
         self.is_setup_complete = False
-        
+        self.feature_names = None
+        self.prediction_data = None
+        self.prediction_features = []
+
+        # 가비지 컬렉션 강제 실행
+        gc.collect()
+
         return {
             'message': 'All models and experiments cleared successfully'
         }
+
+    def cleanup_after_training(self) -> None:
+        """학습 후 불필요한 메모리 정리"""
+        import gc
+
+        # 비교된 모델들 중 현재 모델이 아닌 것들 삭제
+        if self.compared_models is not None:
+            del self.compared_models
+            self.compared_models = None
+
+        # 모델 결과에서 best_models 리스트 삭제 (recommended_model만 유지)
+        if self.model_results is not None and 'best_models' in self.model_results:
+            # 현재 모델만 유지
+            recommended = self.model_results.get('recommended_model')
+            self.model_results['best_models'] = [recommended] if recommended else []
+
+        # 가비지 컬렉션
+        gc.collect()
 
 # 싱글톤 인스턴스
 modeling_service = ModelingService()

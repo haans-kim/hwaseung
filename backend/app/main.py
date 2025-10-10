@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi import Request
-from app.api.routes import data, modeling, analysis, dashboard, organization, company_wide, team, fte, organization_chart
+from app.api.routes import data, modeling, analysis, dashboard, organization, company_wide, team, fte, organization_chart, company_wide_modeling, company_wide_dashboard
 from app.core.config import settings
 import os
 
@@ -43,6 +43,8 @@ app.include_router(company_wide.router, prefix="/api", tags=["company-wide"])
 app.include_router(team.router, prefix="/api", tags=["team"])
 app.include_router(fte.router, prefix="/api", tags=["fte"])
 app.include_router(organization_chart.router, prefix="/api", tags=["organization-chart"])
+app.include_router(company_wide_modeling.router, prefix="/api", tags=["company-wide-modeling"])
+app.include_router(company_wide_dashboard.router, prefix="/api", tags=["company-wide-dashboard"])
 
 @app.get("/")
 async def root():
