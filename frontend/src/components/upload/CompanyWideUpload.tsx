@@ -1,8 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertTriangle, Loader2, Database } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
 
 interface CompanyWideUploadProps {
   organization: 'R&A' | 'tonggibon';
@@ -22,6 +30,28 @@ interface SaveResult {
   total: number;
 }
 
+interface StoredDataRow {
+  id?: number;
+  organization: string;
+  year: number;
+  ev_growth_gl?: number;          // 글로벌 EV시장성장률
+  v_growth_gl?: number;           // 글로벌 자동차 시장성장률
+  v_export_kr?: number;           // 국내 자동차 수출액 증가율
+  vp_export_kr?: number;          // 국내 자동차부품 수출액 증가율
+  gdp_growth_kr?: number;         // GDP성장률
+  cpi_kr?: number;                // 소비자물가상승률
+  exchange_rate_change_krw?: number; // 환율변화율_원화기준
+  scm_index_gl?: number;          // 글로벌물류비지수
+  oil_gl?: number;                // 국제유가
+  labor_cost?: number;            // 인건비 증감률
+  revenue?: number;               // 매출액 증감률/증가율
+  profit?: number;                // 영업이익 증감률/증가율
+  operating_rate?: number;        // 가동률 증감률 or 연구개발비용 증감률
+  operating_date?: number;        // 가동일수 증감률 or 연구개발정부보조금 증감률
+  headcount?: number;             // 정원
+  [key: string]: any;
+}
+
 export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
   organization,
   title,
@@ -34,6 +64,8 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
   const [saveResult, setSaveResult] = useState<SaveResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [storedData, setStoredData] = useState<StoredDataRow[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -128,6 +160,39 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
     setError(null);
     setSuccess(null);
   };
+
+  // 저장된 데이터 불러오기
+  const fetchStoredData = useCallback(async () => {
+    setLoadingData(true);
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/company-wide/features?organization=${encodeURIComponent(organization)}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const result = await response.json();
+      setStoredData(result.data || []);
+    } catch (err) {
+      console.error('Error fetching stored data:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  }, [organization]);
+
+  // 컴포넌트 마운트 시 데이터 로드
+  useEffect(() => {
+    fetchStoredData();
+  }, [fetchStoredData]);
+
+  // 업로드 성공 후 데이터 다시 로드
+  useEffect(() => {
+    if (success) {
+      fetchStoredData();
+    }
+  }, [success, fetchStoredData]);
 
   return (
     <div className="space-y-6">
@@ -271,6 +336,82 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
               )}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* 저장된 데이터 테이블 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            저장된 데이터
+          </CardTitle>
+          <CardDescription>
+            데이터베이스에 저장된 {organization} 데이터 ({storedData.length}개 행)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingData ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-500">데이터 불러오는 중...</span>
+            </div>
+          ) : storedData.length === 0 ? (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>데이터 없음</AlertTitle>
+              <AlertDescription>
+                저장된 데이터가 없습니다. 위에서 파일을 업로드해주세요.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 bg-white z-10">연도</TableHead>
+                    <TableHead>글로벌 EV시장성장률</TableHead>
+                    <TableHead>글로벌 자동차 시장성장률</TableHead>
+                    <TableHead>국내 자동차 수출액 증가율</TableHead>
+                    <TableHead>국내 자동차부품 수출액 증가율</TableHead>
+                    <TableHead>GDP성장률</TableHead>
+                    <TableHead>소비자물가상승률</TableHead>
+                    <TableHead>환율변화율(원화기준)</TableHead>
+                    <TableHead>글로벌물류비지수</TableHead>
+                    <TableHead>국제유가</TableHead>
+                    <TableHead>인건비 증감률</TableHead>
+                    <TableHead>{organization === 'R&A' ? '매출액 증감률' : '매출액 증가율'}</TableHead>
+                    <TableHead>{organization === 'R&A' ? '영업이익 증감률' : '영업이익 증가율'}</TableHead>
+                    <TableHead>{organization === 'R&A' ? '가동률 증감률' : '연구개발비용 증감률'}</TableHead>
+                    <TableHead>{organization === 'R&A' ? '가동일수 증감률' : '연구개발정부보조금 증감률'}</TableHead>
+                    <TableHead>정원</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {storedData.map((row, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="sticky left-0 bg-white font-medium">{row.year}</TableCell>
+                      <TableCell>{row.ev_growth_gl?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.v_growth_gl?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.v_export_kr?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.vp_export_kr?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.gdp_growth_kr?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.cpi_kr?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.exchange_rate_change_krw?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.scm_index_gl?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.oil_gl?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.labor_cost?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.revenue?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.profit?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.operating_rate?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.operating_date?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell>{row.headcount ?? '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
