@@ -164,7 +164,13 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
       return f.회사 === orgInfo.회사;
     });
 
+    console.log('🔍 Filtered teams:', filteredTeams);
+    console.log('🔍 Filtered FTE data:', filteredFTEData.length, 'items');
+
     if (filteredFTEData.length === 0) {
+      console.warn('⚠️ No FTE data after filtering');
+      console.log('Available FTE teams:', fteData.map(f => f.팀명));
+      console.log('Available org teams:', organizationData.map(o => o.팀));
       setStatistics(null);
       return;
     }

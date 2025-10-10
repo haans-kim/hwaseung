@@ -1,29 +1,26 @@
 """
-FTE Service
-FTE 분석 데이터 처리 (평균FTE 시트 - 간소화된 구조)
+FTE (Full-Time Equivalent) 분석 서비스
+평균 FTE 데이터를 피벗 구조로 저장 (UI 호환)
 """
 
 import pandas as pd
 import sqlite3
-from typing import Dict, Any, Optional, List
-from datetime import datetime
+from typing import Dict, Any, List, Optional
+from pathlib import Path
 
 class FTEService:
-    def __init__(self, db_path: str = "/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db"):
-        self.db_path = db_path
-
-    def get_db_connection(self):
-        """데이터베이스 연결"""
-        return sqlite3.connect(self.db_path)
+    def __init__(self):
+        self.db_path = Path(__file__).parent.parent.parent.parent / 'hwaseung_RnD.db'
 
     def validate_excel_file(self, file_path: str) -> Dict[str, Any]:
         """
-        FTE Excel 파일 검증 (평균FTE 시트)
+        Excel 파일 검증 (평균FTE 시트)
 
-        Expected columns: 계열사, 부서, 사용자직위, 평균FTE, 인원수, 평균FTE/인원수
+        Template 구조:
+        - 계열사, 부서, 사용자직위, 평균FTE, 인원수, 평균FTE/인원수
+        - 각 팀의 직급별 데이터를 피벗하여 저장
         """
         try:
-            # Excel 파일 읽기
             excel_file = pd.ExcelFile(file_path)
 
             # "평균FTE" 시트 찾기
@@ -35,218 +32,256 @@ class FTEService:
 
             if not fte_sheet_name:
                 return {
-                    "valid": False,
-                    "error": "Excel 파일에 '평균FTE' 시트가 없습니다"
+                    'valid': False,
+                    'error': f'"평균FTE" 시트를 찾을 수 없습니다. 사용 가능한 시트: {", ".join(excel_file.sheet_names)}'
                 }
 
-            # 시트 읽기
+            # 데이터 읽기
             df = excel_file.parse(fte_sheet_name)
 
-            # 필수 컬럼 검증
+            # 필수 컬럼 확인
             required_cols = ['계열사', '부서', '사용자직위', '평균FTE', '인원수', '평균FTE/인원수']
-
             missing_cols = [col for col in required_cols if col not in df.columns]
+
             if missing_cols:
                 return {
-                    "valid": False,
-                    "error": f"필수 컬럼이 없습니다: {missing_cols}"
+                    'valid': False,
+                    'error': f'필수 컬럼이 없습니다: {", ".join(missing_cols)}'
                 }
 
             # 데이터 검증
-            if len(df) == 0:
+            if df.empty:
                 return {
-                    "valid": False,
-                    "error": "데이터가 없습니다"
+                    'valid': False,
+                    'error': '데이터가 비어있습니다'
                 }
 
-            # 통계 정보
-            companies = df['계열사'].dropna().unique().tolist()
-            teams = df['부서'].dropna().unique().tolist()
-            positions = df['사용자직위'].dropna().unique().tolist()
+            # 회사, 팀, 직급 정보 추출
+            companies = df['계열사'].unique().tolist()
+            teams = df['부서'].unique().tolist()
+            positions = df['사용자직위'].unique().tolist()
 
             return {
-                "valid": True,
-                "dataframe": df,
-                "sheet_name": fte_sheet_name,
-                "row_count": len(df),
-                "companies": companies,
-                "teams": teams,
-                "positions": positions,
-                "company_count": len(companies),
-                "team_count": len(teams),
-                "position_count": len(positions)
+                'valid': True,
+                'dataframe': df,
+                'sheet_name': fte_sheet_name,
+                'row_count': len(df),
+                'companies': companies,
+                'company_count': len(companies),
+                'team_count': len(teams),
+                'positions': positions,
+                'position_count': len(positions)
             }
 
         except Exception as e:
             return {
-                "valid": False,
-                "error": f"파일 검증 중 오류 발생: {str(e)}"
+                'valid': False,
+                'error': f'파일 검증 실패: {str(e)}'
             }
 
     def save_to_database(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """FTE 데이터를 데이터베이스에 저장"""
-        conn = self.get_db_connection()
-        cursor = conn.cursor()
-
-        saved_count = 0
-        errors = []
-
+        """
+        피벗 구조로 데이터베이스에 저장
+        각 팀별로 전체/책임/선임/사원 데이터를 하나의 행으로 피벗
+        """
         try:
-            for _, row in df.iterrows():
-                # 필수 값 확인
-                if pd.isna(row['계열사']) or pd.isna(row['부서']) or pd.isna(row['사용자직위']):
-                    continue
+            conn = sqlite3.connect(str(self.db_path))
+            cursor = conn.cursor()
 
+            saved_count = 0
+            errors = []
+
+            # 팀별로 그룹화하여 피벗
+            for (company, team), group in df.groupby(['계열사', '부서']):
                 try:
+                    # 각 직급별 데이터 추출
+                    pivot_data = {
+                        '팀명': team,
+                        '회사': company,
+                        'FTE_전체': None,
+                        'FTE_책임': None,
+                        'FTE_선임': None,
+                        'FTE_사원': None,
+                        '인원수_전체': None,
+                        '인원수_책임': None,
+                        '인원수_선임': None,
+                        '인원수_사원': None,
+                        'FTE_per_인원_전체': None,
+                        'FTE_per_인원_책임': None,
+                        'FTE_per_인원_선임': None,
+                        'FTE_per_인원_사원': None
+                    }
+
+                    for _, row in group.iterrows():
+                        position = row['사용자직위']
+                        avg_fte = row['평균FTE']
+                        headcount = row['인원수']
+                        avg_per_person = row['평균FTE/인원수']
+
+                        if position == '전체':
+                            pivot_data['FTE_전체'] = avg_fte
+                            pivot_data['인원수_전체'] = headcount
+                            pivot_data['FTE_per_인원_전체'] = avg_per_person
+                        elif position == '책임':
+                            pivot_data['FTE_책임'] = avg_fte
+                            pivot_data['인원수_책임'] = headcount
+                            pivot_data['FTE_per_인원_책임'] = avg_per_person
+                        elif position == '선임':
+                            pivot_data['FTE_선임'] = avg_fte
+                            pivot_data['인원수_선임'] = headcount
+                            pivot_data['FTE_per_인원_선임'] = avg_per_person
+                        elif position == '사원':
+                            pivot_data['FTE_사원'] = avg_fte
+                            pivot_data['인원수_사원'] = headcount
+                            pivot_data['FTE_per_인원_사원'] = avg_per_person
+
+                    # UPSERT
                     cursor.execute("""
                         INSERT INTO fte (
-                            company, team, position, avg_fte, headcount, avg_fte_per_person, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        ON CONFLICT(company, team, position)
-                        DO UPDATE SET
-                            avg_fte = excluded.avg_fte,
-                            headcount = excluded.headcount,
-                            avg_fte_per_person = excluded.avg_fte_per_person,
-                            updated_at = excluded.updated_at
+                            팀명, 회사,
+                            FTE_전체, FTE_책임, FTE_선임, FTE_사원,
+                            인원수_전체, 인원수_책임, 인원수_선임, 인원수_사원,
+                            FTE_per_인원_전체, FTE_per_인원_책임, FTE_per_인원_선임, FTE_per_인원_사원
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(회사, 팀명) DO UPDATE SET
+                            FTE_전체 = excluded.FTE_전체,
+                            FTE_책임 = excluded.FTE_책임,
+                            FTE_선임 = excluded.FTE_선임,
+                            FTE_사원 = excluded.FTE_사원,
+                            인원수_전체 = excluded.인원수_전체,
+                            인원수_책임 = excluded.인원수_책임,
+                            인원수_선임 = excluded.인원수_선임,
+                            인원수_사원 = excluded.인원수_사원,
+                            FTE_per_인원_전체 = excluded.FTE_per_인원_전체,
+                            FTE_per_인원_책임 = excluded.FTE_per_인원_책임,
+                            FTE_per_인원_선임 = excluded.FTE_per_인원_선임,
+                            FTE_per_인원_사원 = excluded.FTE_per_인원_사원,
+                            updated_at = CURRENT_TIMESTAMP
                     """, (
-                        row['계열사'],
-                        row['부서'],
-                        row['사용자직위'],
-                        float(row['평균FTE']) if pd.notna(row['평균FTE']) else None,
-                        float(row['인원수']) if pd.notna(row['인원수']) else None,
-                        float(row['평균FTE/인원수']) if pd.notna(row['평균FTE/인원수']) else None,
-                        datetime.now().isoformat(),
-                        datetime.now().isoformat()
+                        pivot_data['팀명'], pivot_data['회사'],
+                        pivot_data['FTE_전체'], pivot_data['FTE_책임'], pivot_data['FTE_선임'], pivot_data['FTE_사원'],
+                        pivot_data['인원수_전체'], pivot_data['인원수_책임'], pivot_data['인원수_선임'], pivot_data['인원수_사원'],
+                        pivot_data['FTE_per_인원_전체'], pivot_data['FTE_per_인원_책임'],
+                        pivot_data['FTE_per_인원_선임'], pivot_data['FTE_per_인원_사원']
                     ))
 
                     saved_count += 1
 
                 except Exception as e:
-                    errors.append(f"Row {row['계열사']}/{row['부서']}/{row['사용자직위']}: {str(e)}")
+                    errors.append(f'{company} - {team}: {str(e)}')
 
             conn.commit()
+            conn.close()
 
             return {
-                "success": True,
-                "saved_count": saved_count,
-                "errors": errors if errors else None
+                'success': True,
+                'saved_count': saved_count,
+                'errors': errors if errors else None
             }
 
         except Exception as e:
-            conn.rollback()
             return {
-                "success": False,
-                "error": f"데이터 저장 실패: {str(e)}"
+                'success': False,
+                'error': str(e)
             }
-        finally:
-            conn.close()
 
     def get_fte_data(self, company: Optional[str] = None, team: Optional[str] = None) -> List[Dict[str, Any]]:
         """FTE 데이터 조회"""
-        conn = self.get_db_connection()
-        cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(str(self.db_path))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
 
-        query = "SELECT * FROM fte WHERE 1=1"
-        params = []
+            query = "SELECT * FROM fte WHERE 1=1"
+            params = []
 
-        if company:
-            query += " AND company = ?"
-            params.append(company)
+            if company:
+                query += " AND 회사 = ?"
+                params.append(company)
 
-        if team:
-            query += " AND team = ?"
-            params.append(team)
+            if team:
+                query += " AND 팀명 = ?"
+                params.append(team)
 
-        query += " ORDER BY company, team, position"
+            query += " ORDER BY 회사, 팀명"
 
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
 
-        columns = [
-            'id', 'company', 'team', 'position', 'avg_fte', 'headcount',
-            'avg_fte_per_person', 'created_at', 'updated_at'
-        ]
+            result = [dict(row) for row in rows]
 
-        return [dict(zip(columns, row)) for row in rows]
+            conn.close()
+            return result
+
+        except Exception as e:
+            print(f"Error getting FTE data: {e}")
+            return []
 
     def delete_fte_data(self, company: Optional[str] = None, team: Optional[str] = None) -> Dict[str, Any]:
         """FTE 데이터 삭제"""
-        conn = self.get_db_connection()
-        cursor = conn.cursor()
-
         try:
+            conn = sqlite3.connect(str(self.db_path))
+            cursor = conn.cursor()
+
             query = "DELETE FROM fte WHERE 1=1"
             params = []
 
             if company:
-                query += " AND company = ?"
+                query += " AND 회사 = ?"
                 params.append(company)
 
             if team:
-                query += " AND team = ?"
+                query += " AND 팀명 = ?"
                 params.append(team)
 
             cursor.execute(query, params)
             deleted_count = cursor.rowcount
 
             conn.commit()
+            conn.close()
 
             return {
-                "success": True,
-                "deleted_count": deleted_count
+                'success': True,
+                'deleted_count': deleted_count
             }
 
         except Exception as e:
-            conn.rollback()
             return {
-                "success": False,
-                "error": str(e)
+                'success': False,
+                'error': str(e)
             }
-        finally:
-            conn.close()
 
     def get_status(self) -> Dict[str, Any]:
         """FTE 데이터 상태 조회"""
-        conn = self.get_db_connection()
-        cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(str(self.db_path))
+            cursor = conn.cursor()
 
-        # 전체 통계
-        cursor.execute("SELECT COUNT(*) FROM fte")
-        total_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM fte")
+            total_count = cursor.fetchone()[0]
 
-        # 회사별 통계
-        cursor.execute("""
-            SELECT company, COUNT(*) as count, COUNT(DISTINCT team) as team_count, COUNT(DISTINCT position) as position_count
-            FROM fte
-            GROUP BY company
-        """)
-        company_stats = {}
-        for row in cursor.fetchall():
-            company_stats[row[0]] = {
-                'record_count': row[1],
-                'team_count': row[2],
-                'position_count': row[3]
+            cursor.execute("SELECT COUNT(DISTINCT 회사) FROM fte")
+            company_count = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(DISTINCT 팀명) FROM fte")
+            team_count = cursor.fetchone()[0]
+
+            cursor.execute("SELECT 회사, COUNT(*) as count FROM fte GROUP BY 회사")
+            company_breakdown = [{'company': row[0], 'count': row[1]} for row in cursor.fetchall()]
+
+            conn.close()
+
+            return {
+                'total_count': total_count,
+                'company_count': company_count,
+                'team_count': team_count,
+                'company_breakdown': company_breakdown
             }
 
-        # 팀 목록
-        cursor.execute("SELECT DISTINCT team FROM fte ORDER BY team")
-        teams = [row[0] for row in cursor.fetchall()]
+        except Exception as e:
+            return {
+                'error': str(e)
+            }
 
-        # 직위 목록
-        cursor.execute("SELECT DISTINCT position FROM fte ORDER BY position")
-        positions = [row[0] for row in cursor.fetchall()]
-
-        conn.close()
-
-        return {
-            "total_count": total_count,
-            "company_stats": company_stats,
-            "teams": teams,
-            "positions": positions,
-            "team_count": len(teams),
-            "position_count": len(positions)
-        }
-
-# Singleton instance
+# 싱글톤 인스턴스
 fte_service = FTEService()

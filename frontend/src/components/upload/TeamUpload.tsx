@@ -7,13 +7,18 @@ interface UploadResult {
   success: boolean;
   message: string;
   validation?: {
-    organizations: string[];
+    companies: string[];
+    teams: string[];
+    years: number[];
+    months: number[];
+    positions: string[];
+    row_count: number;
+    team_count: number;
     feature_count: number;
-    data_rows: number;
   };
   saved?: {
-    mapping_count: number;
-    features_count: number;
+    count: number;
+    errors?: any;
   };
   error?: string;
 }
@@ -117,9 +122,9 @@ export const TeamUpload: React.FC = () => {
         </h3>
         <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
           <p>• Excel 파일은 2개의 시트를 포함해야 합니다</p>
-          <p>• Sheet 1 (Feature Mapping): 조직, Feature 이름, 설명, 사용여부</p>
-          <p>• Sheet 2 (Master Data): 연도, 조직, [features], 인원</p>
-          <p>• 조직별로 다른 Feature 세트를 사용할 수 있습니다</p>
+          <p>• Sheet 1 (Feature Matching): 조직 계층 정보 (HQ, 본부, 담당, 실, 팀)</p>
+          <p>• Sheet 2 (Master): HQ, 팀, 년, 월, 구분, F1-F9, 인력규모</p>
+          <p>• 팀별, 월별 Feature 데이터를 업로드합니다</p>
         </div>
       </div>
 
@@ -198,15 +203,18 @@ export const TeamUpload: React.FC = () => {
             <p className="font-semibold mb-2">{result.message}</p>
             {result.validation && (
               <div className="mt-2 text-sm space-y-1">
-                <p>• 조직: {result.validation.organizations.join(', ')}</p>
+                <p>• 회사: {result.validation.companies?.join(', ') || 'N/A'}</p>
+                <p>• 팀 수: {result.validation.team_count}개</p>
                 <p>• Feature 수: {result.validation.feature_count}개</p>
-                <p>• 데이터 행: {result.validation.data_rows}개</p>
+                <p>• 데이터 행: {result.validation.row_count}개</p>
+                <p>• 년도: {result.validation.years?.join(', ') || 'N/A'}</p>
+                <p>• 월: {result.validation.months?.join(', ') || 'N/A'}</p>
+                <p>• 직급: {result.validation.positions?.join(', ') || 'N/A'}</p>
               </div>
             )}
             {result.saved && (
               <div className="mt-2 text-sm space-y-1">
-                <p>✅ Feature Mapping: {result.saved.mapping_count}개 저장</p>
-                <p>✅ Team Features: {result.saved.features_count}개 저장</p>
+                <p>✅ {result.saved.count}개 데이터 저장 완료</p>
               </div>
             )}
             {result.error && (
@@ -225,12 +233,12 @@ export const TeamUpload: React.FC = () => {
         </h4>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
           <div>
-            <p className="font-medium">Sheet 1: Feature Mapping</p>
-            <p className="ml-4">조직 | Feature 이름 | 설명 | 사용여부</p>
+            <p className="font-medium">Sheet 1: Feature Matching</p>
+            <p className="ml-4">HQ | 본부 | 담당 | 실 | 팀</p>
           </div>
           <div>
             <p className="font-medium">Sheet 2: Master Data</p>
-            <p className="ml-4">연도 | 조직 | [Feature 컬럼들] | 인원</p>
+            <p className="ml-4">HQ | 팀 | 년 | 월 | 구분 | F1~F9 | 인력규모</p>
           </div>
         </div>
       </div>

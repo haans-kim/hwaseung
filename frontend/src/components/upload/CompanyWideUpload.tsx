@@ -96,7 +96,7 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
       formData.append('file', file);
 
       const response = await fetch(
-        `http://localhost:8000/api/company-wide/upload?organization=${organization}`,
+        `http://localhost:8000/api/company-wide/upload?organization=${encodeURIComponent(organization)}`,
         {
           method: 'POST',
           body: formData,

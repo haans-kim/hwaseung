@@ -167,13 +167,17 @@ const OrganizationHeadcount: React.FC = () => {
             팀: row[4]
           }));
 
+          console.log('✅ Organization data loaded:', orgData.length, 'rows');
           setOrganizationData(orgData);
 
           // 회사 목록 추출
           const uniqueCompanies = Array.from(
             new Set(orgData.map(org => org.회사).filter(Boolean))
           ) as string[];
+          console.log('✅ Companies:', uniqueCompanies);
           setCompanies(uniqueCompanies);
+        } else {
+          console.warn('⚠️ No organization data found');
         }
 
         // FTE 데이터 조회
@@ -206,14 +210,19 @@ const OrganizationHeadcount: React.FC = () => {
             FTE_per_인원_사원: row[13] || 0
           }));
 
+          console.log('✅ FTE data loaded:', fteDataArray.length, 'rows');
+          console.log('Sample FTE data:', fteDataArray[0]);
           setFTEData(fteDataArray);
+        } else {
+          console.warn('⚠️ No FTE data found');
         }
 
         // 데이터베이스 연결 종료
         db.close();
         setLoading(false);
       } catch (error) {
-        console.error('Failed to load database:', error);
+        console.error('❌ Failed to load database:', error);
+        console.error('Error details:', error instanceof Error ? error.message : String(error));
         setLoading(false);
       }
     };
