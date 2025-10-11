@@ -1,0 +1,19 @@
+{
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/venv",
+    "venv",
+    ".venv",
+    "uploads",
+    "models",
+    "data"
+  ],
+  "ignore": [
+    "**/venv/**",
+    "venv/**"
+  ],
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "typeCheckingMode": "basic"
+}

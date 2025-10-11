@@ -25,7 +25,7 @@ except ImportError:
     PYCARET_AVAILABLE = False
     logging.warning("PyCaret not available")
 
-from app.services.augmentation_service import augmentation_service
+from app.services import get_augmentation_service
 
 DB_PATH = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
 
@@ -222,7 +222,7 @@ class CompanyWideModelingService:
     def setup_pycaret_environment(
         self,
         organization: str,
-        use_augmentation: bool = False,  # 🚨 메모리 안전: 기본값 False로 변경
+        use_augmentation: bool = True,
         target_size: int = 200,
         session_id: Optional[int] = None
     ) -> Dict[str, Any]:
@@ -231,7 +231,7 @@ class CompanyWideModelingService:
 
         Args:
             organization: 'R&A' or 'tonggibon'
-            use_augmentation: 데이터 증강 사용 여부 (기본값: False - 메모리 안전)
+            use_augmentation: 데이터 증강 사용 여부
             target_size: 증강 목표 크기
             session_id: 재현성을 위한 시드값
 
@@ -241,16 +241,10 @@ class CompanyWideModelingService:
         if not self.check_pycaret_availability():
             raise RuntimeError("PyCaret is not available")
 
-        # 데이터 증강 여부에 따라 분기
+        # 데이터 준비
         if use_augmentation:
-            logging.info(f"🔄 Augmentation enabled: target size = {target_size}")
-            ml_data, data_info = self.augment_data(
-                organization=organization,
-                target_size=target_size,
-                method='auto'
-            )
+            ml_data, data_info = self.augment_data(organization, target_size)
         else:
-            logging.info("📊 Using original data without augmentation")
             ml_data, data_info = self.prepare_data(organization)
 
         # Session ID 설정 (organization별 고정값)
@@ -268,14 +262,24 @@ class CompanyWideModelingService:
             # 🚨 메모리 정리 (setup 전)
             gc.collect()
 
-            # 데이터 크기에 따른 설정 (메모리 최소화)
+            # 데이터 크기에 따른 설정
             data_size = len(ml_data)
 
-            # 🚨 메모리 에러 방지: 모든 케이스에서 최소 설정
-            train_size = 0.9  # 테스트 셋 최소화
-            fold = 2  # 항상 2-fold
-            normalize = True  # 정규화는 유지 (성능)
-            transformation = False  # 변환 비활성화 (메모리 절약)
+            if data_size < 30:
+                train_size = 0.9
+                fold = 2
+                normalize = False
+                transformation = False
+            elif data_size < 100:
+                train_size = 0.8
+                fold = 3
+                normalize = True
+                transformation = False
+            else:
+                train_size = 0.7
+                fold = 5
+                normalize = True
+                transformation = True
 
             # PyCaret setup (메모리 안전 모드)
             exp = setup(
@@ -301,7 +305,7 @@ class CompanyWideModelingService:
                 remove_multicollinearity=True,
                 multicollinearity_threshold=0.9,
 
-                fold=2  # 항상 2-fold (메모리 최소화)
+                fold=min(3, fold)  # 최대 3-fold
             )
 
             self.experiments[organization] = exp
@@ -358,23 +362,23 @@ class CompanyWideModelingService:
             X_train = get_config('X_train')
             data_size = len(X_train) if X_train is not None else 100
 
-            # 🚨 메모리 안전: 모델 수 최소화 (메모리 에러 방지)
+            # 🚨 메모리 안전: 모델 수 제한
             if data_size < 30:
                 models_to_use = ['lr']  # 1개만
                 n_select = 1
                 safe_fold = 2
-            elif data_size < 100:
-                models_to_use = ['lr', 'ridge']  # 2개만 (가벼운 모델만)
-                n_select = min(1, n_select)  # 1개만 선택
+            elif data_size < 50:
+                models_to_use = self.small_data_models[:2]  # 2개만
+                n_select = min(2, n_select)
                 safe_fold = 2
-            elif data_size < 500:
-                models_to_use = ['lr', 'ridge', 'lasso']  # 3개만 (선형 모델만)
-                n_select = min(1, n_select)  # 1개만 선택
-                safe_fold = 2
+            elif data_size < 200:
+                models_to_use = self.medium_data_models[:3]  # 3개만
+                n_select = min(3, n_select)
+                safe_fold = 3
             else:
-                models_to_use = ['lr', 'ridge', 'rf']  # 3개까지만 (트리 모델 1개만)
-                n_select = min(1, n_select)  # 1개만 선택
-                safe_fold = 2
+                models_to_use = self.large_data_models[:5]  # 5개까지
+                n_select = min(5, n_select)
+                safe_fold = 3
 
             # 모델 비교 (메모리 안전)
             best_models = compare_models(
@@ -628,5 +632,5 @@ class CompanyWideModelingService:
         # 가비지 컬렉션
         gc.collect()
 
-# 싱글톤 인스턴스
-company_wide_modeling_service = CompanyWideModelingService()
+# 싱글톤 인스턴스 제거 - lazy loading 사용
+# company_wide_modeling_service = CompanyWideModelingService()

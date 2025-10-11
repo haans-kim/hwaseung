@@ -16,7 +16,7 @@ router = APIRouter(
 
 class SetupRequest(BaseModel):
     organization: str
-    use_augmentation: bool = True
+    use_augmentation: bool = False  # 🚨 메모리 안전: 기본값 False
     target_size: int = 200
 
 class CompareRequest(BaseModel):

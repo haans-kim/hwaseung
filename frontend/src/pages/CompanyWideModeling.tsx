@@ -426,7 +426,7 @@ const CompanyWideModeling: React.FC = () => {
                     {rnaComparison.comparison_data.slice(0, 3).map((model, idx) => (
                       <div key={idx} className="flex justify-between items-center text-sm p-2 bg-muted rounded">
                         <span className="font-medium">{model.Model}</span>
-                        <span className="text-blue-600">R² {model.R2.toFixed(3)}</span>
+                        <span className="text-blue-600">R² {model.R2 != null ? model.R2.toFixed(3) : 'N/A'}</span>
                       </div>
                     ))}
                   </div>
@@ -441,7 +441,7 @@ const CompanyWideModeling: React.FC = () => {
                     {tongComparison.comparison_data.slice(0, 3).map((model, idx) => (
                       <div key={idx} className="flex justify-between items-center text-sm p-2 bg-muted rounded">
                         <span className="font-medium">{model.Model}</span>
-                        <span className="text-blue-600">R² {model.R2.toFixed(3)}</span>
+                        <span className="text-blue-600">R² {model.R2 != null ? model.R2.toFixed(3) : 'N/A'}</span>
                       </div>
                     ))}
                   </div>
@@ -491,7 +491,7 @@ const CompanyWideModeling: React.FC = () => {
 
                       return (
                         <option key={modelCode} value={modelCode}>
-                          {model.Model} (R² {model.R2.toFixed(3)})
+                          {model.Model} (R² {model.R2 != null ? model.R2.toFixed(3) : 'N/A'})
                         </option>
                       );
                     })}
@@ -522,9 +522,9 @@ const CompanyWideModeling: React.FC = () => {
                   <CheckCircle2 className="h-5 w-5 text-green-600 mb-2" />
                   <div className="text-sm space-y-1">
                     <p className="font-medium">학습 완료: {modelNameKorean[rnaTraining.model_type]}</p>
-                    <p>R²: {rnaTraining.metrics.R2.toFixed(3)}</p>
-                    <p>MAE: {rnaTraining.metrics.MAE.toFixed(2)}</p>
-                    <p>RMSE: {rnaTraining.metrics.RMSE.toFixed(2)}</p>
+                    <p>R²: {rnaTraining.metrics.R2 != null ? rnaTraining.metrics.R2.toFixed(3) : 'N/A'}</p>
+                    <p>MAE: {rnaTraining.metrics.MAE != null ? rnaTraining.metrics.MAE.toFixed(2) : 'N/A'}</p>
+                    <p>RMSE: {rnaTraining.metrics.RMSE != null ? rnaTraining.metrics.RMSE.toFixed(2) : 'N/A'}</p>
                   </div>
                 </div>
               )}
@@ -556,7 +556,7 @@ const CompanyWideModeling: React.FC = () => {
 
                       return (
                         <option key={modelCode} value={modelCode}>
-                          {model.Model} (R² {model.R2.toFixed(3)})
+                          {model.Model} (R² {model.R2 != null ? model.R2.toFixed(3) : 'N/A'})
                         </option>
                       );
                     })}
@@ -587,9 +587,9 @@ const CompanyWideModeling: React.FC = () => {
                   <CheckCircle2 className="h-5 w-5 text-green-600 mb-2" />
                   <div className="text-sm space-y-1">
                     <p className="font-medium">학습 완료: {modelNameKorean[tongTraining.model_type]}</p>
-                    <p>R²: {tongTraining.metrics.R2.toFixed(3)}</p>
-                    <p>MAE: {tongTraining.metrics.MAE.toFixed(2)}</p>
-                    <p>RMSE: {tongTraining.metrics.RMSE.toFixed(2)}</p>
+                    <p>R²: {tongTraining.metrics.R2 != null ? tongTraining.metrics.R2.toFixed(3) : 'N/A'}</p>
+                    <p>MAE: {tongTraining.metrics.MAE != null ? tongTraining.metrics.MAE.toFixed(2) : 'N/A'}</p>
+                    <p>RMSE: {tongTraining.metrics.RMSE != null ? tongTraining.metrics.RMSE.toFixed(2) : 'N/A'}</p>
                   </div>
                 </div>
               )}

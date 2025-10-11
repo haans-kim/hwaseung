@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional
 import logging
 from sklearn.inspection import permutation_importance
 
-from app.services.company_wide_modeling_service import company_wide_modeling_service
+from app.services import get_company_wide_modeling_service
 
 DB_PATH = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
 
@@ -77,10 +77,7 @@ class CompanyWideDashboardService:
 
     def predict_2026(self, organization: str) -> Dict[str, Any]:
         """
-        2025년 및 2026년 적정인력 예측
-
-        - 2025년 예측: 2025년 features로 예측 (기준: 2024년 실제 headcount)
-        - 2026년 예측: 있으면 2026년 features로 예측, 없으면 2025년 예측만 반환
+        2026년 적정인력 예측
 
         Args:
             organization: 'R&A' or 'tonggibon'
@@ -93,128 +90,75 @@ class CompanyWideDashboardService:
             model = company_wide_modeling_service.models.get(organization)
 
             if model is None:
+                # 저장된 모델 로드
                 try:
                     company_wide_modeling_service.load_model(organization, 'latest')
                     model = company_wide_modeling_service.models.get(organization)
                 except:
                     raise ValueError(f"No trained model found for {organization}")
 
-            from pycaret.regression import predict_model, pull
+            # 최신 데이터 가져오기
+            latest_data = self.get_latest_data(organization)
+            latest_year = int(latest_data.get('year', 2025))
+            previous_headcount = latest_data.get('headcount')
+
+            # 예측용 데이터 준비
+            prediction_df = pd.DataFrame([latest_data])
+
+            # 불필요한 컬럼 제거
+            cols_to_drop = ['id', 'organization', 'year', 'headcount', 'created_at', 'updated_at']
+            for col in cols_to_drop:
+                if col in prediction_df.columns:
+                    prediction_df = prediction_df.drop(columns=[col])
+
+            # 예측
+            from pycaret.regression import predict_model
             import io
             import sys
 
-            # DB에서 데이터 가져오기
-            conn = sqlite3.connect(DB_PATH)
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
 
-            # 2024년 실제 headcount 가져오기 (기준값)
-            query_2024 = """
-                SELECT headcount
-                FROM company_wide_features
-                WHERE organization = ? AND year = 2024 AND headcount IS NOT NULL
-                LIMIT 1
-            """
-            result_2024 = pd.read_sql_query(query_2024, conn, params=(organization,))
-            headcount_2024 = result_2024.iloc[0]['headcount'] if len(result_2024) > 0 else None
+            try:
+                predictions = predict_model(model, data=prediction_df)
+                predicted_value = predictions['prediction_label'].iloc[0]
+            finally:
+                sys.stdout = old_stdout
 
-            # 2025년 features 가져오기
-            query_2025 = """
-                SELECT *
-                FROM company_wide_features
-                WHERE organization = ? AND year = 2025
-                LIMIT 1
-            """
-            data_2025 = pd.read_sql_query(query_2025, conn, params=(organization,))
+            # 증감 계산
+            if previous_headcount:
+                change = predicted_value - previous_headcount
+                change_percent = (change / previous_headcount) * 100
+            else:
+                change = 0
+                change_percent = 0
 
-            # 2026년 features 가져오기 (있을 경우)
-            query_2026 = """
-                SELECT *
-                FROM company_wide_features
-                WHERE organization = ? AND year = 2026
-                LIMIT 1
-            """
-            data_2026 = pd.read_sql_query(query_2026, conn, params=(organization,))
-            conn.close()
-
-            # 컬럼 제거 함수
-            def prepare_prediction_data(df):
-                df = df.copy()
-                cols_to_drop = ['id', 'organization', 'year', 'headcount', 'created_at', 'updated_at']
-                for col in cols_to_drop:
-                    if col in df.columns:
-                        df = df.drop(columns=[col])
-                return df
-
-            # 2025년 예측
-            prediction_2025 = None
-            if len(data_2025) > 0:
-                pred_df_2025 = prepare_prediction_data(data_2025)
-
-                old_stdout = sys.stdout
-                sys.stdout = io.StringIO()
-                try:
-                    predictions = predict_model(model, data=pred_df_2025)
-                    prediction_2025 = predictions['prediction_label'].iloc[0]
-                finally:
-                    sys.stdout = old_stdout
-
-            # 2026년 예측 (2026 데이터가 있을 경우만)
-            prediction_2026 = None
-            if len(data_2026) > 0:
-                pred_df_2026 = prepare_prediction_data(data_2026)
-
-                old_stdout = sys.stdout
-                sys.stdout = io.StringIO()
-                try:
-                    predictions = predict_model(model, data=pred_df_2026)
-                    prediction_2026 = predictions['prediction_label'].iloc[0]
-                finally:
-                    sys.stdout = old_stdout
-
-            # 모델 R2 score 가져오기
+            # 모델 평가 메트릭 (R2 score)
+            from pycaret.regression import pull
             try:
                 old_stdout = sys.stdout
                 sys.stdout = io.StringIO()
                 metrics = pull()
                 sys.stdout = old_stdout
+
                 r2_score = metrics.loc[metrics.index[0], 'R2'] if metrics is not None else 0.85
             except:
-                r2_score = 0.85
+                r2_score = 0.85  # 기본값
 
-            # 결과 구성
-            if prediction_2026 is not None:
-                # 2026년 데이터가 있으면 2026년 예측 반환 (기준: 2025년 예측)
-                return {
-                    'year': 2026,
-                    'predicted_headcount': round(prediction_2026),
-                    'previous_year': 2025,
-                    'previous_headcount': round(prediction_2025) if prediction_2025 else None,
-                    'change': round(prediction_2026 - prediction_2025) if prediction_2025 else 0,
-                    'change_percent': round((prediction_2026 - prediction_2025) / prediction_2025 * 100, 1) if prediction_2025 else 0,
-                    'model_r2': round(r2_score, 2),
-                    'organization': organization,
-                    'prediction_2025': round(prediction_2025) if prediction_2025 else None,
-                    'actual_2024': int(headcount_2024) if headcount_2024 else None
-                }
-            else:
-                # 2026년 데이터가 없으면 2025년 features로 2026년 예측 (기준: 2024년 실제)
-                return {
-                    'year': 2026,  # Dashboard 표시를 위해 2026년으로
-                    'predicted_headcount': round(prediction_2025) if prediction_2025 else None,
-                    'previous_year': 2024,
-                    'previous_headcount': int(headcount_2024) if headcount_2024 else None,
-                    'change': round(prediction_2025 - headcount_2024) if (prediction_2025 and headcount_2024) else 0,
-                    'change_percent': round((prediction_2025 - headcount_2024) / headcount_2024 * 100, 1) if (prediction_2025 and headcount_2024) else 0,
-                    'model_r2': round(r2_score, 2),
-                    'organization': organization,
-                    'note': '2025 features로 2026 예측'
-                }
+            return {
+                'year': latest_year + 1,  # 2026
+                'predicted_headcount': round(predicted_value),
+                'previous_year': latest_year,
+                'previous_headcount': int(previous_headcount) if previous_headcount else None,
+                'change': round(change),
+                'change_percent': round(change_percent, 1),
+                'model_r2': round(r2_score, 2),
+                'organization': organization
+            }
 
         except Exception as e:
             logging.error(f"Prediction failed: {e}")
-            import traceback
-            traceback.print_exc()
             raise
-
 
     def get_feature_importance(self, organization: str, top_n: int = 10) -> List[Dict[str, Any]]:
         """
@@ -234,39 +178,24 @@ class CompanyWideDashboardService:
                 company_wide_modeling_service.load_model(organization, 'latest')
                 model = company_wide_modeling_service.models.get(organization)
 
-            # DB에서 학습 데이터 가져오기 (PyCaret config 대신)
-            df = company_wide_modeling_service.get_data_from_db(organization)
+            # 학습 데이터 가져오기
+            from pycaret.regression import get_config
+            X_train = get_config('X_train')
+            y_train = get_config('y_train')
 
-            # 데이터 준비
-            cols_to_drop = ['id', 'organization', 'year', 'created_at', 'updated_at']
-            for col in cols_to_drop:
-                if col in df.columns:
-                    df = df.drop(columns=[col])
-
-            if 'headcount' not in df.columns:
-                raise ValueError("Target column 'headcount' not found")
-
-            # NaN 제거
-            df = df.dropna(subset=['headcount'])
-            if len(df) == 0:
-                raise ValueError("No valid data after removing NaN")
-
-            X = df.drop(columns=['headcount'])
-            y = df['headcount']
-
-            # Feature columns에서도 NaN 제거
-            X = X.fillna(X.mean())  # 평균값으로 대체
+            if X_train is None or y_train is None:
+                raise ValueError("Training data not available")
 
             # Permutation importance 계산
             perm_importance = permutation_importance(
-                model, X, y,
+                model, X_train, y_train,
                 n_repeats=10,
                 random_state=42,
-                n_jobs=1  # 메모리 안전
+                n_jobs=-1
             )
 
             # Feature importance 정렬
-            feature_names = X.columns.tolist()
+            feature_names = X_train.columns.tolist()
             importance_data = []
 
             for idx, feature in enumerate(feature_names):
@@ -291,8 +220,6 @@ class CompanyWideDashboardService:
 
         except Exception as e:
             logging.error(f"Feature importance calculation failed: {e}")
-            import traceback
-            traceback.print_exc()
             # Fallback: 더미 데이터
             return []
 
@@ -461,5 +388,5 @@ class CompanyWideDashboardService:
             logging.error(f"Variable ranges calculation failed: {e}")
             return {}
 
-# 싱글톤 인스턴스
-company_wide_dashboard_service = CompanyWideDashboardService()
+# 싱글톤 인스턴스 제거 - lazy loading 사용
+# company_wide_dashboard_service = CompanyWideDashboardService()

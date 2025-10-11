@@ -51,9 +51,10 @@ interface PredictionData {
 }
 
 interface FeatureImportance {
-  name: string;
+  feature: string;  // 백엔드 API는 'feature' 키 사용
   importance: number;
-  label?: string;
+  label: string;
+  std?: number;
 }
 
 interface TrendData {
@@ -295,7 +296,7 @@ const DashboardRNA: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {prediction ? `R² ${prediction.model_r2.toFixed(3)}` : '-'}
+              {prediction && prediction.model_r2 != null ? `R² ${prediction.model_r2.toFixed(3)}` : '-'}
             </div>
             <p className="text-xs text-muted-foreground">
               결정계수
