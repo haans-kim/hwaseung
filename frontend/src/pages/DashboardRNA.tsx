@@ -107,10 +107,11 @@ const DashboardRNA: React.FC = () => {
       setError(null);
 
       // 병렬로 모든 데이터 로드
+      const encodedOrg = encodeURIComponent(ORGANIZATION);
       const [predRes, impRes, trendRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/company-wide/dashboard/prediction?organization=${ORGANIZATION}`),
-        fetch(`${API_BASE_URL}/api/company-wide/dashboard/importance?organization=${ORGANIZATION}`),
-        fetch(`${API_BASE_URL}/api/company-wide/dashboard/trend?organization=${ORGANIZATION}`)
+        fetch(`${API_BASE_URL}/api/company-wide/dashboard/prediction?organization=${encodedOrg}`),
+        fetch(`${API_BASE_URL}/api/company-wide/dashboard/importance?organization=${encodedOrg}`),
+        fetch(`${API_BASE_URL}/api/company-wide/dashboard/trend?organization=${encodedOrg}`)
       ]);
 
       if (predRes.ok) {
@@ -122,14 +123,14 @@ const DashboardRNA: React.FC = () => {
         const impData = await impRes.json();
         const featuresWithLabels = impData.features.map((f: FeatureImportance) => ({
           ...f,
-          label: featureLabels[f.name] || f.name
+          label: featureLabels[f.feature] || f.feature
         }));
         setImportance(featuresWithLabels);
 
         // 초기 변수값 설정 (시뮬레이션용)
         const initialVars: {[key: string]: number} = {};
         featuresWithLabels.forEach((f: FeatureImportance) => {
-          initialVars[f.name] = 0; // 기본값 0
+          initialVars[f.feature] = 0; // 기본값 0
         });
         setVariables(initialVars);
       }
@@ -209,7 +210,7 @@ const DashboardRNA: React.FC = () => {
 
   // Feature Importance 차트 데이터
   const importanceChartData = importance.length > 0 ? {
-    labels: importance.slice(0, 10).map(f => f.label || f.name),
+    labels: importance.slice(0, 10).map(f => f.label || f.feature),
     datasets: [{
       label: 'Importance',
       data: importance.slice(0, 10).map(f => f.importance),
@@ -369,19 +370,20 @@ const DashboardRNA: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {importance.slice(0, 8).map((feature) => (
-              <div key={feature.name} className="space-y-2">
+              <div key={feature.feature} className="space-y-2">
                 <div className="flex justify-between">
                   <label className="text-sm font-medium">{feature.label}</label>
-                  <span className="text-sm text-muted-foreground">{variables[feature.name] || 0}%</span>
+                  <span className="text-sm text-muted-foreground">{variables[feature.feature] || 0}%</span>
                 </div>
                 <input
                   type="range"
                   min="-50"
                   max="50"
                   step="1"
-                  value={variables[feature.name] || 0}
-                  onChange={(e) => setVariables({...variables, [feature.name]: parseFloat(e.target.value)})}
+                  value={variables[feature.feature] || 0}
+                  onChange={(e) => setVariables({...variables, [feature.feature]: parseFloat(e.target.value)})}
                   className="w-full"
+                  aria-label={feature.label}
                 />
               </div>
             ))}
