@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
     ports:
       - "3000:3000"
     environment:
@@ -21,6 +23,7 @@ services:
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/data:/app/data
+      - ./hwaseung_RnD.db:/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db
     networks:
       - app-network
 

@@ -9,7 +9,7 @@ start:
 start-fixed:
 	@echo "🚀 고정 포트로 서비스 시작 (로컬 개발)..."
 	@cd backend && source venv/bin/activate && python run.py &
-	@cd frontend && npm start
+	@cd frontend && PORT=3000 npm start
 
 # 프로덕션 모드 (외부 접속 가능)
 start-production:
@@ -35,7 +35,11 @@ start-force:
 restart:
 	@echo "🔄 서비스 재시작 중..."
 	@make stop
-	@sleep 2
+	@sleep 3
+	@echo "🔍 포트 상태 재확인..."
+	@lsof -ti:3000 2>/dev/null | xargs kill -9 2>/dev/null || true
+	@lsof -ti:8000 2>/dev/null | xargs kill -9 2>/dev/null || true
+	@sleep 1
 	@make start-fixed
 	@echo "✅ 재시작 완료!"
 

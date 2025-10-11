@@ -3,12 +3,18 @@ FROM node:18-alpine as build
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from frontend directory
+COPY frontend/package*.json ./
 RUN npm ci --only=production
 
-# Copy app files
-COPY . .
+# Copy frontend app files
+COPY frontend/ .
+
+# Copy database file from project root (resolve symlink issue)
+COPY hwaseung_RnD.db ./public/hwaseung_RnD.db
+
+# Set API URL for Docker environment
+ENV REACT_APP_API_URL=http://localhost:8000
 
 # Build the app
 RUN npm run build
@@ -19,14 +25,9 @@ FROM nginx:alpine
 # Copy built app
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Add nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Add nginx config (from frontend directory since context is project root)
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Create a script to replace PORT at runtime
-RUN echo '#!/bin/sh\n\
-sed -i "s/listen 80;/listen ${PORT:-80};/g" /etc/nginx/conf.d/default.conf\n\
-nginx -g "daemon off;"' > /start.sh && chmod +x /start.sh
+EXPOSE 80
 
-EXPOSE ${PORT:-80}
-
-CMD ["/start.sh"]
+CMD ["nginx", "-g", "daemon off;"]
