@@ -395,10 +395,20 @@ class CompanyWideDashboardService:
             # 2026년 예측
             prediction = self.predict_2026(organization)
 
-            # 데이터 결합
-            years = df['year'].tolist() + [prediction['year']]
-            actual = df['headcount'].tolist() + [None]
-            predicted = [None] * len(df) + [prediction['predicted_headcount']]
+            # 데이터 결합 - 연도를 +1하여 표시 (예측 대상 연도)
+            # 예: 2021년 데이터로 2022년 예측, 2022년 데이터로 2023년 예측
+            years = [y + 1 for y in df['year'].tolist()]
+            actual = df['headcount'].tolist()
+            predicted = [None] * len(df)
+
+            # 마지막 연도가 2026이 아니면 2026 예측 추가
+            if years[-1] != 2026:
+                years.append(prediction['year'])
+                actual.append(None)
+                predicted.append(prediction['predicted_headcount'])
+            else:
+                # 마지막 항목이 2026이면 예측값만 설정
+                predicted[-1] = prediction['predicted_headcount']
 
             return {
                 'years': years,

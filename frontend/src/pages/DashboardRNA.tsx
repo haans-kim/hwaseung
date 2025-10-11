@@ -187,23 +187,26 @@ const DashboardRNA: React.FC = () => {
     labels: trendData.years.map(y => `${y}년`),
     datasets: [
       {
-        label: '실제 정원',
-        data: trendData.actual,
+        label: '인력 추이 및 예측',
+        data: trendData.actual.map((val, idx) => {
+          // actual 값이 있으면 actual, 없으면 predicted 사용 (2026년)
+          return val !== null ? val : trendData.predicted[idx];
+        }),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 2,
         fill: true,
-        tension: 0.4
-      },
-      {
-        label: '2026년 예측',
-        data: trendData.predicted,
-        borderColor: 'rgb(239, 68, 68)',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        fill: false,
-        tension: 0.4
+        tension: 0.4,
+        segment: {
+          borderColor: (ctx: any) => {
+            // 2025 → 2026 구간은 빨간색으로
+            const years = trendData.years;
+            if (ctx.p0DataIndex === years.length - 2 && years[ctx.p0DataIndex] === 2025) {
+              return 'rgb(239, 68, 68)';
+            }
+            return 'rgb(59, 130, 246)';
+          }
+        }
       }
     ]
   } : null;
@@ -348,7 +351,7 @@ const DashboardRNA: React.FC = () => {
                   },
                   scales: {
                     y: {
-                      beginAtZero: false,
+                      beginAtZero: true,
                       ticks: {
                         callback: (value) => `${value}명`
                       }

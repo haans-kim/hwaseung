@@ -51,9 +51,10 @@ interface PredictionData {
 }
 
 interface FeatureImportance {
-  name: string;
+  feature: string;  // 백엔드 API는 'feature' 키 사용
   importance: number;
-  label?: string;
+  label: string;
+  std?: number;
 }
 
 interface TrendData {
@@ -106,10 +107,11 @@ const DashboardTonggibon: React.FC = () => {
       setError(null);
 
       // 병렬로 모든 데이터 로드
+      const encodedOrg = encodeURIComponent(ORGANIZATION);
       const [predRes, impRes, trendRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/company-wide/dashboard/prediction?organization=${ORGANIZATION}`),
-        fetch(`${API_BASE_URL}/api/company-wide/dashboard/importance?organization=${ORGANIZATION}`),
-        fetch(`${API_BASE_URL}/api/company-wide/dashboard/trend?organization=${ORGANIZATION}`)
+        fetch(`${API_BASE_URL}/api/company-wide/dashboard/prediction?organization=${encodedOrg}`),
+        fetch(`${API_BASE_URL}/api/company-wide/dashboard/importance?organization=${encodedOrg}`),
+        fetch(`${API_BASE_URL}/api/company-wide/dashboard/trend?organization=${encodedOrg}`)
       ]);
 
       if (predRes.ok) {
@@ -121,14 +123,14 @@ const DashboardTonggibon: React.FC = () => {
         const impData = await impRes.json();
         const featuresWithLabels = impData.features.map((f: FeatureImportance) => ({
           ...f,
-          label: featureLabels[f.name] || f.name
+          label: featureLabels[f.feature] || f.feature
         }));
         setImportance(featuresWithLabels);
 
         // 초기 변수값 설정 (시뮬레이션용)
         const initialVars: {[key: string]: number} = {};
         featuresWithLabels.forEach((f: FeatureImportance) => {
-          initialVars[f.name] = 0; // 기본값 0
+          initialVars[f.feature] = 0; // 기본값 0
         });
         setVariables(initialVars);
       }
@@ -185,30 +187,33 @@ const DashboardTonggibon: React.FC = () => {
     labels: trendData.years.map(y => `${y}년`),
     datasets: [
       {
-        label: '실제 정원',
-        data: trendData.actual,
+        label: '인력 추이 및 예측',
+        data: trendData.actual.map((val, idx) => {
+          // actual 값이 있으면 actual, 없으면 predicted 사용 (2026년)
+          return val !== null ? val : trendData.predicted[idx];
+        }),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 2,
         fill: true,
-        tension: 0.4
-      },
-      {
-        label: '2026년 예측',
-        data: trendData.predicted,
-        borderColor: 'rgb(239, 68, 68)',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        fill: false,
-        tension: 0.4
+        tension: 0.4,
+        segment: {
+          borderColor: (ctx: any) => {
+            // 2025 → 2026 구간은 빨간색으로
+            const years = trendData.years;
+            if (ctx.p0DataIndex === years.length - 2 && years[ctx.p0DataIndex] === 2025) {
+              return 'rgb(239, 68, 68)';
+            }
+            return 'rgb(59, 130, 246)';
+          }
+        }
       }
     ]
   } : null;
 
   // Feature Importance 차트 데이터
   const importanceChartData = importance.length > 0 ? {
-    labels: importance.slice(0, 10).map(f => f.label || f.name),
+    labels: importance.slice(0, 10).map(f => f.label || f.feature),
     datasets: [{
       label: 'Importance',
       data: importance.slice(0, 10).map(f => f.importance),
@@ -346,7 +351,7 @@ const DashboardTonggibon: React.FC = () => {
                   },
                   scales: {
                     y: {
-                      beginAtZero: false,
+                      beginAtZero: true,
                       ticks: {
                         callback: (value) => `${value}명`
                       }
@@ -368,19 +373,20 @@ const DashboardTonggibon: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {importance.slice(0, 8).map((feature) => (
-              <div key={feature.name} className="space-y-2">
+              <div key={feature.feature} className="space-y-2">
                 <div className="flex justify-between">
                   <label className="text-sm font-medium">{feature.label}</label>
-                  <span className="text-sm text-muted-foreground">{variables[feature.name] || 0}%</span>
+                  <span className="text-sm text-muted-foreground">{variables[feature.feature] || 0}%</span>
                 </div>
                 <input
                   type="range"
                   min="-50"
                   max="50"
                   step="1"
-                  value={variables[feature.name] || 0}
-                  onChange={(e) => setVariables({...variables, [feature.name]: parseFloat(e.target.value)})}
+                  value={variables[feature.feature] || 0}
+                  onChange={(e) => setVariables({...variables, [feature.feature]: parseFloat(e.target.value)})}
                   className="w-full"
+                  aria-label={feature.label}
                 />
               </div>
             ))}
