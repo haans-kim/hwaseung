@@ -575,17 +575,17 @@ const OrganizationSimulation: React.FC = () => {
               </div>
             </div>
             <div className="text-2xl font-bold text-purple-600 mb-1">
-              {(predictedHeadcount['총'] || 0)}명
+              {(predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)}명
             </div>
             <div className={`text-xs ${
-              (predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0) > 0
+              ((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0) > 0
                 ? 'text-green-600'
-                : (predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0) < 0
+                : ((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0) < 0
                   ? 'text-red-600'
                   : 'text-gray-600'
             }`}>
-              {(predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0) > 0 ? '+' : ''}
-              {(predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0)}명 변화
+              {((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0) > 0 ? '+' : ''}
+              {((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0)}명 변화
             </div>
           </div>
 
@@ -598,14 +598,14 @@ const OrganizationSimulation: React.FC = () => {
               </div>
             </div>
             <div className={`text-2xl font-bold mb-1 ${
-              (predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0) > 0
+              ((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0) > 0
                 ? 'text-green-600'
-                : (predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0) < 0
+                : ((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0) < 0
                   ? 'text-red-600'
                   : 'text-gray-600'
             }`}>
               {currentHeadcount['총'] > 0
-                ? `${(((predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0)) / (currentHeadcount['총'] || 1) * 100).toFixed(1)}%`
+                ? `${((((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0)) / (currentHeadcount['총'] || 1) * 100).toFixed(1)}%`
                 : '0%'
               }
             </div>
@@ -675,10 +675,14 @@ const OrganizationSimulation: React.FC = () => {
                       <td className="py-2 px-3 font-medium text-blue-700">전체</td>
                       <td className="text-center py-2 px-3">{currentHeadcount['총'] || 0}명</td>
                       <td className="text-center py-2 px-3 text-blue-600">{(currentFTE['총'] || 0).toFixed(1)}</td>
-                      <td className="text-center py-2 px-3 text-blue-600 font-semibold">{predictedHeadcount['총'] || 0}명</td>
-                      <td className={`text-center py-2 px-3 font-semibold ${getChangeColor((predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0))}`}>
-                        {(predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0) > 0 ? '+' : ''}
-                        {(predictedHeadcount['총'] || 0) - (currentHeadcount['총'] || 0)}명
+                      <td className="text-center py-2 px-3 text-blue-600 font-semibold">
+                        {(predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)}명
+                      </td>
+                      <td className={`text-center py-2 px-3 font-semibold ${getChangeColor(
+                        ((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0)
+                      )}`}>
+                        {((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0) > 0 ? '+' : ''}
+                        {((predictedHeadcount['책임'] || 0) + (predictedHeadcount['선임'] || 0) + (predictedHeadcount['사원'] || 0)) - (currentHeadcount['총'] || 0)}명
                       </td>
                     </tr>
                     <tr className="border-b hover:bg-gray-50">
