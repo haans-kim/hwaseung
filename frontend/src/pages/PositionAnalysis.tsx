@@ -216,36 +216,36 @@ const PositionAnalysis: React.FC = () => {
           <div className="text-sm text-gray-600">총 분석 인원</div>
           <div className="text-xs text-gray-500 mt-1">(예상 인력 합계)</div>
         </div>
-        <div className={`rounded-lg border-2 p-4 text-center ${
+        <div className={`rounded-lg border-2 border-gray-300 p-4 text-center ${
           summary.책임Change > 0
-            ? 'border-red-400 bg-red-50'
+            ? 'bg-red-50'
             : summary.책임Change < 0
-              ? 'border-blue-400 bg-blue-50'
-              : 'border-green-400 bg-green-50'
+              ? 'bg-blue-50'
+              : 'bg-green-50'
         }`}>
           <div className={`text-2xl font-bold mb-2 ${summary.책임Change > 0 ? 'text-red-600' : summary.책임Change < 0 ? 'text-blue-600' : 'text-green-600'}`}>
             {summary.책임Change > 0 ? '+' : ''}{summary.책임Change}명
           </div>
           <div className="text-sm text-gray-600">책임 변동</div>
         </div>
-        <div className={`rounded-lg border-2 p-4 text-center ${
+        <div className={`rounded-lg border-2 border-gray-300 p-4 text-center ${
           summary.선임Change > 0
-            ? 'border-red-400 bg-red-50'
+            ? 'bg-red-50'
             : summary.선임Change < 0
-              ? 'border-blue-400 bg-blue-50'
-              : 'border-green-400 bg-green-50'
+              ? 'bg-blue-50'
+              : 'bg-green-50'
         }`}>
           <div className={`text-2xl font-bold mb-2 ${summary.선임Change > 0 ? 'text-red-600' : summary.선임Change < 0 ? 'text-blue-600' : 'text-green-600'}`}>
             {summary.선임Change > 0 ? '+' : ''}{summary.선임Change}명
           </div>
           <div className="text-sm text-gray-600">선임 변동</div>
         </div>
-        <div className={`rounded-lg border-2 p-4 text-center ${
+        <div className={`rounded-lg border-2 border-gray-300 p-4 text-center ${
           summary.사원Change > 0
-            ? 'border-red-400 bg-red-50'
+            ? 'bg-red-50'
             : summary.사원Change < 0
-              ? 'border-blue-400 bg-blue-50'
-              : 'border-green-400 bg-green-50'
+              ? 'bg-blue-50'
+              : 'bg-green-50'
         }`}>
           <div className={`text-2xl font-bold mb-2 ${summary.사원Change > 0 ? 'text-red-600' : summary.사원Change < 0 ? 'text-blue-600' : 'text-green-600'}`}>
             {summary.사원Change > 0 ? '+' : ''}{summary.사원Change}명
@@ -272,7 +272,7 @@ const PositionAnalysis: React.FC = () => {
             </div>
 
             {/* 전체 합계 행 */}
-            <div className="grid grid-cols-5 border-b-2 border-gray-400 bg-blue-50">
+            <div className="grid grid-cols-5 border-b bg-blue-50">
               <div className="py-4 px-4 font-bold text-gray-900 text-base text-center flex items-center justify-center">전체</div>
               {teamsData.map((team, idx) => {
                 const totalChange = team.책임.change + team.선임.change + team.사원.change;
