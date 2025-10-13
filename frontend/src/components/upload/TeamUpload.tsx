@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Upload, AlertCircle, CheckCircle, FileSpreadsheet, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
+import { API_BASE_URL } from '../../lib/api';
 
 interface UploadResult {
   success: boolean;
@@ -75,7 +76,7 @@ export const TeamUpload: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8000/api/team/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/team/upload`, {
         method: 'POST',
         body: formData,
       });

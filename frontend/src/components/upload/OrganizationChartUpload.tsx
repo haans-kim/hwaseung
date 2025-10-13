@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Upload, AlertCircle, CheckCircle, FileSpreadsheet, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
+import { API_BASE_URL } from '../../lib/api';
 
 interface UploadResult {
   success: boolean;
@@ -78,7 +79,7 @@ export const OrganizationChartUpload: React.FC = () => {
       formData.append('file', file);
 
       const response = await fetch(
-        `http://localhost:8000/api/organization-chart/upload?replace_all=${replaceAll}`,
+        `${API_BASE_URL}/api/organization-chart/upload?replace_all=${replaceAll}`,
         {
           method: 'POST',
           body: formData,

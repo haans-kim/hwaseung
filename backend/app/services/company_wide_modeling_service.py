@@ -11,6 +11,7 @@ import io
 import sys
 import gc  # 🚨 메모리 관리
 import logging
+import os
 from pathlib import Path
 
 # PyCaret import
@@ -27,7 +28,8 @@ except ImportError:
 
 from app.services.augmentation_service import augmentation_service
 
-DB_PATH = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
+# 환경변수 또는 상대 경로로 DB 경로 설정
+DB_PATH = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../hwaseung_RnD.db'))
 
 class CompanyWideModelingService:
     """전사 적정인력 산정 모델링 (R&A, tonggibon)"""

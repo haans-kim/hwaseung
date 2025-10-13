@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
+import { API_BASE_URL } from '../../lib/api';
 
 interface CompanyWideUploadProps {
   organization: 'R&A' | 'tonggibon';
@@ -128,7 +129,7 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
       formData.append('file', file);
 
       const response = await fetch(
-        `http://localhost:8000/api/company-wide/upload?organization=${encodeURIComponent(organization)}`,
+        `${API_BASE_URL}/api/company-wide/upload?organization=${encodeURIComponent(organization)}`,
         {
           method: 'POST',
           body: formData,
@@ -166,7 +167,7 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
     setLoadingData(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/api/company-wide/features?organization=${encodeURIComponent(organization)}`
+        `${API_BASE_URL}/api/company-wide/features?organization=${encodeURIComponent(organization)}`
       );
 
       if (!response.ok) {

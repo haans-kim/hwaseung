@@ -6,11 +6,13 @@ import numpy as np
 import sqlite3
 from typing import Dict, Any, List, Optional
 import logging
+import os
 from sklearn.inspection import permutation_importance
 
 from app.services.company_wide_modeling_service import company_wide_modeling_service
 
-DB_PATH = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
+# 환경변수 또는 상대 경로로 DB 경로 설정
+DB_PATH = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../hwaseung_RnD.db'))
 
 class CompanyWideDashboardService:
     """전사 적정인력 산정 Dashboard"""

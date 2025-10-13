@@ -3,22 +3,21 @@
 // 프로덕션: dashboard.insightgroup.biz:8000
 // Docker: 현재 호스트의 IP:8000 (동적 감지)
 const getApiBaseUrl = () => {
-  // 환경변수가 설정되어 있으면 사용
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-
-  // 브라우저 환경에서 실행 중이면 현재 호스트의 8000 포트 사용
+  // 브라우저 환경에서 실행 중이면 항상 현재 호스트의 8000 포트 사용
+  // 이렇게 하면 localhost, dashboard.insightgroup.biz 등 어디서든 작동
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     return `${protocol}//${hostname}:8000`;
   }
 
-  // 기본값
+  // 서버 사이드 렌더링이나 빌드 시점의 기본값
   return 'http://localhost:8000';
 };
 
+// 런타임에 매번 평가되도록 함수로 export
+export const getAPIBaseURL = getApiBaseUrl;
+// 하위 호환성을 위해 상수도 유지하되, 동적으로 평가
 export const API_BASE_URL = getApiBaseUrl();
 
 export interface DataUploadResponse {

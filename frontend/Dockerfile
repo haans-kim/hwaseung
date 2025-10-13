@@ -13,7 +13,9 @@ COPY frontend/ .
 # Copy database file from project root (resolve symlink issue)
 COPY hwaseung_RnD.db ./public/hwaseung_RnD.db
 
-# Build the app (API URL will be dynamically determined at runtime)
+# Build without environment variable to use dynamic detection
+# This allows the app to detect API URL at runtime based on window.location
+ENV REACT_APP_API_URL=
 RUN npm run build
 
 # Production stage

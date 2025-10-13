@@ -6,10 +6,12 @@ import sqlite3
 from typing import Dict, Any, List
 from pathlib import Path
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
+# 환경변수 또는 상대 경로로 DB 경로 설정
+DB_PATH = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../hwaseung_RnD.db'))
 
 # 컬럼 매핑: Excel 한글 컬럼 → DB 영문 컬럼
 # 공통 컬럼 (외부 지표)
