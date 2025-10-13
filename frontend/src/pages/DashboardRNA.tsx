@@ -215,15 +215,18 @@ const DashboardRNA: React.FC = () => {
 
   // Feature Importance 차트 데이터
   const importanceChartData = importance.length > 0 ? {
-    labels: importance.slice(0, 10).map(f => f.label || f.feature),
+    labels: importance.slice(0, 8).map(f => f.label || f.feature),
     datasets: [{
       label: 'Importance',
-      data: importance.slice(0, 10).map(f => f.importance),
+      data: importance.slice(0, 8).map(f => f.importance),
       backgroundColor: 'rgba(59, 130, 246, 0.5)',
       borderColor: 'rgb(59, 130, 246)',
       borderWidth: 1
     }]
   } : null;
+
+  // 차트 높이 계산 (항목당 65px)
+  const chartHeight = importance.length > 0 ? importance.slice(0, 8).length * 65 : 400;
 
   if (loading) {
     return (
@@ -366,79 +369,97 @@ const DashboardRNA: React.FC = () => {
         </Card>
       )}
 
-      {/* 변수 조정 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>변수 조정 시뮬레이션</CardTitle>
-          <CardDescription>주요 변수를 조정하여 시나리오별 예측 확인</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {importance.slice(0, 8).map((feature) => (
-              <div key={feature.feature} className="space-y-2">
-                <div className="flex justify-between">
-                  <label className="text-sm font-medium">{feature.label}</label>
-                  <span className="text-sm text-muted-foreground">{variables[feature.feature] || 0}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="-50"
-                  max="50"
-                  step="1"
-                  value={variables[feature.feature] || 0}
-                  onChange={(e) => setVariables({...variables, [feature.feature]: parseFloat(e.target.value)})}
-                  className="w-full"
-                  aria-label={feature.label}
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={handleSimulate} className="flex-1">
-              <Target className="mr-2 h-4 w-4" />
-              시뮬레이션 실행
-            </Button>
-            <Button onClick={handleReset} variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              초기화
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Feature Importance */}
-      {importanceChartData && (
+      {/* 변수 조정 시뮬레이션 & 영향 요인 분석 (나란히 배치) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 변수 조정 */}
         <Card>
           <CardHeader>
-            <CardTitle>영향 요인 분석</CardTitle>
-            <CardDescription>적정인력에 영향을 미치는 주요 변수 (Permutation Importance)</CardDescription>
+            <CardTitle>변수 조정 시뮬레이션</CardTitle>
+            <CardDescription>주요 변수를 조정하여 시나리오별 예측 확인</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <Bar
-                data={importanceChartData}
-                options={{
-                  indexAxis: 'y' as const,
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: { display: false }
-                  },
-                  scales: {
-                    x: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: (value) => typeof value === 'number' ? value.toFixed(3) : value
-                      }
-                    }
-                  }
-                }}
-              />
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              {importance.slice(0, 8).map((feature) => (
+                <div key={feature.feature} className="space-y-2">
+                  <div className="flex justify-between">
+                    <label className="text-sm font-medium">{feature.label}</label>
+                    <span className="text-sm text-muted-foreground">{variables[feature.feature] || 0}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-50"
+                    max="50"
+                    step="1"
+                    value={variables[feature.feature] || 0}
+                    onChange={(e) => setVariables({...variables, [feature.feature]: parseFloat(e.target.value)})}
+                    className="w-full"
+                    aria-label={feature.label}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSimulate} className="flex-1">
+                <Target className="mr-2 h-4 w-4" />
+                시뮬레이션 실행
+              </Button>
+              <Button onClick={handleReset} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                초기화
+              </Button>
             </div>
           </CardContent>
         </Card>
-      )}
+
+        {/* Feature Importance */}
+        {importanceChartData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>영향 요인 분석</CardTitle>
+              <CardDescription>적정인력에 영향을 미치는 주요 변수 (Permutation Importance)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div style={{ height: `${chartHeight}px`, width: '100%' }}>
+                <Bar
+                  data={importanceChartData}
+                  options={{
+                    indexAxis: 'y' as const,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      datalabels: {
+                        anchor: 'end',
+                        align: 'end',
+                        formatter: (value: number) => value.toFixed(3),
+                        color: '#374151',
+                        font: { size: 12, weight: 'bold' }
+                      }
+                    },
+                    scales: {
+                      x: {
+                        beginAtZero: true,
+                        ticks: {
+                          font: { size: 12 },
+                          callback: (value) => typeof value === 'number' ? value.toFixed(3) : value
+                        }
+                      },
+                      y: {
+                        ticks: {
+                          font: { size: 13 },
+                          autoSkip: false,
+                          padding: 5
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* 모델 학습 안내 */}
       {!prediction && !loading && (
