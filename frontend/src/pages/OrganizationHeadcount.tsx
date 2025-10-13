@@ -34,56 +34,6 @@ interface BreadcrumbItem {
   value: string;
 }
 
-// ColumnPane 컴포넌트
-const ColumnPane = ({
-  title,
-  items,
-  selectedValue,
-  onSelect,
-  width,
-}: {
-  title: string;
-  items: string[];
-  selectedValue: string | null;
-  onSelect: (value: string) => void;
-  width: string;
-}) => {
-  return (
-    <div
-      className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
-      style={{ width }}
-    >
-      <div className="bg-white px-4 py-2 border-b border-gray-200">
-        <h3 className="text-sm font-medium text-gray-700">{title}</h3>
-      </div>
-      <div className="overflow-y-auto h-[300px]">
-        {items.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-gray-500">데이터 없음</div>
-        ) : (
-          items.map((item) => {
-            const isSelected = selectedValue === item;
-            return (
-              <div
-                key={item}
-                onClick={() => onSelect(item)}
-                className={`
-                  px-4 py-2 cursor-pointer text-sm
-                  ${
-                    isSelected
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'hover:bg-gray-50 text-gray-900'
-                  }
-                `}
-              >
-                {item}
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-};
 
 // Breadcrumb 컴포넌트
 const Breadcrumb = ({
@@ -420,93 +370,140 @@ const OrganizationHeadcount: React.FC = () => {
         </div>
       </div>
 
-      {/* Miller Column */}
-      <Card className="mb-4 overflow-hidden bg-white">
-        <div
-          className="flex overflow-x-auto bg-white"
-          style={{ minWidth: '1000px' }} // 최소 너비 설정으로 5개 컬럼 (200px * 5)
-        >
-          {/* 회사 Column */}
-          <ColumnPane
-            title="회사"
-            items={companies}
-            selectedValue={selectedCompany}
-            onSelect={setSelectedCompany}
-            width="200px"
-          />
+      {/* Miller Column Navigation */}
+      <div className="grid grid-cols-5 gap-4">
+        {/* 회사 */}
+        <Card className="p-4 bg-white">
+          <h3 className="font-medium text-gray-700 mb-3 text-center">회사</h3>
+          <div className="space-y-2">
+            {companies.map((company) => (
+              <button
+                key={company}
+                onClick={() => setSelectedCompany(company)}
+                className={`w-full px-3 py-2 text-left rounded text-sm ${
+                  selectedCompany === company
+                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                    : 'hover:bg-gray-50 border border-gray-200'
+                }`}
+              >
+                {company}
+              </button>
+            ))}
+          </div>
+        </Card>
 
-          {/* 본부 Column */}
-          {selectedCompany && (
-            <ColumnPane
-              title="본부"
-              items={departments}
-              selectedValue={selectedDepartment}
-              onSelect={setSelectedDepartment}
-              width="200px"
-            />
-          )}
+        {/* 본부 */}
+        <Card className="p-4 bg-white">
+          <h3 className="font-medium text-gray-700 mb-3 text-center">본부</h3>
+          <div className="space-y-2">
+            {selectedCompany ? (
+              departments.length > 0 ? (
+                departments.map((dept) => (
+                  <button
+                    key={dept}
+                    onClick={() => setSelectedDepartment(dept)}
+                    className={`w-full px-3 py-2 text-left rounded text-sm ${
+                      selectedDepartment === dept
+                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                        : 'hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    {dept}
+                  </button>
+                ))
+              ) : (
+                <div className="text-sm text-gray-400 text-center py-2">데이터 없음</div>
+              )
+            ) : (
+              <div className="text-sm text-gray-400 text-center py-2">회사를 선택하세요</div>
+            )}
+          </div>
+        </Card>
 
-          {/* 담당/사업단/센터 Column */}
-          {selectedDepartment && (
-            <ColumnPane
-              title="담당/사업단/센터"
-              items={divisions}
-              selectedValue={selectedDivision}
-              onSelect={setSelectedDivision}
-              width="240px" // 제목이 길어서 약간 넓게
-            />
-          )}
+        {/* 담당/사업단/센터 */}
+        <Card className="p-4 bg-white">
+          <h3 className="font-medium text-gray-700 mb-3 text-center">담당/사업단/센터</h3>
+          <div className="space-y-2">
+            {selectedDepartment ? (
+              divisions.length > 0 ? (
+                divisions.map((div) => (
+                  <button
+                    key={div}
+                    onClick={() => setSelectedDivision(div)}
+                    className={`w-full px-3 py-2 text-left rounded text-sm ${
+                      selectedDivision === div
+                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                        : 'hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    {div}
+                  </button>
+                ))
+              ) : (
+                <div className="text-sm text-gray-400 text-center py-2">데이터 없음</div>
+              )
+            ) : (
+              <div className="text-sm text-gray-400 text-center py-2">본부를 선택하세요</div>
+            )}
+          </div>
+        </Card>
 
-          {/* 실 Column */}
-          {selectedDivision && sections.length > 0 && (
-            <ColumnPane
-              title="실"
-              items={sections}
-              selectedValue={selectedSection}
-              onSelect={setSelectedSection}
-              width="200px"
-            />
-          )}
+        {/* 실 */}
+        <Card className="p-4 bg-white">
+          <h3 className="font-medium text-gray-700 mb-3 text-center">실</h3>
+          <div className="space-y-2">
+            {selectedDivision ? (
+              sections.length > 0 ? (
+                sections.map((sec) => (
+                  <button
+                    key={sec}
+                    onClick={() => setSelectedSection(sec)}
+                    className={`w-full px-3 py-2 text-left rounded text-sm ${
+                      selectedSection === sec
+                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                        : 'hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    {sec}
+                  </button>
+                ))
+              ) : (
+                <div className="text-sm text-gray-400 text-center py-2">데이터 없음</div>
+              )
+            ) : (
+              <div className="text-sm text-gray-400 text-center py-2">담당을 선택하세요</div>
+            )}
+          </div>
+        </Card>
 
-          {/* 팀 Column */}
-          {((selectedSection && teams.length > 0) ||
-            (selectedDivision && !sections.length && teams.length > 0)) && (
-            <ColumnPane
-              title="팀"
-              items={teams}
-              selectedValue={selectedTeam}
-              onSelect={setSelectedTeam}
-              width="200px"
-            />
-          )}
-
-          {/* 빈 공간 채우기 - 선택되지 않은 컬럼 영역을 미리 확보 */}
-          {!selectedCompany && (
-            <>
-              <div className="w-[200px] flex-shrink-0" />
-              <div className="w-[240px] flex-shrink-0" />
-              <div className="w-[200px] flex-shrink-0" />
-              <div className="w-[200px] flex-shrink-0" />
-            </>
-          )}
-          {selectedCompany && !selectedDepartment && (
-            <>
-              <div className="w-[240px] flex-shrink-0" />
-              <div className="w-[200px] flex-shrink-0" />
-              <div className="w-[200px] flex-shrink-0" />
-            </>
-          )}
-          {selectedDepartment && !selectedDivision && (
-            <>
-              <div className="w-[200px] flex-shrink-0" />
-              <div className="w-[200px] flex-shrink-0" />
-            </>
-          )}
-          {selectedDivision && sections.length > 0 && !selectedSection && (
-            <div className="w-[200px] flex-shrink-0" />
-          )}
-        </div>
-      </Card>
+        {/* 팀 */}
+        <Card className="p-4 bg-white">
+          <h3 className="font-medium text-gray-700 mb-3 text-center">팀</h3>
+          <div className="space-y-2">
+            {selectedSection || (selectedDivision && sections.length === 0) ? (
+              teams.length > 0 ? (
+                teams.map((team) => (
+                  <button
+                    key={team}
+                    onClick={() => setSelectedTeam(team)}
+                    className={`w-full px-3 py-2 text-left rounded text-sm ${
+                      selectedTeam === team
+                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                        : 'hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    {team}
+                  </button>
+                ))
+              ) : (
+                <div className="text-sm text-gray-400 text-center py-2">데이터 없음</div>
+              )
+            ) : (
+              <div className="text-sm text-gray-400 text-center py-2">실을 선택하세요</div>
+            )}
+          </div>
+        </Card>
+      </div>
 
       {/* Breadcrumb */}
       {breadcrumbItems.length > 0 && (
