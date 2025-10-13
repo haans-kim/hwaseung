@@ -1,7 +1,25 @@
 // 환경에 따라 다른 URL 사용
 // 개발: localhost:8000
 // 프로덕션: dashboard.insightgroup.biz:8000
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Docker: 현재 호스트의 IP:8000 (동적 감지)
+const getApiBaseUrl = () => {
+  // 환경변수가 설정되어 있으면 사용
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // 브라우저 환경에서 실행 중이면 현재 호스트의 8000 포트 사용
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:8000`;
+  }
+
+  // 기본값
+  return 'http://localhost:8000';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export interface DataUploadResponse {
   message: string;

@@ -13,10 +13,7 @@ COPY frontend/ .
 # Copy database file from project root (resolve symlink issue)
 COPY hwaseung_RnD.db ./public/hwaseung_RnD.db
 
-# Set API URL for Docker environment
-ENV REACT_APP_API_URL=http://localhost:8000
-
-# Build the app
+# Build the app (API URL will be dynamically determined at runtime)
 RUN npm run build
 
 # Production stage
