@@ -64,7 +64,7 @@ interface TrendData {
 }
 
 interface SimulationResult {
-  predicted_headcount: number;
+  simulated_headcount: number;
   baseline_headcount: number;
   change: number;
 }
@@ -316,7 +316,7 @@ const DashboardTonggibon: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {simulationResult ? `${Math.round(simulationResult.predicted_headcount)}명` : '-'}
+              {simulationResult ? `${Math.round(simulationResult.simulated_headcount)}명` : '-'}
             </div>
             <p className="text-xs text-muted-foreground">
               {simulationResult ? `${simulationResult.change > 0 ? '+' : ''}${Math.round(simulationResult.change)}명` : '변수 조정 필요'}

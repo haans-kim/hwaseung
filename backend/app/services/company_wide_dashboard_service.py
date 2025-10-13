@@ -332,9 +332,9 @@ class CompanyWideDashboardService:
             # 최신 데이터 가져오기
             latest_data = self.get_latest_data(organization)
 
-            # 변수 조정 적용
+            # 변수 조정 적용 (0이 아닌 값만 적용)
             for var_name, var_value in variables.items():
-                if var_name in latest_data:
+                if var_name in latest_data and var_value != 0:
                     latest_data[var_name] = var_value
 
             # 예측용 데이터 준비
