@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-SambioWage - A machine learning-based wage increase prediction dashboard with React frontend and FastAPI backend.
+Hwaseung - 화승 인원 최적화 대시보드. 머신러닝 기반 인원 분석 및 예측 시스템으로 React frontend와 FastAPI backend로 구성되어 있습니다.
 
 ## Development Commands
 

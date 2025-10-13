@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.sambiowage.docker</string>
+    <string>com.hwaseung.docker</string>
     
     <key>ProgramArguments</key>
     <array>
@@ -27,10 +27,10 @@
     </dict>
     
     <key>StandardOutPath</key>
-    <string>/Users/hanskim/Projects/2026_Wage_Prediction/logs/sambiowage.log</string>
-    
+    <string>/Users/hanskim/Projects/2026_Wage_Prediction/logs/hwaseung.log</string>
+
     <key>StandardErrorPath</key>
-    <string>/Users/hanskim/Projects/2026_Wage_Prediction/logs/sambiowage.error.log</string>
+    <string>/Users/hanskim/Projects/2026_Wage_Prediction/logs/hwaseung.error.log</string>
     
     <key>EnvironmentVariables</key>
     <dict>

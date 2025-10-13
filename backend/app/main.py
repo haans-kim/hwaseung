@@ -16,8 +16,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="SambioWage API",
-    description="머신러닝 기반 임금인상률 예측 대시보드 API",
+    title="Hwaseung API",
+    description="화승 인원 최적화 대시보드 API",
     version="1.0.0"
 )
 
@@ -63,7 +63,7 @@ async def startup_event():
     import psutil
     process = psutil.Process()
     memory_info = process.memory_info()
-    logger.info("🚀 SambioWage API starting up...")
+    logger.info("🚀 Hwaseung API starting up...")
     logger.info(f"   Initial Memory: {memory_info.rss / 1024 / 1024:.1f} MB")
 
 @app.on_event("shutdown")
@@ -71,12 +71,12 @@ async def shutdown_event():
     import psutil
     process = psutil.Process()
     memory_info = process.memory_info()
-    logger.info("👋 SambioWage API shutting down...")
+    logger.info("👋 Hwaseung API shutting down...")
     logger.info(f"   Final Memory: {memory_info.rss / 1024 / 1024:.1f} MB")
 
 @app.get("/")
 async def root():
-    return {"message": "SambioWage API", "version": "1.0.0"}
+    return {"message": "Hwaseung API", "version": "1.0.0"}
 
 @app.get("/health")
 async def health_check():

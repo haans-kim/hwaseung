@@ -8,7 +8,7 @@ echo "=============================="
 # 설정 (수정 필요)
 MAC_MINI_HOST="mac-mini.local"  # 맥미니 호스트명 또는 IP
 MAC_MINI_USER="hanskim"          # 맥미니 사용자명
-REMOTE_DIR="/Users/$MAC_MINI_USER/sambiowage"
+REMOTE_DIR="/Users/$MAC_MINI_USER/hwaseung"
 
 echo "🎯 대상: $MAC_MINI_USER@$MAC_MINI_HOST:$REMOTE_DIR"
 

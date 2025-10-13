@@ -3,7 +3,7 @@ from typing import List
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "SambioWage"
+    PROJECT_NAME: str = "Hwaseung"
     VERSION: str = "1.0.0"
     
     # CORS 설정

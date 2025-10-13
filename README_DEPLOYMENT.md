@@ -1,4 +1,4 @@
-# SambioWage 배포 가이드
+# Hwaseung 배포 가이드
 
 ## 프론트엔드 배포 (Vercel)
 
@@ -58,7 +58,7 @@ CORS_ORIGINS=https://your-frontend.vercel.app,http://localhost:3000
 3. GitHub 리포지토리 연결
 
 ### 2. 배포 설정
-- **Name**: sambiowage-backend
+- **Name**: hwaseung-backend
 - **Root Directory**: `backend`
 - **Environment**: Python
 - **Build Command**: `pip install -r requirements.txt`

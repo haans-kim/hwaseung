@@ -45,22 +45,22 @@
 
 ### 서비스 시작
 ```bash
-ssh hanskim@mac-mini.local "cd ~/sambiowage && docker-compose -f docker-compose.production.yml up -d"
+ssh hanskim@mac-mini.local "cd ~/hwaseung && docker-compose -f docker-compose.production.yml up -d"
 ```
 
 ### 서비스 중지
 ```bash
-ssh hanskim@mac-mini.local "cd ~/sambiowage && docker-compose -f docker-compose.production.yml down"
+ssh hanskim@mac-mini.local "cd ~/hwaseung && docker-compose -f docker-compose.production.yml down"
 ```
 
 ### 로그 확인
 ```bash
-ssh hanskim@mac-mini.local "cd ~/sambiowage && docker-compose -f docker-compose.production.yml logs -f"
+ssh hanskim@mac-mini.local "cd ~/hwaseung && docker-compose -f docker-compose.production.yml logs -f"
 ```
 
 ### 컨테이너 상태 확인
 ```bash
-ssh hanskim@mac-mini.local "cd ~/sambiowage && docker-compose -f docker-compose.production.yml ps"
+ssh hanskim@mac-mini.local "cd ~/hwaseung && docker-compose -f docker-compose.production.yml ps"
 ```
 
 ## 접속 정보
@@ -75,12 +75,12 @@ ssh hanskim@mac-mini.local "cd ~/sambiowage && docker-compose -f docker-compose.
 
 ### 자동 시작 비활성화
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.sambiowage.docker.plist
+launchctl unload ~/Library/LaunchAgents/com.hwaseung.docker.plist
 ```
 
 ### 자동 시작 재활성화
 ```bash
-launchctl load ~/Library/LaunchAgents/com.sambiowage.docker.plist
+launchctl load ~/Library/LaunchAgents/com.hwaseung.docker.plist
 ```
 
 ## 문제 해결
@@ -88,7 +88,7 @@ launchctl load ~/Library/LaunchAgents/com.sambiowage.docker.plist
 ### Docker 컨테이너가 시작되지 않을 때
 ```bash
 # 로그 확인
-cat ~/sambiowage/logs/sambiowage.error.log
+cat ~/hwaseung/logs/hwaseung.error.log
 
 # Docker 재시작
 killall Docker && open -a Docker
@@ -130,8 +130,8 @@ docker container prune -f
 ### 데이터 백업
 ```bash
 # 맥북에서 실행
-rsync -avz hanskim@mac-mini.local:~/sambiowage/backend/data/ ./backup/data/
-rsync -avz hanskim@mac-mini.local:~/sambiowage/backend/models/ ./backup/models/
+rsync -avz hanskim@mac-mini.local:~/hwaseung/backend/data/ ./backup/data/
+rsync -avz hanskim@mac-mini.local:~/hwaseung/backend/models/ ./backup/models/
 ```
 
 ### 자동 백업 설정

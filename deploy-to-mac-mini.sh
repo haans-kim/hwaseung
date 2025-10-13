@@ -3,9 +3,9 @@
 # 맥미니 서버 설정
 MAC_MINI_HOST="your-mac-mini.local"  # 맥미니 호스트명 또는 IP
 MAC_MINI_USER="hanskim"  # 맥미니 사용자명
-REMOTE_DIR="/Users/$MAC_MINI_USER/sambiowage"
+REMOTE_DIR="/Users/$MAC_MINI_USER/hwaseung"
 
-echo "🚀 맥미니 서버에 SambioWage 배포 시작..."
+echo "🚀 맥미니 서버에 Hwaseung 배포 시작..."
 
 # 1. 프론트엔드 빌드
 echo "📦 프론트엔드 빌드 중..."
@@ -27,7 +27,7 @@ rsync -avz --exclude 'node_modules' \
 # 3. 맥미니에서 Docker 컨테이너 실행
 echo "🐳 맥미니에서 Docker 컨테이너 시작..."
 ssh $MAC_MINI_USER@$MAC_MINI_HOST << 'ENDSSH'
-cd /Users/hanskim/sambiowage
+cd /Users/hanskim/hwaseung
 
 # 기존 컨테이너 중지 및 제거
 docker-compose -f docker-compose.production.yml down

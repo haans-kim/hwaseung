@@ -35,19 +35,19 @@ vi transfer-to-mac-mini.sh
 ### 방법 2: 수동 전송
 ```bash
 # 데이터 파일
-scp backend/data/*.pkl user@mac-mini:~/sambiowage/backend/data/
+scp backend/data/*.pkl user@mac-mini:~/hwaseung/backend/data/
 
 # 모델 파일
-scp backend/models/*.pkl user@mac-mini:~/sambiowage/backend/models/
+scp backend/models/*.pkl user@mac-mini:~/hwaseung/backend/models/
 
 # 업로드 폴더
-scp -r backend/uploads/ user@mac-mini:~/sambiowage/backend/
+scp -r backend/uploads/ user@mac-mini:~/hwaseung/backend/
 ```
 
 ### 방법 3: USB/외장 드라이브
 1. 필요한 파일들을 압축
 ```bash
-tar -czf sambiowage-data.tar.gz \
+tar -czf hwaseung-data.tar.gz \
   backend/data/*.pkl \
   backend/models/*.pkl \
   backend/uploads/
@@ -55,7 +55,7 @@ tar -czf sambiowage-data.tar.gz \
 
 2. USB로 복사 후 맥미니에서 압축 해제
 ```bash
-tar -xzf sambiowage-data.tar.gz
+tar -xzf hwaseung-data.tar.gz
 ```
 
 ## 주의사항

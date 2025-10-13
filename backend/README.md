@@ -1,6 +1,6 @@
-# SambioWage Backend API
+# Hwaseung Backend API
 
-FastAPI 기반 머신러닝 임금인상률 예측 백엔드 서버
+FastAPI 기반 화승 인원 최적화 백엔드 서버
 
 ## 설치 및 실행
 

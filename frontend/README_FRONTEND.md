@@ -1,6 +1,6 @@
-# SambioWage Frontend
+# Hwaseung Frontend
 
-React + TypeScript + Tailwind CSS 기반 프론트엔드 애플리케이션
+화승 인원 최적화 대시보드 - React + TypeScript + Tailwind CSS 기반 프론트엔드 애플리케이션
 
 ## 기술 스택
 
