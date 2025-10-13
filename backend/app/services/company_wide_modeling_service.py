@@ -535,28 +535,32 @@ class CompanyWideModelingService:
         }
 
     def _save_model(self, organization: str, model_name: str = None) -> bool:
-        """모델 저장"""
+        """
+        모델 저장 (최신 1개만 유지)
+
+        이전 버전의 모델 파일들을 모두 삭제하고 최신 모델만 저장합니다.
+        """
         try:
             if self.models[organization] is None:
                 return False
 
-            from datetime import datetime
+            import glob
 
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            if model_name:
-                filename = f"company_wide_{organization}_{model_name}_{timestamp}"
-            else:
-                filename = f"company_wide_{organization}_{timestamp}"
+            # 1. 기존 모델 파일들 모두 삭제
+            pattern = str(self.models_dir / f"company_wide_{organization}_*.pkl")
+            old_files = glob.glob(pattern)
+            for old_file in old_files:
+                try:
+                    Path(old_file).unlink()
+                    logging.info(f"🗑️ Deleted old model: {Path(old_file).name}")
+                except Exception as e:
+                    logging.warning(f"Failed to delete {old_file}: {e}")
 
-            filepath = self.models_dir / filename
-
-            save_model(self.models[organization], str(filepath), verbose=False)
-
-            # latest 링크
+            # 2. 최신 모델만 latest 이름으로 저장
             latest_path = self.models_dir / f"company_wide_{organization}_latest"
             save_model(self.models[organization], str(latest_path), verbose=False)
 
-            logging.info(f"✅ Model saved: {filename}.pkl")
+            logging.info(f"✅ Model saved (latest only): company_wide_{organization}_latest.pkl")
             return True
 
         except Exception as e:

@@ -236,8 +236,13 @@ class CompanyWideDashboardService:
                 company_wide_modeling_service.load_model(organization, 'latest')
                 model = company_wide_modeling_service.models.get(organization)
 
-            # DB에서 학습 데이터 가져오기 (PyCaret config 대신)
-            df = company_wide_modeling_service.get_data_from_db(organization)
+            # 🔥 증강된 데이터가 있으면 사용, 없으면 원본 데이터 사용
+            if company_wide_modeling_service.augmented_data.get(organization) is not None:
+                logging.info(f"📊 Using augmented data for feature importance: {organization}")
+                df = company_wide_modeling_service.augmented_data[organization].copy()
+            else:
+                logging.info(f"📊 Using original data for feature importance: {organization}")
+                df = company_wide_modeling_service.get_data_from_db(organization)
 
             # 데이터 준비
             cols_to_drop = ['id', 'organization', 'year', 'created_at', 'updated_at']
