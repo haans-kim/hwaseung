@@ -1,16 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import {
-  Upload,
-  Activity,
-  Users,
-  Moon,
-  Sun,
-  LineChart,
-  Building2,
-  SlidersHorizontal,
-  Target
-} from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface SidebarProps {
@@ -18,14 +8,27 @@ interface SidebarProps {
   toggleDarkMode: () => void;
 }
 
-const navigation = [
-  { name: 'Data 업로드', href: '/data', icon: Upload },
-  { name: '전사 모델링 (R&A/통합기술본부)', href: '/company-wide-modeling', icon: Target },
-  { name: '전사 적정인력 산정/예측 (R&A)', href: '/dashboard/rna', icon: Activity },
-  { name: '전사 적정인력 산정/예측 (통합기술본부)', href: '/dashboard/tonggibon', icon: Activity },
-  { name: '조직, 직급별 적정인력 요약', href: '/position-analysis', icon: Users },
-  { name: '조직, 직급별 적정인력 산정/예측', href: '/organization-simulation', icon: SlidersHorizontal },
-  { name: '인력 수준 검토', href: '/organization-headcount', icon: Building2 },
+interface NavItem {
+  name: string;
+  href?: string;
+  isGroup?: boolean;
+  children?: { name: string; href: string }[];
+}
+
+const navigation: NavItem[] = [
+  { name: 'Data 업로드', href: '/data' },
+  { name: '전사 모델링', href: '/company-wide-modeling' },
+  {
+    name: '전사 적정인력 산정/예측',
+    isGroup: true,
+    children: [
+      { name: 'R&A', href: '/dashboard/rna' },
+      { name: '통합기술본부', href: '/dashboard/tonggibon' }
+    ]
+  },
+  { name: '조직, 직급별 적정인력 요약', href: '/position-analysis' },
+  { name: '조직, 직급별 적정인력 산정/예측', href: '/organization-simulation' },
+  { name: '인력 수준 검토', href: '/organization-headcount' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) => {
@@ -40,20 +43,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.href}
-            className={({ isActive }) =>
-              `flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              }`
-            }
-          >
-            <item.icon className="mr-3 h-5 w-5" />
-            {item.name}
-          </NavLink>
+          <div key={item.name}>
+            {item.isGroup ? (
+              <>
+                <div className="px-4 py-2 text-sm font-medium text-muted-foreground">
+                  {item.name}
+                </div>
+                {item.children?.map((child) => (
+                  <NavLink
+                    key={child.name}
+                    to={child.href}
+                    className={({ isActive }) =>
+                      `flex items-center pl-8 pr-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      }`
+                    }
+                  >
+                    {child.name}
+                  </NavLink>
+                ))}
+              </>
+            ) : item.href ? (
+              <NavLink
+                to={item.href}
+                className={({ isActive }) =>
+                  `flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`
+                }
+              >
+                {item.name}
+              </NavLink>
+            ) : null}
+          </div>
         ))}
       </nav>
 
@@ -69,7 +95,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isDarkMode, toggleDarkMode }) 
             }`
           }
         >
-          <LineChart className="mr-3 h-5 w-5" />
           Explainer Dashboard
         </NavLink>
       </div>
