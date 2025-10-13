@@ -350,12 +350,68 @@ const CompanyWideModeling: React.FC = () => {
     'gbr': 'Gradient Boosting'
   };
 
+  // 모델 초기화
+  const handleClearModels = async () => {
+    if (!window.confirm('모든 모델과 환경 설정을 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    try {
+      setLoading({ ...loading, clear: true });
+      setError(null);
+
+      const response = await fetch(`${API_BASE_URL}/api/company-wide/modeling/clear`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('초기화 실패');
+      }
+
+      // 모든 상태 초기화
+      setRnaAugment(null);
+      setTongAugment(null);
+      setRnaSetup(null);
+      setTongSetup(null);
+      setRnaComparison(null);
+      setTongComparison(null);
+      setRnaTraining(null);
+      setTongTraining(null);
+
+      // 상태 갱신
+      await fetchAllStatus();
+
+      alert('모델이 초기화되었습니다.');
+    } catch (err: any) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setLoading({ ...loading, clear: false });
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* 헤더 */}
-      <div>
-        <h1 className="text-3xl font-bold">전사 적정인력 산정 모델링</h1>
-        <p className="text-muted-foreground">R&A와 통합기술본부의 2026년 적정인력 예측 모델 학습</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">전사 적정인력 산정 모델링</h1>
+          <p className="text-muted-foreground">R&A와 통합기술본부의 2026년 적정인력 예측 모델 학습</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleClearModels}
+          disabled={loading.clear}
+        >
+          {loading.clear ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              초기화 중...
+            </>
+          ) : (
+            '모델 초기화'
+          )}
+        </Button>
       </div>
 
       {/* 에러 */}
