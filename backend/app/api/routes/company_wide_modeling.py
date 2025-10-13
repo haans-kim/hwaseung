@@ -14,10 +14,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+class AugmentRequest(BaseModel):
+    organization: str
+    target_size: int = 200
+    method: str = 'auto'
+
 class SetupRequest(BaseModel):
     organization: str
-    use_augmentation: bool = False  # 🚨 메모리 안전: 기본값 False
-    target_size: int = 200
 
 class CompareRequest(BaseModel):
     organization: str
@@ -27,15 +30,43 @@ class TrainRequest(BaseModel):
     organization: str
     model_name: str
 
-@router.post("/setup")
-async def setup_pycaret(request: SetupRequest) -> Dict[str, Any]:
+@router.post("/augment")
+async def augment_data(request: AugmentRequest) -> Dict[str, Any]:
     """
-    PyCaret 환경 설정 및 데이터 증강
+    데이터 증강 (선택적)
 
     Args:
         organization: 'R&A' or 'tonggibon'
-        use_augmentation: 데이터 증강 사용 여부
         target_size: 증강 목표 크기
+        method: 증강 방법 ('auto', 'noise', 'mixup')
+
+    Returns:
+        증강 결과
+    """
+    if request.organization not in ['R&A', 'tonggibon']:
+        raise HTTPException(
+            status_code=400,
+            detail="organization must be 'R&A' or 'tonggibon'"
+        )
+
+    try:
+        result = company_wide_modeling_service.augment_and_store(
+            organization=request.organization,
+            target_size=request.target_size,
+            method=request.method
+        )
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Data augmentation failed: {str(e)}")
+
+@router.post("/setup")
+async def setup_pycaret(request: SetupRequest) -> Dict[str, Any]:
+    """
+    PyCaret 환경 설정 (증강 여부 무관)
+
+    Args:
+        organization: 'R&A' or 'tonggibon'
 
     Returns:
         설정 결과
@@ -48,9 +79,7 @@ async def setup_pycaret(request: SetupRequest) -> Dict[str, Any]:
 
     try:
         result = company_wide_modeling_service.setup_pycaret_environment(
-            organization=request.organization,
-            use_augmentation=request.use_augmentation,
-            target_size=request.target_size
+            organization=request.organization
         )
         return result
 

@@ -19,27 +19,20 @@ interface OrganizationStatus {
   organization: string;
   has_data: boolean;
   data_rows: number;
-  is_augmented: boolean;
-  augmented_size: number;
   environment_setup: boolean;
   model_trained: boolean;
   models_compared: boolean;
   current_model_type: string | null;
+  augmented_size?: number;
   best_model?: string;
   best_r2?: number;
 }
 
-interface AugmentResult {
+interface SetupResult {
   organization: string;
   original_size: number;
   augmented_size: number;
   feature_count: number;
-}
-
-interface SetupResult {
-  organization: string;
-  data_size: number;
-  features: string[];
 }
 
 interface ComparisonResult {
@@ -71,11 +64,7 @@ const CompanyWideModeling: React.FC = () => {
   const [rnaStatus, setRnaStatus] = useState<OrganizationStatus | null>(null);
   const [tongStatus, setTongStatus] = useState<OrganizationStatus | null>(null);
 
-  // 각 조직별 증강 결과
-  const [rnaAugment, setRnaAugment] = useState<AugmentResult | null>(null);
-  const [tongAugment, setTongAugment] = useState<AugmentResult | null>(null);
-
-  // 각 조직별 setup 결과
+  // 각 조직별 결과
   const [rnaSetup, setRnaSetup] = useState<SetupResult | null>(null);
   const [tongSetup, setTongSetup] = useState<SetupResult | null>(null);
 
@@ -119,30 +108,30 @@ const CompanyWideModeling: React.FC = () => {
     }
   };
 
-  // 1-1단계: 데이터 증강 (선택적)
+  // 1단계: 데이터 증강 (양쪽 동시 진행)
   const handleDataAugmentation = async () => {
     try {
       setLoading({ ...loading, augmentation: true });
       setError(null);
 
-      // R&A와 tonggibon 동시 증강
+      // R&A와 tonggibon 동시 Setup
       const [rnaRes, tongRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/augment`, {
+        fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             organization: 'R&A',
-            target_size: 200,
-            method: 'auto'
+            use_augmentation: true,
+            target_size: 200
           })
         }),
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/augment`, {
+        fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             organization: 'tonggibon',
-            target_size: 200,
-            method: 'auto'
+            use_augmentation: true,
+            target_size: 200
           })
         })
       ]);
@@ -154,8 +143,19 @@ const CompanyWideModeling: React.FC = () => {
       const rnaData = await rnaRes.json();
       const tongData = await tongRes.json();
 
-      setRnaAugment(rnaData);
-      setTongAugment(tongData);
+      setRnaSetup({
+        organization: 'R&A',
+        original_size: rnaData.data_info.original_size,
+        augmented_size: rnaData.data_info.augmented_size,
+        feature_count: rnaData.data_info.feature_count
+      });
+
+      setTongSetup({
+        organization: 'tonggibon',
+        original_size: tongData.data_info.original_size,
+        augmented_size: tongData.data_info.augmented_size,
+        feature_count: tongData.data_info.feature_count
+      });
 
       // 상태 갱신
       await fetchAllStatus();
@@ -164,50 +164,6 @@ const CompanyWideModeling: React.FC = () => {
       console.error(err);
     } finally {
       setLoading({ ...loading, augmentation: false });
-    }
-  };
-
-  // 1-2단계: PyCaret 환경 설정 (필수)
-  const handlePyCaretSetup = async () => {
-    try {
-      setLoading({ ...loading, setup: true });
-      setError(null);
-
-      // R&A와 tonggibon 동시 Setup
-      const [rnaRes, tongRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            organization: 'R&A'
-          })
-        }),
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            organization: 'tonggibon'
-          })
-        })
-      ]);
-
-      if (!rnaRes.ok || !tongRes.ok) {
-        throw new Error('PyCaret 환경 설정 실패');
-      }
-
-      const rnaData = await rnaRes.json();
-      const tongData = await tongRes.json();
-
-      setRnaSetup(rnaData);
-      setTongSetup(tongData);
-
-      // 상태 갱신
-      await fetchAllStatus();
-    } catch (err: any) {
-      setError(err.message);
-      console.error(err);
-    } finally {
-      setLoading({ ...loading, setup: false });
     }
   };
 
@@ -367,15 +323,15 @@ const CompanyWideModeling: React.FC = () => {
         </Alert>
       )}
 
-      {/* 1-1단계: 데이터 증강 (선택) */}
+      {/* 1단계: 데이터 증강 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            1-1단계: 데이터 증강 (선택)
+            <Database className="h-5 w-5" />
+            1단계: 데이터 증강
           </CardTitle>
           <CardDescription>
-            원본 데이터가 부족한 경우 200개로 증강합니다. 선택 사항입니다.
+            R&A와 통합기술본부의 원본 데이터를 각각 200개로 증강합니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -384,12 +340,12 @@ const CompanyWideModeling: React.FC = () => {
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold">R&A</h4>
-                {rnaStatus?.is_augmented && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                {rnaSetup && <CheckCircle2 className="h-5 w-5 text-green-500" />}
               </div>
               {rnaStatus && (
                 <div className="space-y-1 text-sm">
                   <p>원본 데이터: {rnaStatus.data_rows}개</p>
-                  {rnaStatus.is_augmented && <p className="text-green-600">증강 완료: {rnaStatus.augmented_size}개</p>}
+                  {rnaSetup && <p className="text-green-600">증강 완료: {rnaSetup.augmented_size}개</p>}
                 </div>
               )}
             </div>
@@ -398,12 +354,12 @@ const CompanyWideModeling: React.FC = () => {
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold">통합기술본부</h4>
-                {tongStatus?.is_augmented && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                {tongSetup && <CheckCircle2 className="h-5 w-5 text-green-500" />}
               </div>
               {tongStatus && (
                 <div className="space-y-1 text-sm">
                   <p>원본 데이터: {tongStatus.data_rows}개</p>
-                  {tongStatus.is_augmented && <p className="text-green-600">증강 완료: {tongStatus.augmented_size}개</p>}
+                  {tongSetup && <p className="text-green-600">증강 완료: {tongSetup.augmented_size}개</p>}
                 </div>
               )}
             </div>
@@ -411,92 +367,18 @@ const CompanyWideModeling: React.FC = () => {
 
           <Button
             onClick={handleDataAugmentation}
-            disabled={loading.augmentation || !rnaStatus?.has_data || !tongStatus?.has_data || (rnaStatus?.is_augmented && tongStatus?.is_augmented)}
+            disabled={loading.augmentation || !rnaStatus?.has_data || !tongStatus?.has_data}
             className="w-full"
-            variant={rnaStatus?.is_augmented && tongStatus?.is_augmented ? "outline" : "default"}
           >
             {loading.augmentation ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 데이터 증강 중...
               </>
-            ) : (rnaStatus?.is_augmented && tongStatus?.is_augmented) ? (
-              <>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                증강 완료
-              </>
             ) : (
               <>
                 <Zap className="mr-2 h-4 w-4" />
                 데이터 증강 시작
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* 1-2단계: PyCaret 환경 설정 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            1-2단계: PyCaret 환경 설정
-          </CardTitle>
-          <CardDescription>
-            머신러닝 환경을 설정합니다. 증강된 데이터가 있으면 사용하고, 없으면 원본 데이터를 사용합니다.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            {/* R&A Setup */}
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold">R&A</h4>
-                {rnaStatus?.environment_setup && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-              </div>
-              {rnaStatus && (
-                <div className="space-y-1 text-sm">
-                  <p>데이터: {rnaStatus.is_augmented ? `증강됨 (${rnaStatus.augmented_size}개)` : `원본 (${rnaStatus.data_rows}개)`}</p>
-                  {rnaSetup && <p className="text-green-600">환경 설정 완료</p>}
-                </div>
-              )}
-            </div>
-
-            {/* 통합기술본부 Setup */}
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold">통합기술본부</h4>
-                {tongStatus?.environment_setup && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-              </div>
-              {tongStatus && (
-                <div className="space-y-1 text-sm">
-                  <p>데이터: {tongStatus.is_augmented ? `증강됨 (${tongStatus.augmented_size}개)` : `원본 (${tongStatus.data_rows}개)`}</p>
-                  {tongSetup && <p className="text-green-600">환경 설정 완료</p>}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <Button
-            onClick={handlePyCaretSetup}
-            disabled={loading.setup || !rnaStatus?.has_data || !tongStatus?.has_data || (rnaStatus?.environment_setup && tongStatus?.environment_setup)}
-            className="w-full"
-            variant={rnaStatus?.environment_setup && tongStatus?.environment_setup ? "outline" : "default"}
-          >
-            {loading.setup ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                환경 설정 중...
-              </>
-            ) : (rnaStatus?.environment_setup && tongStatus?.environment_setup) ? (
-              <>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                설정 완료
-              </>
-            ) : (
-              <>
-                <Database className="mr-2 h-4 w-4" />
-                환경 설정 시작
               </>
             )}
           </Button>
@@ -517,7 +399,7 @@ const CompanyWideModeling: React.FC = () => {
         <CardContent className="space-y-4">
           <Button
             onClick={handleModelComparison}
-            disabled={loading.comparison || !rnaStatus?.environment_setup || !tongStatus?.environment_setup}
+            disabled={loading.comparison || !rnaSetup || !tongSetup}
             className="w-full"
           >
             {loading.comparison ? (

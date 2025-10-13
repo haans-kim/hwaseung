@@ -56,6 +56,15 @@ class CompanyWideModelingService:
             'R&A': None,
             'tonggibon': None
         }
+        # 증강된 데이터 저장 (선택적)
+        self.augmented_data = {
+            'R&A': None,
+            'tonggibon': None
+        }
+        self.augmentation_info = {
+            'R&A': None,
+            'tonggibon': None
+        }
 
         # 모델 저장 경로
         self.models_dir = Path(__file__).parent.parent.parent / 'models'
@@ -221,20 +230,50 @@ class CompanyWideModelingService:
 
         return augmented_df, info
 
-    def setup_pycaret_environment(
+    def augment_and_store(
         self,
         organization: str,
-        use_augmentation: bool = False,  # 🚨 메모리 안전: 기본값 False로 변경
         target_size: int = 200,
-        session_id: Optional[int] = None
+        method: str = 'auto'
     ) -> Dict[str, Any]:
         """
-        PyCaret 환경 설정
+        데이터 증강 후 저장 (setup 전 선택적으로 실행)
 
         Args:
             organization: 'R&A' or 'tonggibon'
-            use_augmentation: 데이터 증강 사용 여부 (기본값: False - 메모리 안전)
-            target_size: 증강 목표 크기
+            target_size: 목표 데이터 크기
+            method: 증강 방법
+
+        Returns:
+            증강 결과 정보
+        """
+        augmented_df, info = self.augment_data(organization, target_size, method)
+
+        # 증강된 데이터 저장
+        self.augmented_data[organization] = augmented_df
+        self.augmentation_info[organization] = info
+
+        return {
+            'message': f'Data augmentation completed for {organization}',
+            'organization': organization,
+            'original_size': info.get('original_shape', (0,))[0],
+            'augmented_size': len(augmented_df),
+            'feature_count': info.get('feature_count', 0),
+            'method': method
+        }
+
+    def setup_pycaret_environment(
+        self,
+        organization: str,
+        session_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        PyCaret 환경 설정 (증강 여부 무관)
+
+        증강된 데이터가 있으면 사용, 없으면 원본 데이터 사용
+
+        Args:
+            organization: 'R&A' or 'tonggibon'
             session_id: 재현성을 위한 시드값
 
         Returns:
@@ -243,16 +282,13 @@ class CompanyWideModelingService:
         if not self.check_pycaret_availability():
             raise RuntimeError("PyCaret is not available")
 
-        # 데이터 증강 여부에 따라 분기
-        if use_augmentation:
-            logging.info(f"🔄 Augmentation enabled: target size = {target_size}")
-            ml_data, data_info = self.augment_data(
-                organization=organization,
-                target_size=target_size,
-                method='auto'
-            )
+        # 증강된 데이터가 있으면 사용, 없으면 원본 데이터 준비
+        if self.augmented_data.get(organization) is not None:
+            logging.info(f"📊 Using augmented data for {organization}")
+            ml_data = self.augmented_data[organization]
+            data_info = self.augmentation_info[organization]
         else:
-            logging.info("📊 Using original data without augmentation")
+            logging.info(f"📊 Using original data for {organization}")
             ml_data, data_info = self.prepare_data(organization)
 
         # Session ID 설정 (organization별 고정값)
@@ -559,11 +595,17 @@ class CompanyWideModelingService:
         except:
             pass
 
+        # 증강 정보
+        is_augmented = self.augmented_data.get(organization) is not None
+        augmented_size = len(self.augmented_data[organization]) if is_augmented else 0
+
         return {
             'organization': organization,
             'pycaret_available': self.check_pycaret_availability(),
             'has_data': has_data,
             'data_rows': data_rows,
+            'is_augmented': is_augmented,
+            'augmented_size': augmented_size,
             'environment_setup': self.is_setup_complete.get(organization, False),
             'model_trained': self.models.get(organization) is not None,
             'models_compared': self.model_results.get(organization) is not None,
@@ -584,6 +626,10 @@ class CompanyWideModelingService:
                 if 'best_models' in self.model_results[organization]:
                     del self.model_results[organization]['best_models']
                 del self.model_results[organization]
+            if self.augmented_data.get(organization) is not None:
+                del self.augmented_data[organization]
+            if self.augmentation_info.get(organization) is not None:
+                del self.augmentation_info[organization]
 
             # 초기화
             self.models[organization] = None
@@ -591,6 +637,8 @@ class CompanyWideModelingService:
             self.is_setup_complete[organization] = False
             self.model_results[organization] = None
             self.feature_names[organization] = None
+            self.augmented_data[organization] = None
+            self.augmentation_info[organization] = None
             message = f'Models cleared for {organization}'
         else:
             # 모든 organization 메모리 해제
@@ -603,6 +651,10 @@ class CompanyWideModelingService:
                     if 'best_models' in self.model_results[org]:
                         del self.model_results[org]['best_models']
                     del self.model_results[org]
+                if self.augmented_data.get(org) is not None:
+                    del self.augmented_data[org]
+                if self.augmentation_info.get(org) is not None:
+                    del self.augmentation_info[org]
 
             # 초기화
             self.models = {'R&A': None, 'tonggibon': None}
@@ -610,6 +662,8 @@ class CompanyWideModelingService:
             self.is_setup_complete = {'R&A': False, 'tonggibon': False}
             self.model_results = {'R&A': None, 'tonggibon': None}
             self.feature_names = {'R&A': None, 'tonggibon': None}
+            self.augmented_data = {'R&A': None, 'tonggibon': None}
+            self.augmentation_info = {'R&A': None, 'tonggibon': None}
             message = 'All models cleared'
 
         # 가비지 컬렉션 강제 실행
