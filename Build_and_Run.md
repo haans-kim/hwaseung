@@ -34,6 +34,18 @@ make install
 make start
 ```
 
+### Docker로 시작 (권장)
+```bash
+# Docker 컨테이너로 실행
+docker compose up -d
+
+# 로그 확인
+docker compose logs -f
+
+# 중지
+docker compose down
+```
+
 ### 프로덕션 모드로 시작 (외부 접속 가능)
 ```bash
 make start-production
@@ -105,6 +117,39 @@ make build-frontend   # 프론트엔드 빌드만
 make serve-frontend   # 빌드된 프론트엔드 실행
 ```
 
+## Docker 명령어
+
+### 기본 실행
+| 명령어 | 설명 |
+|--------|------|
+| `docker compose up -d` | 백그라운드에서 컨테이너 시작 |
+| `docker compose down` | 컨테이너 중지 및 제거 |
+| `docker compose ps` | 실행 중인 컨테이너 확인 |
+| `docker compose logs -f` | 실시간 로그 확인 |
+
+### 파일 변경 시 갱신
+| 명령어 | 설명 |
+|--------|------|
+| `docker compose restart` | 컨테이너 재시작 (빠른 재시작) |
+| `docker compose up -d --build` | 이미지 재빌드 후 재시작 (전체) |
+| `docker compose up -d --build frontend` | 프론트엔드만 재빌드 |
+| `docker compose up -d --build backend` | 백엔드만 재빌드 |
+| `docker compose build --no-cache` | 캐시 없이 완전 재빌드 |
+
+### 로그 및 디버깅
+| 명령어 | 설명 |
+|--------|------|
+| `docker compose logs backend` | 백엔드 로그만 확인 |
+| `docker compose logs frontend` | 프론트엔드 로그만 확인 |
+| `docker compose exec backend bash` | 백엔드 컨테이너 접속 |
+| `docker compose exec frontend sh` | 프론트엔드 컨테이너 접속 |
+
+### 정리
+| 명령어 | 설명 |
+|--------|------|
+| `docker compose down -v` | 컨테이너와 볼륨 모두 제거 |
+| `docker system prune -a` | 사용하지 않는 Docker 리소스 정리 |
+
 ## Makefile 명령어
 
 ### 시작/중지
@@ -157,7 +202,60 @@ make serve-frontend   # 빌드된 프론트엔드 실행
 
 ## 문제 해결
 
-### 포트가 이미 사용 중일 때
+### Docker 사용 시
+
+#### nginx 설정 변경 후 갱신
+```bash
+# frontend/nginx.conf 수정 시 (이미지에 포함됨)
+docker compose up -d --build frontend
+
+# 별도 nginx 컨테이너 사용 시 (volumes로 마운트된 경우)
+docker compose restart nginx
+```
+
+#### 파일 변경사항이 반영되지 않을 때
+```bash
+# 1. 전체 재빌드 (가장 확실한 방법)
+docker compose up -d --build
+
+# 2. 캐시 없이 완전 재빌드
+docker compose build --no-cache
+docker compose up -d
+
+# 3. 특정 서비스만 재빌드
+docker compose up -d --build backend  # 백엔드만
+docker compose up -d --build frontend # 프론트엔드만
+```
+
+#### 컨테이너 상태 확인
+```bash
+# 실행 중인 컨테이너 확인
+docker compose ps
+
+# 로그 확인
+docker compose logs -f
+
+# 특정 서비스 로그
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+#### 컨테이너 내부 접속
+```bash
+# 백엔드 컨테이너 접속
+docker compose exec backend bash
+
+# 프론트엔드 컨테이너 접속
+docker compose exec frontend sh
+
+# 파일 확인 예시
+docker compose exec backend ls -la /app
+docker compose exec frontend ls -la /etc/nginx
+```
+
+### 일반 실행 시
+
+#### 포트가 이미 사용 중일 때
 ```bash
 # 포트 확인
 make check-ports
