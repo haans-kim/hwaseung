@@ -66,7 +66,12 @@ const OrganizationSimulation: React.FC = () => {
 
         const response = await fetch('/hwaseung_RnD.db');
         const buffer = await response.arrayBuffer();
+        console.log('📦 DB file loaded, size:', buffer.byteLength, 'bytes');
         const db = new SQL.Database(new Uint8Array(buffer));
+
+        // DB 테이블 확인
+        const tablesResult = db.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+        console.log('📋 Available tables:', tablesResult[0]?.values.map(row => row[0]));
 
         // 조직 데이터 로드
         const orgResult = db.exec('SELECT * FROM organization');
@@ -91,17 +96,45 @@ const OrganizationSimulation: React.FC = () => {
           }
         }
 
-        // 회귀 모델이 있는 팀 목록 로드
-        const regressionTeamsResult = db.exec(`
-          SELECT DISTINCT org_name
-          FROM regression_models
-          WHERE model_type IN ('총', '책임', '선임', '사원')
-          ORDER BY org_name
-        `);
+        // 분석가능팀 목록 로드 (API 우선, 실패시 DB 폴백)
+        let teamsLoaded = false;
 
-        if (regressionTeamsResult.length > 0) {
-          const teams = regressionTeamsResult[0].values.map(row => row[0] as string);
-          setAvailableRegressionTeams(teams);
+        try {
+          // API로 분석가능팀 조회 시도
+          const apiResponse = await fetch('http://localhost:8000/api/organization-chart/analysis-ready-teams');
+          if (apiResponse.ok) {
+            const apiData = await apiResponse.json();
+            console.log('🌐 API Response:', apiData);
+
+            if (apiData.teams && apiData.teams.length > 0) {
+              const teams = apiData.teams.map((team: { team: string }) => team.team);
+              console.log('✅ Analysis-ready teams from API:', teams);
+              setAvailableRegressionTeams(teams);
+              teamsLoaded = true;
+            }
+          }
+        } catch (apiError) {
+          console.warn('⚠️ API call failed, falling back to DB query:', apiError);
+        }
+
+        // API 실패시 DB에서 직접 조회
+        if (!teamsLoaded) {
+          const regressionTeamsResult = db.exec(`
+            SELECT DISTINCT org_name
+            FROM regression_models
+            WHERE model_type IN ('총', '책임', '선임', '사원')
+            ORDER BY org_name
+          `);
+
+          console.log('🔍 Regression Teams Query Result (DB fallback):', regressionTeamsResult);
+
+          if (regressionTeamsResult.length > 0) {
+            const teams = regressionTeamsResult[0].values.map(row => row[0] as string);
+            console.log('✅ Available Regression Teams (from DB):', teams);
+            setAvailableRegressionTeams(teams);
+          } else {
+            console.warn('⚠️ No regression teams found in database');
+          }
         }
 
         db.close();

@@ -47,7 +47,7 @@ async def upload_organization_chart(
             os.remove(file_path)
             raise HTTPException(status_code=400, detail=validation_result['error'])
 
-        # 데이터베이스에 저장
+        # 조직도 데이터 저장
         save_result = organization_service.save_to_database(
             validation_result['dataframe'],
             replace_all=replace_all
@@ -56,7 +56,21 @@ async def upload_organization_chart(
         if not save_result['success']:
             raise HTTPException(status_code=500, detail=save_result.get('error', 'Save failed'))
 
-        return {
+        # Feature 정의 저장
+        feature_save_result = None
+        if validation_result.get('feature_dataframe') is not None:
+            feature_save_result = organization_service.save_feature_definitions(
+                validation_result['feature_dataframe'],
+                replace_all=replace_all
+            )
+
+        # Master 시트 데이터 처리 (team_metrics, team_headcount)
+        master_result = organization_service.process_master_sheet(
+            file_path,
+            replace_all=replace_all
+        )
+
+        response_data = {
             "message": "Organization chart uploaded successfully",
             "filename": file.filename,
             "mode": "replace_all" if replace_all else "upsert",
@@ -75,6 +89,26 @@ async def upload_organization_chart(
                 "errors": save_result.get('errors')
             }
         }
+
+        # Feature 정의 저장 결과 추가
+        if feature_save_result:
+            response_data["feature_definitions"] = {
+                "saved_count": feature_save_result.get('saved_count', 0),
+                "deleted_count": feature_save_result.get('deleted_count', 0),
+                "errors": feature_save_result.get('errors')
+            }
+
+        # Master 데이터 저장 결과 추가
+        if master_result and master_result.get('success'):
+            response_data["master_data"] = {
+                "metrics_saved": master_result.get('metrics_saved', 0),
+                "metrics_deleted": master_result.get('metrics_deleted', 0),
+                "headcount_saved": master_result.get('headcount_saved', 0),
+                "headcount_deleted": master_result.get('headcount_deleted', 0),
+                "errors": master_result.get('errors')
+            }
+
+        return response_data
 
     except HTTPException:
         raise
@@ -127,3 +161,39 @@ async def get_organization_status() -> Dict[str, Any]:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving status: {str(e)}")
+
+@router.get("/organization-chart/feature-definitions")
+async def get_feature_definitions(
+    team: Optional[str] = Query(None, description="팀명 (선택)"),
+    company: Optional[str] = Query(None, description="회사명 (선택)")
+) -> Dict[str, Any]:
+    """Feature 정의 조회"""
+    try:
+        definitions = organization_service.get_feature_definitions(team=team, company=company)
+
+        return {
+            "message": "Feature definitions retrieved successfully",
+            "count": len(definitions),
+            "data": definitions
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving feature definitions: {str(e)}")
+
+@router.get("/organization-chart/analysis-ready-teams")
+async def get_analysis_ready_teams() -> Dict[str, Any]:
+    """
+    분석가능팀 목록 조회
+    조건: Feature 정의가 있고 회귀모델이 있는 팀
+    """
+    try:
+        teams = organization_service.get_analysis_ready_teams()
+
+        return {
+            "message": "Analysis-ready teams retrieved successfully",
+            "count": len(teams),
+            "teams": teams
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving analysis-ready teams: {str(e)}")

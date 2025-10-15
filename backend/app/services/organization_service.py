@@ -27,10 +27,11 @@ class OrganizationService:
         - 실 (Office)
         - 팀 (Team)
         - 비고 (Note) - optional
+        - F1~F9 (Feature 정의) - optional
         """
         try:
-            # Excel 파일 읽기 (첫 번째 시트)
-            df = pd.read_excel(file_path)
+            # Excel 파일 읽기 (첫 번째 시트 - Feature Matching)
+            df = pd.read_excel(file_path, sheet_name=0)
 
             # 컬럼명 정규화 (공백 제거)
             df.columns = df.columns.str.strip()
@@ -99,9 +100,26 @@ class OrganizationService:
             departments = df['담당/사업단/센터'].dropna().unique().tolist()
             offices = df['실'].dropna().unique().tolist()
 
+            # Feature 컬럼 추출 (F1~F9)
+            feature_cols = [col for col in df.columns if col.startswith('F') and len(col) == 2 and col[1].isdigit()]
+
+            # 조직 데이터만 추출
+            org_cols = ['회사', '본부', '담당/사업단/센터', '실', '팀', '비고']
+            org_df = df[org_cols].copy()
+
+            # Feature 정의가 있는 데이터 추출
+            feature_df = None
+            if feature_cols:
+                # Feature 정의가 하나라도 있는 행만 추출
+                has_features = df[feature_cols].notna().any(axis=1)
+                if has_features.any():
+                    feature_df = df[has_features][['회사', '팀'] + feature_cols].copy()
+
             return {
                 "valid": True,
-                "dataframe": df[['회사', '본부', '담당/사업단/센터', '실', '팀', '비고']],
+                "dataframe": org_df,
+                "feature_dataframe": feature_df,
+                "feature_columns": feature_cols,
                 "row_count": len(df),
                 "companies": companies,
                 "company_count": len(companies),
@@ -116,6 +134,88 @@ class OrganizationService:
                 "valid": False,
                 "error": f"파일 검증 중 오류 발생: {str(e)}"
             }
+
+    def save_feature_definitions(self, feature_df: pd.DataFrame, replace_all: bool = True) -> Dict[str, Any]:
+        """
+        Feature 정의를 데이터베이스에 저장
+
+        Args:
+            feature_df: Feature 정의 DataFrame (회사, 팀, F1~F9 컬럼 포함)
+            replace_all: True면 기존 Feature 정의 삭제 후 저장
+        """
+        if feature_df is None or len(feature_df) == 0:
+            return {
+                "success": True,
+                "deleted_count": 0,
+                "saved_count": 0,
+                "message": "No feature definitions to save"
+            }
+
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            deleted_count = 0
+
+            # replace_all=True인 경우 기존 데이터 삭제
+            if replace_all:
+                cursor.execute("DELETE FROM team_feature_definitions")
+                deleted_count = cursor.rowcount
+
+            saved_count = 0
+            errors = []
+
+            # Feature 컬럼 추출
+            feature_cols = [col for col in feature_df.columns if col.startswith('F') and len(col) == 2 and col[1].isdigit()]
+
+            for _, row in feature_df.iterrows():
+                company = row.get('회사', None)
+                team = row.get('팀', None)
+
+                if not company or not team:
+                    continue
+
+                # 각 Feature별로 저장
+                for feature_col in feature_cols:
+                    feature_name = row.get(feature_col, None)
+
+                    # Feature 정의가 있는 경우만 저장
+                    if pd.notna(feature_name) and str(feature_name).strip():
+                        try:
+                            cursor.execute("""
+                                INSERT OR REPLACE INTO team_feature_definitions (
+                                    company, team, feature_number, feature_name,
+                                    created_at, updated_at
+                                ) VALUES (?, ?, ?, ?, ?, ?)
+                            """, (
+                                company,
+                                team,
+                                feature_col,
+                                str(feature_name).strip(),
+                                datetime.now().isoformat(),
+                                datetime.now().isoformat()
+                            ))
+                            saved_count += 1
+                        except Exception as e:
+                            errors.append(f"Team {team}, {feature_col}: {str(e)}")
+
+            conn.commit()
+
+            return {
+                "success": True,
+                "deleted_count": deleted_count,
+                "saved_count": saved_count,
+                "errors": errors if errors else None
+            }
+
+        except Exception as e:
+            conn.rollback()
+            return {
+                "success": False,
+                "error": f"Feature 정의 저장 실패: {str(e)}"
+            }
+        finally:
+            conn.close()
 
     def save_to_database(self, df: pd.DataFrame, replace_all: bool = True) -> Dict[str, Any]:
         """
@@ -235,6 +335,71 @@ class OrganizationService:
 
         return tree
 
+    def get_feature_definitions(self, team: str = None, company: str = None) -> List[Dict[str, Any]]:
+        """Feature 정의 조회"""
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        query = "SELECT * FROM team_feature_definitions"
+        params = []
+        conditions = []
+
+        if team:
+            conditions.append("team = ?")
+            params.append(team)
+
+        if company:
+            conditions.append("company = ?")
+            params.append(company)
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += " ORDER BY company, team, feature_number"
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        conn.close()
+
+        columns = ['id', 'company', 'team', 'feature_number', 'feature_name', 'created_at', 'updated_at']
+        return [dict(zip(columns, row)) for row in rows]
+
+    def get_analysis_ready_teams(self) -> List[Dict[str, Any]]:
+        """
+        분석가능팀 조회
+        조건: Feature 정의가 있고 회귀모델이 있는 팀
+        """
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        query = """
+            SELECT DISTINCT
+                tfd.company,
+                tfd.team,
+                COUNT(DISTINCT tfd.feature_number) as feature_count,
+                COUNT(DISTINCT rm.model_type) as model_count
+            FROM team_feature_definitions tfd
+            INNER JOIN regression_models rm ON tfd.team = rm.org_name
+            GROUP BY tfd.company, tfd.team
+            HAVING feature_count > 0 AND model_count > 0
+            ORDER BY tfd.company, tfd.team
+        """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        conn.close()
+
+        teams = []
+        for row in rows:
+            teams.append({
+                'company': row[0],
+                'team': row[1],
+                'feature_count': row[2],
+                'model_count': row[3]
+            })
+
+        return teams
+
     def get_status(self) -> Dict[str, Any]:
         """조직도 데이터 상태 조회"""
         conn = self.get_db_connection()
@@ -278,6 +443,134 @@ class OrganizationService:
             "companies": companies,
             "company_count": len(companies)
         }
+
+    def process_master_sheet(self, file_path: str, replace_all: bool = True) -> Dict[str, Any]:
+        """
+        Master 시트 데이터를 처리하여 team_metrics와 team_headcount 테이블에 저장
+
+        Master 시트 컬럼:
+        - HQ (회사)
+        - 팀
+        - 년, 월
+        - 구분 (전체, 선임, 책임, 사원)
+        - F1~F9 (Feature 값)
+        - 인력규모
+        """
+        try:
+            # Master 시트 읽기
+            master_df = pd.read_excel(file_path, sheet_name='master')
+
+            if master_df is None or len(master_df) == 0:
+                return {
+                    "success": True,
+                    "message": "No master data to process",
+                    "metrics_saved": 0,
+                    "headcount_saved": 0
+                }
+
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+
+            try:
+                # replace_all=True인 경우 기존 데이터 삭제
+                metrics_deleted = 0
+                headcount_deleted = 0
+
+                if replace_all:
+                    cursor.execute("DELETE FROM team_metrics")
+                    metrics_deleted = cursor.rowcount
+                    cursor.execute("DELETE FROM team_headcount")
+                    headcount_deleted = cursor.rowcount
+
+                metrics_saved = 0
+                headcount_saved = 0
+                errors = []
+
+                # Feature 컬럼 추출 (F1~F9)
+                feature_cols = [col for col in master_df.columns if col.startswith('F') and len(col) == 2 and col[1].isdigit()]
+
+                for _, row in master_df.iterrows():
+                    team_name = row.get('팀', None)
+                    year = row.get('년', None)
+                    month = row.get('월', None)
+                    position = row.get('구분', None)
+                    headcount = row.get('인력규모', None)
+
+                    if not team_name or pd.isna(year) or pd.isna(month) or not position:
+                        continue
+
+                    # year를 2자리로 변환 (2025 -> 25)
+                    if year >= 2000:
+                        year = year - 2000
+
+                    # 구분 매핑 (전체 -> 총합)
+                    if position == '전체':
+                        position = '총합'
+
+                    # team_headcount에 인력규모 저장
+                    if pd.notna(headcount):
+                        try:
+                            cursor.execute("""
+                                INSERT OR REPLACE INTO team_headcount (
+                                    team_name, year, month, position, headcount
+                                ) VALUES (?, ?, ?, ?, ?)
+                            """, (
+                                team_name,
+                                int(year),
+                                int(month),
+                                position,
+                                int(headcount)
+                            ))
+                            headcount_saved += 1
+                        except Exception as e:
+                            errors.append(f"Headcount save error - Team: {team_name}, Year: {year}, Month: {month}, Position: {position}: {str(e)}")
+
+                    # team_metrics에 Feature 값들 저장
+                    for feature_col in feature_cols:
+                        feature_value = row.get(feature_col, None)
+
+                        if pd.notna(feature_value):
+                            try:
+                                cursor.execute("""
+                                    INSERT OR REPLACE INTO team_metrics (
+                                        team_name, year, month, metric_name, metric_value
+                                    ) VALUES (?, ?, ?, ?, ?)
+                                """, (
+                                    team_name,
+                                    int(year),
+                                    int(month),
+                                    feature_col,
+                                    float(feature_value)
+                                ))
+                                metrics_saved += 1
+                            except Exception as e:
+                                errors.append(f"Metrics save error - Team: {team_name}, Feature: {feature_col}: {str(e)}")
+
+                conn.commit()
+
+                return {
+                    "success": True,
+                    "metrics_deleted": metrics_deleted,
+                    "metrics_saved": metrics_saved,
+                    "headcount_deleted": headcount_deleted,
+                    "headcount_saved": headcount_saved,
+                    "errors": errors if errors else None
+                }
+
+            except Exception as e:
+                conn.rollback()
+                return {
+                    "success": False,
+                    "error": f"Master 데이터 저장 실패: {str(e)}"
+                }
+            finally:
+                conn.close()
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Master 시트 처리 실패: {str(e)}"
+            }
 
 # Singleton instance
 organization_service = OrganizationService()
