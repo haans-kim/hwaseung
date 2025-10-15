@@ -53,10 +53,17 @@ class DashboardService:
                 }
             }
         }
-        
-        # Feature importance기반 상위 변수들 동적 선정
-        self.variable_definitions = self._build_variable_definitions()
-    
+
+        # 🔧 FIX: Lazy loading - 모델이 학습된 후에 호출되도록 변경
+        self._variable_definitions_cache = None
+
+    @property
+    def variable_definitions(self) -> Dict[str, Dict[str, Any]]:
+        """변수 정의 - 최초 접근 시에만 빌드 (Lazy Loading)"""
+        if self._variable_definitions_cache is None:
+            self._variable_definitions_cache = self._build_variable_definitions()
+        return self._variable_definitions_cache
+
     def _build_variable_definitions(self) -> Dict[str, Dict[str, Any]]:
         """기반 Importance와 실제 데이터를 기반으로 변수 정의 동적 생성"""
         try:
