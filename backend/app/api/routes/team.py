@@ -46,11 +46,18 @@ async def upload_team_data(file: UploadFile = File(...)) -> Dict[str, Any]:
         # 데이터베이스에 저장
         save_result = team_service.save_to_database(
             validation_result['df_master'],
+            validation_result['df_matching'],
             validation_result['feature_columns']
         )
 
         if not save_result['success']:
             raise HTTPException(status_code=500, detail=save_result.get('error', 'Save failed'))
+
+        # 🔧 NEW: 회귀 모델 자동 학습
+        model_result = team_service.train_regression_models()
+
+        # 🔧 NEW: 예측값 자동 계산
+        prediction_result = team_service.calculate_predictions_from_features()
 
         return {
             "message": "Team data uploaded successfully",
@@ -68,6 +75,16 @@ async def upload_team_data(file: UploadFile = File(...)) -> Dict[str, Any]:
             "saved": {
                 "count": save_result['saved_count'],
                 "errors": save_result.get('errors')
+            },
+            "models": {
+                "trained": model_result.get('models_trained', 0),
+                "teams_processed": model_result.get('teams_processed', 0),
+                "errors": model_result.get('errors')
+            },
+            "predictions": {
+                "saved": prediction_result.get('predictions_saved', 0),
+                "deleted": prediction_result.get('deleted_count', 0),
+                "errors": prediction_result.get('errors')
             }
         }
 

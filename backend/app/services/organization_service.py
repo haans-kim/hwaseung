@@ -371,21 +371,20 @@ class OrganizationService:
     def get_analysis_ready_teams(self) -> List[Dict[str, Any]]:
         """
         분석가능팀 조회
-        조건: Feature 정의가 있고 회귀모델이 있는 팀
+        조건: Feature 정의가 있는 팀 (공통 회귀모델 사용)
         """
         conn = self.get_db_connection()
         cursor = conn.cursor()
 
+        # 🔧 FIX: regression_models JOIN 제거 - 모든 팀이 공통 모델 사용
         query = """
             SELECT DISTINCT
                 tfd.company,
                 tfd.team,
-                COUNT(DISTINCT tfd.feature_number) as feature_count,
-                COUNT(DISTINCT rm.model_type) as model_count
+                COUNT(DISTINCT tfd.feature_number) as feature_count
             FROM team_feature_definitions tfd
-            INNER JOIN regression_models rm ON tfd.team = rm.org_name
             GROUP BY tfd.company, tfd.team
-            HAVING feature_count > 0 AND model_count > 0
+            HAVING feature_count > 0
             ORDER BY tfd.company, tfd.team
         """
 
@@ -399,7 +398,7 @@ class OrganizationService:
                 'company': row[0],
                 'team': row[1],
                 'feature_count': row[2],
-                'model_count': row[3]
+                'model_count': 0  # 공통 모델 사용으로 개별 카운트 불필요
             })
 
         return teams

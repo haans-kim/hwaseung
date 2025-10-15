@@ -64,7 +64,7 @@ const PositionAnalysis: React.FC = () => {
         SELECT team_name, position, current_headcount, predicted_headcount, change, change_percent, category
         FROM team_predictions
         ORDER BY team_name, CASE position
-          WHEN '총' THEN 1
+          WHEN '총합' THEN 1
           WHEN '책임' THEN 2
           WHEN '선임' THEN 3
           WHEN '사원' THEN 4
