@@ -5,12 +5,15 @@ FTE (Full-Time Equivalent) 분석 서비스
 
 import pandas as pd
 import sqlite3
+import os
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 class FTEService:
     def __init__(self):
-        self.db_path = Path(__file__).parent.parent.parent.parent / 'hwaseung_RnD.db'
+        # 🔧 FIX: Docker 환경을 위해 환경 변수 사용
+        db_path_str = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../hwaseung_RnD.db'))
+        self.db_path = Path(db_path_str)
 
     def validate_excel_file(self, file_path: str) -> Dict[str, Any]:
         """

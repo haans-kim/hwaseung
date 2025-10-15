@@ -5,11 +5,15 @@ Organization Service
 
 import pandas as pd
 import sqlite3
+import os
 from typing import Dict, Any, List
 from datetime import datetime
 
 class OrganizationService:
-    def __init__(self, db_path: str = "/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db"):
+    def __init__(self, db_path: str = None):
+        # 🔧 FIX: Docker 환경을 위해 환경 변수 사용
+        if db_path is None:
+            db_path = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../hwaseung_RnD.db'))
         self.db_path = db_path
 
     def get_db_connection(self):

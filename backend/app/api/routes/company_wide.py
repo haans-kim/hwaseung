@@ -172,7 +172,10 @@ async def delete_company_wide_features(
 
     try:
         import sqlite3
-        conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+        import os
+        # 🔧 FIX: Docker 환경을 위해 환경 변수 사용
+        db_path = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../../hwaseung_RnD.db'))
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute("""

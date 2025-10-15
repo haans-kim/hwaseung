@@ -6,16 +6,19 @@ import sqlite3
 import os
 from pathlib import Path
 
-DB_PATH = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
+# 🔧 FIX: Docker 환경을 위해 환경 변수 또는 상대 경로 사용
+DB_PATH = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), 'hwaseung_RnD.db'))
 MIGRATIONS_DIR = Path(__file__).parent / 'migrations'
 
 def apply_migration(migration_file: Path):
     """마이그레이션 SQL 파일 적용"""
     print(f"📄 Applying migration: {migration_file.name}")
+    print(f"   Using DB path: {DB_PATH}")
 
-    if not os.path.exists(DB_PATH):
-        print(f"❌ Database not found: {DB_PATH}")
-        return False
+    # DB 파일이 없으면 자동 생성됨 (sqlite3.connect가 생성함)
+    if not os.path.exists(os.path.dirname(DB_PATH)):
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        print(f"   Created directory: {os.path.dirname(DB_PATH)}")
 
     try:
         with open(migration_file, 'r', encoding='utf-8') as f:

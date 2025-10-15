@@ -31,4 +31,5 @@ RUN mkdir -p /app/uploads /app/data
 # Use PORT environment variable from Railway
 EXPOSE ${PORT:-8000}
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# 🔧 FIX: Run migrations before starting the app
+CMD ["sh", "-c", "python apply_migration.py && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
