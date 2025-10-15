@@ -70,6 +70,13 @@ async def upload_organization_chart(
             replace_all=replace_all
         )
 
+        # 예측값 자동 계산 (Master 데이터가 성공적으로 저장된 경우에만)
+        prediction_result = None
+        if master_result and master_result.get('success'):
+            prediction_result = organization_service.calculate_team_predictions(
+                replace_all=replace_all
+            )
+
         response_data = {
             "message": "Organization chart uploaded successfully",
             "filename": file.filename,
@@ -106,6 +113,15 @@ async def upload_organization_chart(
                 "headcount_saved": master_result.get('headcount_saved', 0),
                 "headcount_deleted": master_result.get('headcount_deleted', 0),
                 "errors": master_result.get('errors')
+            }
+
+        # 예측값 계산 결과 추가
+        if prediction_result and prediction_result.get('success'):
+            response_data["predictions"] = {
+                "predictions_saved": prediction_result.get('predictions_saved', 0),
+                "predictions_deleted": prediction_result.get('deleted_count', 0),
+                "teams_analyzed": prediction_result.get('teams_analyzed', 0),
+                "errors": prediction_result.get('errors')
             }
 
         return response_data

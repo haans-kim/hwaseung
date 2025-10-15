@@ -572,5 +572,146 @@ class OrganizationService:
                 "error": f"Master 시트 처리 실패: {str(e)}"
             }
 
+    def calculate_team_predictions(self, replace_all: bool = True) -> Dict[str, Any]:
+        """
+        회귀 모델을 사용하여 팀별 예측값 계산 및 저장
+
+        조건: Feature 정의 + 회귀모델 + team_metrics + team_headcount 모두 있는 팀
+        """
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            # replace_all=True인 경우 기존 예측값 삭제
+            deleted_count = 0
+            if replace_all:
+                cursor.execute("DELETE FROM team_predictions")
+                deleted_count = cursor.rowcount
+
+            # 분석가능팀 조회 (Feature 정의 + 회귀모델)
+            analysis_ready_teams = self.get_analysis_ready_teams()
+
+            if not analysis_ready_teams:
+                return {
+                    "success": True,
+                    "message": "No teams available for prediction",
+                    "deleted_count": deleted_count,
+                    "predictions_saved": 0
+                }
+
+            predictions_saved = 0
+            errors = []
+            team_results = []
+
+            for team_info in analysis_ready_teams:
+                team_name = team_info['team']
+
+                try:
+                    # 팀 메트릭 평균값 조회
+                    cursor.execute("""
+                        SELECT metric_name, AVG(metric_value) as avg_value
+                        FROM team_metrics
+                        WHERE team_name = ?
+                        GROUP BY metric_name
+                    """, (team_name,))
+
+                    metrics = {row[0]: row[1] for row in cursor.fetchall()}
+
+                    if not metrics:
+                        errors.append(f"Team {team_name}: No metrics data found")
+                        continue
+
+                    # 4개 모델 타입별 예측 (총, 책임, 선임, 사원)
+                    model_types = ['총', '책임', '선임', '사원']
+                    position_map = {'총': '총합', '책임': '책임', '선임': '선임', '사원': '사원'}
+
+                    for model_type in model_types:
+                        # 모델 조회
+                        cursor.execute("""
+                            SELECT id FROM regression_models
+                            WHERE org_name = ? AND model_type = ?
+                            LIMIT 1
+                        """, (team_name, model_type))
+
+                        model_result = cursor.fetchone()
+                        if not model_result:
+                            errors.append(f"Team {team_name}, {model_type}: No model found")
+                            continue
+
+                        model_id = model_result[0]
+
+                        # 회귀 계수 조회
+                        cursor.execute("""
+                            SELECT parameter_name, coefficient
+                            FROM regression_parameters
+                            WHERE model_id = ?
+                        """, (model_id,))
+
+                        parameters = cursor.fetchall()
+
+                        # 예측값 계산
+                        prediction = 0
+                        for param_name, coefficient in parameters:
+                            if param_name == 'intercept':
+                                prediction += coefficient
+                            elif param_name in metrics:
+                                prediction += coefficient * metrics[param_name]
+
+                        predicted_headcount = max(0, round(prediction))
+
+                        # 현재 인원 조회
+                        cursor.execute("""
+                            SELECT headcount FROM team_headcount
+                            WHERE team_name = ? AND year = 25 AND month = 8 AND position = ?
+                            LIMIT 1
+                        """, (team_name, position_map[model_type]))
+
+                        current_result = cursor.fetchone()
+                        current_headcount = int(current_result[0]) if current_result else 0
+
+                        # 변화량 및 변화율 계산
+                        change = predicted_headcount - current_headcount
+                        change_percent = (change / current_headcount * 100) if current_headcount > 0 else 0
+
+                        # 분류 결정
+                        if change > 0:
+                            category = '충원필요'
+                        elif change < 0:
+                            category = '감원검토'
+                        else:
+                            category = '적정'
+
+                        # DB에 저장
+                        cursor.execute("""
+                            INSERT OR REPLACE INTO team_predictions
+                            (team_name, position, current_headcount, predicted_headcount, change, change_percent, category)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """, (team_name, model_type, current_headcount, predicted_headcount, change, change_percent, category))
+
+                        predictions_saved += 1
+
+                except Exception as e:
+                    errors.append(f"Team {team_name} prediction error: {str(e)}")
+                    continue
+
+            conn.commit()
+
+            return {
+                "success": True,
+                "deleted_count": deleted_count,
+                "predictions_saved": predictions_saved,
+                "teams_analyzed": len(analysis_ready_teams),
+                "errors": errors if errors else None
+            }
+
+        except Exception as e:
+            conn.rollback()
+            return {
+                "success": False,
+                "error": f"Prediction calculation failed: {str(e)}"
+            }
+        finally:
+            conn.close()
+
 # Singleton instance
 organization_service = OrganizationService()
