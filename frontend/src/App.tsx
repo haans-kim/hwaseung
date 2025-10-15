@@ -7,7 +7,6 @@ import { Effects } from './pages/Effects';
 import PositionAnalysis from './pages/PositionAnalysis';
 import OrganizationHeadcount from './pages/OrganizationHeadcount';
 import OrganizationSimulation from './pages/OrganizationSimulation';
-import { ExplainerDashboard } from './pages/ExplainerDashboard';
 import CompanyWideModeling from './pages/CompanyWideModeling';
 import DashboardRNA from './pages/DashboardRNA';
 import DashboardTonggibon from './pages/DashboardTonggibon';
@@ -27,7 +26,6 @@ function App() {
           <Route path="organization-headcount" element={<OrganizationHeadcount />} />
           <Route path="organization-simulation" element={<OrganizationSimulation />} />
           <Route path="effects" element={<Effects />} />
-          <Route path="explainer" element={<ExplainerDashboard />} />
         </Route>
       </Routes>
     </Router>
