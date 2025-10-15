@@ -173,32 +173,37 @@ const CompanyWideModeling: React.FC = () => {
       setLoading({ ...loading, setup: true });
       setError(null);
 
-      // R&A와 tonggibon 동시 Setup
-      const [rnaRes, tongRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            organization: 'R&A'
-          })
-        }),
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            organization: 'tonggibon'
-          })
+      // 🔧 FIX: R&A와 tonggibon을 순차적으로 Setup (PyCaret 전역 상태 충돌 방지)
+      // R&A 먼저 Setup
+      const rnaRes = await fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization: 'R&A'
         })
-      ]);
+      });
 
-      if (!rnaRes.ok || !tongRes.ok) {
-        throw new Error('PyCaret 환경 설정 실패');
+      if (!rnaRes.ok) {
+        throw new Error('R&A PyCaret 환경 설정 실패');
       }
 
       const rnaData = await rnaRes.json();
-      const tongData = await tongRes.json();
-
       setRnaSetup(rnaData);
+
+      // tonggibon 두 번째로 Setup
+      const tongRes = await fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization: 'tonggibon'
+        })
+      });
+
+      if (!tongRes.ok) {
+        throw new Error('tonggibon PyCaret 환경 설정 실패');
+      }
+
+      const tongData = await tongRes.json();
       setTongSetup(tongData);
 
       // 상태 갱신
@@ -211,40 +216,45 @@ const CompanyWideModeling: React.FC = () => {
     }
   };
 
-  // 2단계: 모델 비교 (양쪽 동시 진행)
+  // 2단계: 모델 비교 (순차적 진행 - PyCaret 전역 상태 충돌 방지)
   const handleModelComparison = async () => {
     try {
       setLoading({ ...loading, comparison: true });
       setError(null);
 
-      // R&A와 tonggibon 동시 Compare
-      const [rnaRes, tongRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/compare`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            organization: 'R&A',
-            n_select: 3
-          })
-        }),
-        fetch(`${API_BASE_URL}/api/company-wide/modeling/compare`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            organization: 'tonggibon',
-            n_select: 3
-          })
+      // 🔧 FIX: R&A와 tonggibon을 순차적으로 Compare (PyCaret 전역 상태 충돌 방지)
+      // R&A 먼저 Compare
+      const rnaRes = await fetch(`${API_BASE_URL}/api/company-wide/modeling/compare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization: 'R&A',
+          n_select: 3
         })
-      ]);
+      });
 
-      if (!rnaRes.ok || !tongRes.ok) {
-        throw new Error('모델 비교 실패');
+      if (!rnaRes.ok) {
+        throw new Error('R&A 모델 비교 실패');
       }
 
       const rnaData = await rnaRes.json();
-      const tongData = await tongRes.json();
-
       setRnaComparison(rnaData);
+
+      // tonggibon 두 번째로 Compare
+      const tongRes = await fetch(`${API_BASE_URL}/api/company-wide/modeling/compare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization: 'tonggibon',
+          n_select: 3
+        })
+      });
+
+      if (!tongRes.ok) {
+        throw new Error('tonggibon 모델 비교 실패');
+      }
+
+      const tongData = await tongRes.json();
       setTongComparison(tongData);
 
       // 최고 모델 자동 선택

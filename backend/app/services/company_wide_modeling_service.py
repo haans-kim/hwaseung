@@ -282,6 +282,24 @@ class CompanyWideModelingService:
         if not self.check_pycaret_availability():
             raise RuntimeError("PyCaret is not available")
 
+        # 🔧 FIX: PyCaret 전역 상태 문제 완화
+        # 재setup이면 현재 organization만 정리
+        if self.is_setup_complete.get(organization, False):
+            logging.info(f"🔄 Re-setup detected for {organization}, clearing previous state")
+            if self.experiments.get(organization) is not None:
+                del self.experiments[organization]
+            if self.model_results.get(organization) is not None:
+                if 'best_models' in self.model_results[organization]:
+                    del self.model_results[organization]['best_models']
+                del self.model_results[organization]
+
+            self.experiments[organization] = None
+            self.model_results[organization] = None
+            gc.collect()
+
+        # ⚠️ 참고: PyCaret은 전역 상태를 사용하므로, 두 organization을 동시에 사용할 수 없습니다.
+        # compare/train 시 자동으로 재setup하도록 구현되어 있습니다.
+
         # 증강된 데이터가 있으면 사용, 없으면 원본 데이터 준비
         if self.augmented_data.get(organization) is not None:
             logging.info(f"📊 Using augmented data for {organization}")
@@ -379,8 +397,10 @@ class CompanyWideModelingService:
         Returns:
             비교 결과
         """
-        if not self.is_setup_complete.get(organization, False):
-            raise RuntimeError(f"PyCaret not setup for {organization}. Call setup_pycaret_environment first.")
+        # 🔧 FIX: PyCaret 전역 상태 문제 해결 - 항상 재setup
+        # PyCaret은 전역 상태를 사용하므로, 매번 해당 organization으로 재setup 필요
+        logging.info(f"🔄 Re-setting up PyCaret for {organization} before compare")
+        self.setup_pycaret_environment(organization)
 
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -476,8 +496,10 @@ class CompanyWideModelingService:
         Returns:
             학습 결과
         """
-        if not self.is_setup_complete.get(organization, False):
-            raise RuntimeError(f"PyCaret not setup for {organization}")
+        # 🔧 FIX: PyCaret 전역 상태 문제 해결 - 항상 재setup
+        # PyCaret은 전역 상태를 사용하므로, 매번 해당 organization으로 재setup 필요
+        logging.info(f"🔄 Re-setting up PyCaret for {organization} before training")
+        self.setup_pycaret_environment(organization)
 
         old_stdout = sys.stdout
         old_stderr = sys.stderr
