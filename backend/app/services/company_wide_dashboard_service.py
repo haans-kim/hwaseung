@@ -172,14 +172,40 @@ class CompanyWideDashboardService:
                 finally:
                     sys.stdout = old_stdout
 
-            # 모델 R2 score 가져오기
+            # 🔧 FIX: DB에서 저장된 모델 R2 score 가져오기
             try:
-                old_stdout = sys.stdout
-                sys.stdout = io.StringIO()
-                metrics = pull()
-                sys.stdout = old_stdout
-                r2_score = metrics.loc[metrics.index[0], 'R2'] if metrics is not None else 0.85
-            except:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+
+                # 가장 최근에 학습된 모델의 R² 가져오기
+                cursor.execute("""
+                    SELECT r_squared
+                    FROM company_wide_model_metrics
+                    WHERE organization = ?
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """, (organization,))
+
+                result = cursor.fetchone()
+                conn.close()
+
+                if result and result[0] is not None:
+                    r2_score = result[0]
+                    logging.info(f"✅ Loaded R² from DB for {organization}: {r2_score:.4f}")
+                else:
+                    # DB에 없으면 현재 메모리의 metrics 시도
+                    try:
+                        old_stdout = sys.stdout
+                        sys.stdout = io.StringIO()
+                        metrics = pull()
+                        sys.stdout = old_stdout
+                        r2_score = metrics.loc[metrics.index[0], 'R2'] if metrics is not None else 0.85
+                        logging.warning(f"⚠️ No metrics in DB for {organization}, using pull(): {r2_score:.4f}")
+                    except:
+                        r2_score = 0.85
+                        logging.warning(f"⚠️ No metrics available for {organization}, using default: {r2_score}")
+            except Exception as e:
+                logging.error(f"Failed to load metrics from DB: {e}")
                 r2_score = 0.85
 
             # 결과 구성
@@ -192,7 +218,7 @@ class CompanyWideDashboardService:
                     'previous_headcount': round(prediction_2025) if prediction_2025 else None,
                     'change': round(prediction_2026 - prediction_2025) if prediction_2025 else 0,
                     'change_percent': round((prediction_2026 - prediction_2025) / prediction_2025 * 100, 1) if prediction_2025 else 0,
-                    'model_r2': round(r2_score, 2),
+                    'model_r2': r2_score,  # 🔧 FIX: 반올림하지 않고 DB 원본 값 그대로 반환
                     'organization': organization,
                     'prediction_2025': round(prediction_2025) if prediction_2025 else None,
                     'actual_2024': int(headcount_2024) if headcount_2024 else None
@@ -206,7 +232,7 @@ class CompanyWideDashboardService:
                     'previous_headcount': int(headcount_2024) if headcount_2024 else None,
                     'change': round(prediction_2025 - headcount_2024) if (prediction_2025 and headcount_2024) else 0,
                     'change_percent': round((prediction_2025 - headcount_2024) / headcount_2024 * 100, 1) if (prediction_2025 and headcount_2024) else 0,
-                    'model_r2': round(r2_score, 2),
+                    'model_r2': r2_score,  # 🔧 FIX: 반올림하지 않고 DB 원본 값 그대로 반환
                     'organization': organization,
                     'note': '2025 features로 2026 예측'
                 }

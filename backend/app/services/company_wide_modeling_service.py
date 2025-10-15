@@ -476,6 +476,9 @@ class CompanyWideModelingService:
         comparison_df = self.model_results[organization]['comparison_df']
         comparison_data = comparison_df.to_dict(orient='records') if comparison_df is not None else []
 
+        # ℹ️ 참고: compare_models()의 R²는 Cross-Validation 평균값이므로 DB에 저장하지 않음
+        # 실제 사용할 모델은 train_model()에서 학습 후 저장됨
+
         return {
             'message': f'Model comparison completed for {organization}',
             'organization': organization,
@@ -536,6 +539,30 @@ class CompanyWideModelingService:
             # 평가 메트릭
             metrics = pull()
             metrics_dict = metrics.to_dict(orient='records')[0] if metrics is not None else {}
+
+            # 🔧 FIX: DB에 metrics 저장
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+
+                cursor.execute("""
+                    INSERT OR REPLACE INTO company_wide_model_metrics
+                    (organization, model_name, r_squared, mae, rmse, mse)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    organization,
+                    model_name,
+                    metrics_dict.get('R2'),
+                    metrics_dict.get('MAE'),
+                    metrics_dict.get('RMSE'),
+                    metrics_dict.get('MSE')
+                ))
+
+                conn.commit()
+                conn.close()
+                logging.info(f"✅ Saved metrics to DB for {organization}/{model_name}: R²={metrics_dict.get('R2', 0):.4f}")
+            except Exception as db_error:
+                logging.error(f"Failed to save metrics to DB: {db_error}")
 
             # 학습 후 메모리 정리
             self.cleanup_after_training(organization)
