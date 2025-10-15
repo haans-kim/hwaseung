@@ -459,7 +459,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                   </th>
                 ))}
                 <th className="border-l-2 border-gray-300"></th>
-                <th className="text-center py-3 px-2 min-w-[160px] text-base font-semibold bg-gray-100">전체 평균</th>
+                <th className="text-center py-3 px-2 min-w-[160px] text-base font-semibold bg-gray-100">전체</th>
               </tr>
             </thead>
             <tbody>
@@ -489,7 +489,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
                   <MetricCard
-                    title="전체평균"
+                    title="전체"
                     value={statistics.avgFTEPerPerson}
                     unit=""
                     status={getStatus(statistics.avgFTEPerPerson, '평균')}
@@ -525,7 +525,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
                   <MetricCard
-                    title="책임평균"
+                    title="전체"
                     value={statistics.byPosition.책임.people > 0
                       ? statistics.byPosition.책임.fte / statistics.byPosition.책임.people
                       : 0}
@@ -566,7 +566,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
                   <MetricCard
-                    title="선임평균"
+                    title="전체"
                     value={statistics.byPosition.선임.people > 0
                       ? statistics.byPosition.선임.fte / statistics.byPosition.선임.people
                       : 0}
@@ -607,7 +607,7 @@ export const FTEStatistics: React.FC<FTEStatisticsProps> = ({
                 <td className="border-l-2 border-gray-300"></td>
                 <td className="text-center p-3 bg-gray-50">
                   <MetricCard
-                    title="사원평균"
+                    title="전체"
                     value={statistics.byPosition.사원.people > 0
                       ? statistics.byPosition.사원.fte / statistics.byPosition.사원.people
                       : 0}
