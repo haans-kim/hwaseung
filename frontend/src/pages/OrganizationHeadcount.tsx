@@ -95,7 +95,7 @@ const OrganizationHeadcount: React.FC = () => {
         });
 
         // 데이터베이스 파일 로드
-        const response = await fetch('/hwaseung_RnD.db');
+        const response = await fetch(`/hwaseung_RnD.db?t=${Date.now()}`);
         const buffer = await response.arrayBuffer();
         const db = new SQL.Database(new Uint8Array(buffer));
 

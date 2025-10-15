@@ -55,7 +55,7 @@ const PositionAnalysis: React.FC = () => {
         locateFile: (file: string) => `https://sql.js.org/dist/${file}`
       });
 
-      const response = await fetch('/hwaseung_RnD.db');
+      const response = await fetch(`/hwaseung_RnD.db?t=${Date.now()}`);
       const buffer = await response.arrayBuffer();
       const db = new SQL.Database(new Uint8Array(buffer));
 

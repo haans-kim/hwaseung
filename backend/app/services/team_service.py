@@ -190,7 +190,7 @@ class TeamService:
                 feature_values_json = json.dumps(feature_values, ensure_ascii=False)
 
                 try:
-                    # UPSERT: INSERT or UPDATE
+                    # team_features 테이블에 저장
                     cursor.execute("""
                         INSERT INTO team_features (
                             company, team, year, month, position, feature_values, headcount, created_at, updated_at
@@ -210,6 +210,32 @@ class TeamService:
                         headcount,
                         datetime.now().isoformat(),
                         datetime.now().isoformat()
+                    ))
+
+                    # team_headcount 테이블에도 저장 (OrganizationSimulation 페이지용)
+                    # year를 2자리로 변환 (2025 -> 25)
+                    year_short = year % 100
+
+                    # position 변환 ('전체' -> '총합')
+                    position_for_headcount = '총합' if position == '전체' else position
+
+                    # 먼저 기존 데이터 삭제
+                    cursor.execute("""
+                        DELETE FROM team_headcount
+                        WHERE team_name = ? AND year = ? AND month = ? AND position = ?
+                    """, (team, year_short, month, position_for_headcount))
+
+                    # 새 데이터 삽입
+                    cursor.execute("""
+                        INSERT INTO team_headcount (
+                            team_name, year, month, position, headcount
+                        ) VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        team,
+                        year_short,
+                        month,
+                        position_for_headcount,
+                        headcount
                     ))
 
                     saved_count += 1
@@ -512,9 +538,9 @@ class TeamService:
 
                         # 카테고리 결정
                         if change_percent > 10:
-                            category = '증원필요'
+                            category = '충원필요'
                         elif change_percent < -10:
-                            category = '감원필요'
+                            category = '감원검토'
                         else:
                             category = '적정'
 
