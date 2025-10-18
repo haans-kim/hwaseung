@@ -652,6 +652,7 @@ class TeamService:
         특정 팀의 시뮬레이션에 필요한 모든 데이터를 한 번에 조회
         - Regression models & parameters (총, 책임, 선임, 사원)
         - Team metrics (평균값)
+        - Feature definitions (F1, F2 -> 실제 feature 이름)
         - Current headcount (최신 데이터)
         - FTE data
         """
@@ -664,7 +665,8 @@ class TeamService:
                 "regression_models": {},
                 "team_metrics": {},
                 "current_headcount": {},
-                "current_fte": {}
+                "current_fte": {},
+                "feature_definitions": {}
             }
 
             model_types = ['총', '책임', '선임', '사원']
@@ -713,6 +715,18 @@ class TeamService:
             for metric_row in cursor.fetchall():
                 metric_name, avg_value = metric_row
                 result["team_metrics"][metric_name] = avg_value
+
+            # 2-1. Feature Definitions 조회 (F1, F2 -> 실제 feature 이름)
+            cursor.execute("""
+                SELECT feature_number, feature_name
+                FROM team_feature_definitions
+                WHERE team = ?
+                ORDER BY feature_number
+            """, (team_name,))
+
+            for feature_row in cursor.fetchall():
+                feature_number, feature_name = feature_row
+                result["feature_definitions"][feature_number] = feature_name
 
             # 3. Current Headcount 조회 (최신 년월 데이터)
             # 먼저 최신 년월 찾기

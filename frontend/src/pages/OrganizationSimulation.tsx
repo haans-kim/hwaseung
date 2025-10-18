@@ -49,6 +49,7 @@ const OrganizationSimulation: React.FC = () => {
   const [regressionParameters, setRegressionParameters] = useState<{ [key: string]: RegressionParameter[] }>({});
   const [teamMetrics, setTeamMetrics] = useState<{ [key: string]: number }>({});
   const [adjustedMetrics, setAdjustedMetrics] = useState<{ [key: string]: number }>({});
+  const [featureDefinitions, setFeatureDefinitions] = useState<{ [key: string]: string }>({});
 
   // 4개 예측 결과 (총, 책임, 선임, 사원)
   const [currentHeadcount, setCurrentHeadcount] = useState<{ [key: string]: number }>({});
@@ -232,6 +233,9 @@ const OrganizationSimulation: React.FC = () => {
       // 2. Team Metrics 설정
       setTeamMetrics(data.team_metrics);
       setAdjustedMetrics(data.team_metrics);
+
+      // 2-1. Feature Definitions 설정 (F1, F2 -> 실제 이름)
+      setFeatureDefinitions(data.feature_definitions || {});
 
       // 3. Current Headcount 설정
       setCurrentHeadcount(data.current_headcount);
@@ -524,10 +528,12 @@ const OrganizationSimulation: React.FC = () => {
               <div className="space-y-4">
                 {Object.entries(teamMetrics).map(([metricName, baseValue]) => {
                   const adjustment = ((adjustedMetrics[metricName] || baseValue) - baseValue) / baseValue * 100;
+                  // F1, F2 등을 실제 feature 이름으로 변환
+                  const displayName = featureDefinitions[metricName] || metricName;
                   return (
                     <div key={metricName} className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-700">{metricName}</span>
+                        <span className="text-sm font-medium text-gray-700">{displayName}</span>
                         <span className="text-sm text-gray-500">
                           기준: {baseValue.toFixed(1)} | 현재: {adjustedMetrics[metricName]?.toFixed(1) || baseValue.toFixed(1)}
                         </span>
