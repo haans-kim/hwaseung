@@ -40,16 +40,43 @@ async def upload_team_data(file: UploadFile = File(...)) -> Dict[str, Any]:
         with open(file_path, 'wb') as f:
             f.write(contents)
 
-        # 엑셀 파일 처리 및 DB 저장
-        result = team_service.process_regression_excel(file_path)
+        # 엑셀 파일 검증
+        validation_result = team_service.validate_excel_file(file_path)
+
+        if not validation_result.get('valid'):
+            raise HTTPException(status_code=400, detail=validation_result.get('error', 'Validation failed'))
+
+        # DB 저장
+        save_result = team_service.save_to_database(
+            validation_result['df_master'],
+            validation_result['df_matching'],
+            validation_result['feature_columns']
+        )
+
+        if not save_result.get('success'):
+            raise HTTPException(status_code=500, detail=save_result.get('error', 'Save failed'))
+
+        # 회귀모델 자동 훈련
+        train_result = team_service.train_regression_models()
+
+        # 예측값 자동 계산
+        prediction_result = team_service.calculate_predictions_from_features()
 
         return {
             "message": "Team data uploaded and processed successfully",
             "filename": file.filename,
-            "processed_teams": result['processed_teams'],
-            "team_metrics_count": result['team_metrics_count'],
-            "feature_definitions_count": result['feature_definitions_count'],
-            "errors": result.get('errors', [])
+            "validation": {
+                "team_count": save_result.get('team_count', 0),
+                "feature_count": save_result.get('feature_def_count', 0),
+                "row_count": save_result.get('saved_count', 0),
+            },
+            "saved": {
+                "count": save_result.get('saved_count', 0),
+                "feature_definitions": save_result.get('feature_def_count', 0),
+            },
+            "models_trained": train_result.get('models_created', 0) if train_result.get('success') else 0,
+            "predictions_created": prediction_result.get('predictions_saved', 0) if prediction_result.get('success') else 0,
+            "errors": save_result.get('errors', [])
         }
 
     except HTTPException:

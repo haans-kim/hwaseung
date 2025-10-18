@@ -155,8 +155,12 @@ class TeamService:
             cursor.execute("DELETE FROM team_feature_definitions")
             deleted_definitions = cursor.rowcount
 
+            # 모든 기존 team_predictions 데이터 삭제
+            cursor.execute("DELETE FROM team_predictions")
+            deleted_predictions = cursor.rowcount
+
             conn.commit()
-            logging.info(f"🗑️ Deleted all existing data: {deleted_features} team_features, {deleted_headcount} team_headcount, {deleted_models} regression_models, {deleted_params} regression_parameters, {deleted_definitions} team_feature_definitions rows")
+            logging.info(f"🗑️ Deleted all existing data: {deleted_features} team_features, {deleted_headcount} team_headcount, {deleted_models} regression_models, {deleted_params} regression_parameters, {deleted_definitions} team_feature_definitions, {deleted_predictions} team_predictions rows")
 
             teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
             logging.info(f"✅ Will insert data for {len(teams_in_file)} teams")
@@ -268,10 +272,15 @@ class TeamService:
 
             conn.commit()
 
+            # 팀 수 계산
+            teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
+            team_count = len(teams_in_file)
+
             return {
                 "success": True,
                 "saved_count": saved_count,
                 "feature_def_count": feature_def_count,
+                "team_count": team_count,
                 "errors": errors if errors else None
             }
 
