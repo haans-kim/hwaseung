@@ -545,26 +545,31 @@ const OrganizationSimulation: React.FC = () => {
         <Card className="p-4 bg-white">
           <h3 className="font-medium text-gray-700 mb-3 text-center">팀</h3>
           <div className="space-y-2">
-            {teams.map((team) => (
-              <button
-                key={team}
-                onClick={() => setSelectedTeam(team)}
-                className={`w-full px-3 py-2 text-left rounded text-sm ${
-                  selectedTeam === team
-                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                    : 'hover:bg-gray-50 border border-gray-200'
-                }`}
-              >
-                {team}
-              </button>
-            ))}
+            {teams.map((team) => {
+              const hasData = availableRegressionTeams.includes(team);
+              return (
+                <button
+                  key={team}
+                  onClick={() => setSelectedTeam(team)}
+                  className={`w-full px-3 py-2 text-left rounded text-sm ${
+                    selectedTeam === team
+                      ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                      : hasData
+                        ? 'bg-gray-200 hover:bg-gray-300 border border-gray-300'
+                        : 'bg-white hover:bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  {team}
+                </button>
+              );
+            })}
           </div>
         </Card>
 
         {/* 분석가능팀 */}
         <Card className="p-4 bg-white">
           <h3 className="font-medium text-gray-700 mb-3 text-center">분석가능팀</h3>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-96 overflow-y-scroll scrollbar-visible">
             {availableRegressionTeams.map((team) => (
               <button
                 key={team}
