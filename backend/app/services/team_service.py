@@ -603,5 +603,49 @@ class TeamService:
         finally:
             conn.close()
 
+    def get_team_predictions(self) -> List[Dict[str, Any]]:
+        """
+        team_predictions 테이블에서 모든 예측 데이터 조회
+        요약 페이지용
+        """
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                SELECT team_name, position, current_headcount, predicted_headcount,
+                       change, change_percent, category, created_at
+                FROM team_predictions
+                ORDER BY team_name, CASE position
+                    WHEN '총합' THEN 1
+                    WHEN '책임' THEN 2
+                    WHEN '선임' THEN 3
+                    WHEN '사원' THEN 4
+                END
+            """)
+
+            rows = cursor.fetchall()
+
+            predictions = []
+            for row in rows:
+                predictions.append({
+                    'team_name': row[0],
+                    'position': row[1],
+                    'current_headcount': row[2],
+                    'predicted_headcount': row[3],
+                    'change': row[4],
+                    'change_percent': row[5],
+                    'category': row[6],
+                    'created_at': row[7]
+                })
+
+            return predictions
+
+        except Exception as e:
+            logging.error(f"Error retrieving team predictions: {str(e)}")
+            raise
+        finally:
+            conn.close()
+
 # Singleton instance
 team_service = TeamService()

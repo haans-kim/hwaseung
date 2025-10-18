@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import initSqlJs from 'sql.js';
+import { apiClient } from '../lib/api';
 
 interface TeamPrediction {
   team_name: string;
@@ -50,37 +50,11 @@ const PositionAnalysis: React.FC = () => {
     try {
       setLoading(true);
 
-      // sql.js 초기화
-      const SQL = await initSqlJs({
-        locateFile: (file: string) => `https://sql.js.org/dist/${file}`
-      });
+      // Backend API에서 예측 데이터 조회
+      const response = await apiClient.getTeamPredictions();
 
-      const response = await fetch(`/hwaseung_RnD.db?t=${Date.now()}`);
-      const buffer = await response.arrayBuffer();
-      const db = new SQL.Database(new Uint8Array(buffer));
-
-      // team_predictions 테이블에서 모든 데이터 조회
-      const result = db.exec(`
-        SELECT team_name, position, current_headcount, predicted_headcount, change, change_percent, category
-        FROM team_predictions
-        ORDER BY team_name, CASE position
-          WHEN '총합' THEN 1
-          WHEN '책임' THEN 2
-          WHEN '선임' THEN 3
-          WHEN '사원' THEN 4
-        END
-      `);
-
-      if (result.length > 0) {
-        const predictions: TeamPrediction[] = result[0].values.map(row => ({
-          team_name: row[0] as string,
-          position: row[1] as string,
-          current_headcount: row[2] as number,
-          predicted_headcount: row[3] as number,
-          change: row[4] as number,
-          change_percent: row[5] as number,
-          category: row[6] as string
-        }));
+      if (response && response.data && response.data.length > 0) {
+        const predictions: TeamPrediction[] = response.data;
 
         // 팀별로 데이터 그룹핑
         const teams: { [key: string]: TeamData } = {};
@@ -148,26 +122,15 @@ const PositionAnalysis: React.FC = () => {
           사원Total
         });
 
-        console.log('✅ 예측 데이터 로드 완료:', teamsArray);
+        console.log('✅ 예측 데이터 로드 완료 (from API):', teamsArray);
+      } else {
+        console.warn('⚠️ API에서 데이터가 없습니다');
       }
 
-      db.close();
       setLoading(false);
     } catch (error) {
       console.error('❌ 예측 데이터 로드 실패:', error);
       setLoading(false);
-    }
-  };
-
-  const getCellStyle = (category: string) => {
-    switch (category) {
-      case '충원필요':
-        return 'bg-red-200 text-red-800 border-red-200';
-      case '감원검토':
-        return 'bg-blue-200 text-blue-800 border-blue-200';
-      case '적정':
-      default:
-        return 'bg-green-200 text-green-800 border-green-200';
     }
   };
 

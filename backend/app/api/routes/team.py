@@ -123,3 +123,21 @@ async def get_team_status() -> Dict[str, Any]:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving status: {str(e)}")
+
+@router.get("/team/predictions")
+async def get_team_predictions() -> Dict[str, Any]:
+    """
+    팀별 직급별 예측 인력 데이터 조회
+    요약 페이지에서 사용
+    """
+    try:
+        predictions = team_service.get_team_predictions()
+
+        return {
+            "message": "Team predictions retrieved successfully",
+            "count": len(predictions),
+            "data": predictions
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving team predictions: {str(e)}")

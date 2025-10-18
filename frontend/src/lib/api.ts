@@ -731,6 +731,18 @@ export class ApiClient {
 
     return response.json();
   }
+
+  // Team API methods
+  async getTeamPredictions(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/api/team/predictions`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const apiClient = new ApiClient();
