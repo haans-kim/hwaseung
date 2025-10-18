@@ -260,19 +260,20 @@ const PositionAnalysis: React.FC = () => {
           <CardTitle className="text-lg font-bold">직급별 적정인원(예측)</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto scrollbar-visible">
+            <div className="min-w-max">
             {/* 헤더 */}
-            <div className="flex border-b min-w-max">
+            <div className="flex border-b">
               <div className="py-3 px-4 font-bold text-gray-900 text-base text-center flex items-center justify-center w-40 flex-shrink-0 bg-white sticky left-0 z-10">구분</div>
               {teamsData.map((team, idx) => (
-                <div key={idx} className="py-3 px-4 font-bold text-gray-900 text-base text-center border-l w-64 flex-shrink-0">
+                <div key={idx} className="py-3 px-4 font-bold text-gray-900 text-base text-center border-l w-44 flex-shrink-0">
                   {team.team_name}
                 </div>
               ))}
             </div>
 
             {/* 전체 합계 행 */}
-            <div className="flex border-b bg-blue-50 min-w-max">
+            <div className="flex border-b bg-blue-50">
               <div className="py-4 px-4 font-bold text-gray-900 text-base text-center flex items-center justify-center w-40 flex-shrink-0 bg-blue-50 sticky left-0 z-10">전체</div>
               {teamsData.map((team, idx) => {
                 const totalChange = team.책임.change + team.선임.change + team.사원.change;
@@ -302,8 +303,8 @@ const PositionAnalysis: React.FC = () => {
                   return '●';
                 };
                 return (
-                  <div key={idx} className="py-4 px-4 text-center border-l flex items-center justify-center w-64 flex-shrink-0">
-                    <div style={{width: '200px'}} className={`flex items-center justify-center gap-1.5 px-4 py-3 rounded-lg border-2 ${getBgColor()} ${getBorderColor()}`}>
+                  <div key={idx} className="py-4 px-2 text-center border-l flex items-center justify-center w-44 flex-shrink-0">
+                    <div style={{width: '130px'}} className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border-2 ${getBgColor()} ${getBorderColor()}`}>
                       <span className={`text-base ${getIconColor()}`}>{getIcon()}</span>
                       <span className={`text-base font-bold ${getTextColor()}`}>
                         {team.책임.predicted + team.선임.predicted + team.사원.predicted}명
@@ -320,11 +321,11 @@ const PositionAnalysis: React.FC = () => {
             </div>
 
             {/* 책임 행 */}
-            <div className="flex border-b min-w-max">
+            <div className="flex border-b">
               <div className="py-4 px-4 font-bold text-gray-900 text-base text-center flex items-center justify-center w-40 flex-shrink-0 bg-white sticky left-0 z-10">책임</div>
               {teamsData.map((team, idx) => (
-                <div key={idx} className="py-4 px-4 text-center border-l flex items-center justify-center w-64 flex-shrink-0">
-                  <div style={{width: '200px'}} className={`flex items-center justify-center gap-1.5 px-4 py-3 rounded-lg border-2 ${
+                <div key={idx} className="py-4 px-2 text-center border-l flex items-center justify-center w-44 flex-shrink-0">
+                  <div style={{width: '130px'}} className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border-2 ${
                     team.책임.category === '충원필요' ? 'bg-red-50 border-red-500' :
                     team.책임.category === '감원검토' ? 'bg-blue-50 border-blue-500' :
                     'bg-green-50 border-green-500'
@@ -358,11 +359,11 @@ const PositionAnalysis: React.FC = () => {
             </div>
 
             {/* 선임 행 */}
-            <div className="flex border-b min-w-max">
+            <div className="flex border-b">
               <div className="py-4 px-4 font-bold text-gray-900 text-base text-center flex items-center justify-center w-40 flex-shrink-0 bg-white sticky left-0 z-10">선임</div>
               {teamsData.map((team, idx) => (
-                <div key={idx} className="py-4 px-4 text-center border-l flex items-center justify-center w-64 flex-shrink-0">
-                  <div style={{width: '200px'}} className={`flex items-center justify-center gap-1.5 px-4 py-3 rounded-lg border-2 ${
+                <div key={idx} className="py-4 px-2 text-center border-l flex items-center justify-center w-44 flex-shrink-0">
+                  <div style={{width: '130px'}} className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border-2 ${
                     team.선임.category === '충원필요' ? 'bg-red-50 border-red-500' :
                     team.선임.category === '감원검토' ? 'bg-blue-50 border-blue-500' :
                     'bg-green-50 border-green-500'
@@ -396,11 +397,11 @@ const PositionAnalysis: React.FC = () => {
             </div>
 
             {/* 사원 행 */}
-            <div className="flex min-w-max">
+            <div className="flex">
               <div className="py-4 px-4 font-bold text-gray-900 text-base text-center flex items-center justify-center w-40 flex-shrink-0 bg-white sticky left-0 z-10">사원</div>
               {teamsData.map((team, idx) => (
-                <div key={idx} className="py-4 px-4 text-center border-l flex items-center justify-center w-64 flex-shrink-0">
-                  <div style={{width: '200px'}} className={`flex items-center justify-center gap-1.5 px-4 py-3 rounded-lg border-2 ${
+                <div key={idx} className="py-4 px-2 text-center border-l flex items-center justify-center w-44 flex-shrink-0">
+                  <div style={{width: '130px'}} className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border-2 ${
                     team.사원.category === '충원필요' ? 'bg-red-50 border-red-500' :
                     team.사원.category === '감원검토' ? 'bg-blue-50 border-blue-500' :
                     'bg-green-50 border-green-500'
@@ -431,6 +432,7 @@ const PositionAnalysis: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
             </div>
           </div>
 

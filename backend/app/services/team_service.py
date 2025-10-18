@@ -169,6 +169,34 @@ class TeamService:
             logging.error(error_msg)
 
         try:
+            # 2. 업로드 파일에 포함된 팀들의 기존 데이터 전체 삭제 (REPLACE 방식)
+            teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
+
+            for _, team_row in teams_in_file.iterrows():
+                company = team_row['HQ']
+                team = team_row['팀']
+
+                if pd.isna(company) or pd.isna(team):
+                    continue
+
+                # team_features 삭제
+                cursor.execute("""
+                    DELETE FROM team_features
+                    WHERE company = ? AND team = ?
+                """, (company, team))
+
+                # team_headcount 삭제
+                cursor.execute("""
+                    DELETE FROM team_headcount
+                    WHERE team_name = ?
+                """, (team,))
+
+                logging.info(f"🗑️ Deleted existing data for {company}/{team}")
+
+            conn.commit()
+            logging.info(f"✅ Cleared data for {len(teams_in_file)} teams")
+
+            # 3. 새 데이터 저장
             for _, row in df_master.iterrows():
                 # 필수 값 확인
                 if pd.isna(row['HQ']) or pd.isna(row['팀']) or pd.isna(row['년']) or pd.isna(row['월']):
@@ -190,16 +218,11 @@ class TeamService:
                 feature_values_json = json.dumps(feature_values, ensure_ascii=False)
 
                 try:
-                    # team_features 테이블에 저장
+                    # team_features 테이블에 저장 (순수 INSERT, ON CONFLICT 제거)
                     cursor.execute("""
                         INSERT INTO team_features (
                             company, team, year, month, position, feature_values, headcount, created_at, updated_at
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ON CONFLICT(company, team, year, month, position)
-                        DO UPDATE SET
-                            feature_values = excluded.feature_values,
-                            headcount = excluded.headcount,
-                            updated_at = excluded.updated_at
                     """, (
                         organization,
                         team,
@@ -219,13 +242,7 @@ class TeamService:
                     # position 변환 ('전체' -> '총합')
                     position_for_headcount = '총합' if position == '전체' else position
 
-                    # 먼저 기존 데이터 삭제
-                    cursor.execute("""
-                        DELETE FROM team_headcount
-                        WHERE team_name = ? AND year = ? AND month = ? AND position = ?
-                    """, (team, year_short, month, position_for_headcount))
-
-                    # 새 데이터 삽입
+                    # 새 데이터 삽입 (팀 단위로 이미 삭제되었으므로 바로 INSERT)
                     cursor.execute("""
                         INSERT INTO team_headcount (
                             team_name, year, month, position, headcount
