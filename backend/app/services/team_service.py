@@ -169,32 +169,20 @@ class TeamService:
             logging.error(error_msg)
 
         try:
-            # 2. 업로드 파일에 포함된 팀들의 기존 데이터 전체 삭제 (REPLACE 방식)
-            teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
+            # 2. 전체 데이터 삭제 (REPLACE 방식 - 업로드 파일에 있는 팀만 남김)
+            # 모든 기존 team_features 데이터 삭제
+            cursor.execute("DELETE FROM team_features")
+            deleted_features = cursor.rowcount
 
-            for _, team_row in teams_in_file.iterrows():
-                company = team_row['HQ']
-                team = team_row['팀']
-
-                if pd.isna(company) or pd.isna(team):
-                    continue
-
-                # team_features 삭제
-                cursor.execute("""
-                    DELETE FROM team_features
-                    WHERE company = ? AND team = ?
-                """, (company, team))
-
-                # team_headcount 삭제
-                cursor.execute("""
-                    DELETE FROM team_headcount
-                    WHERE team_name = ?
-                """, (team,))
-
-                logging.info(f"🗑️ Deleted existing data for {company}/{team}")
+            # 모든 기존 team_headcount 데이터 삭제
+            cursor.execute("DELETE FROM team_headcount")
+            deleted_headcount = cursor.rowcount
 
             conn.commit()
-            logging.info(f"✅ Cleared data for {len(teams_in_file)} teams")
+            logging.info(f"🗑️ Deleted all existing data: {deleted_features} team_features, {deleted_headcount} team_headcount rows")
+
+            teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
+            logging.info(f"✅ Will insert data for {len(teams_in_file)} teams")
 
             # 3. 새 데이터 저장
             for _, row in df_master.iterrows():
