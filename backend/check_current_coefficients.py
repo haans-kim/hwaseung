@@ -6,7 +6,7 @@ import sqlite3
 def check_current_coefficients():
     """현재 DB에 저장된 회귀 계수 확인"""
 
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     print("=== 현재 저장된 회귀 계수 ===")

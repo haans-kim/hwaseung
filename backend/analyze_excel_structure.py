@@ -6,7 +6,7 @@ import pandas as pd
 def analyze_excel_structure():
     """엑셀 파일의 구조를 자세히 분석"""
 
-    file_path = '/Users/hanskim/Projects/Hwaseung/data/FTE계산_2025.0.21.xlsx'
+    file_path = str(Path(__file__).parent.parent / 'data/FTE계산_2025.0.21.xlsx'
 
     # FTE 계산 시트 분석
     print("=== FTE 계산 시트 구조 분석 ===")

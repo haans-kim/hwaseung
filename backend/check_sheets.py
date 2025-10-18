@@ -6,7 +6,7 @@ import pandas as pd
 def check_sheets():
     """엑셀 파일의 시트 이름 확인"""
 
-    file_path = '/Users/hanskim/Projects/Hwaseung/data/FTE계산_2025.0.21.xlsx'
+    file_path = str(Path(__file__).parent.parent / 'data/FTE계산_2025.0.21.xlsx'
 
     # 모든 시트 이름 확인
     xl_file = pd.ExcelFile(file_path)

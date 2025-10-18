@@ -6,7 +6,7 @@ import sqlite3
 def manual_update_coefficients():
     """스크린샷에서 확인한 회귀 계수를 수동으로 입력"""
 
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     print("=== 스크린샷 계수 수동 입력 ===")

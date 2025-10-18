@@ -2,13 +2,18 @@ import pandas as pd
 import sqlite3
 import numpy as np
 import json
+from pathlib import Path
+from db_config import DB_PATH
 
 # 데이터베이스 경로
-db_path = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
-excel_path = '/Users/hanskim/Projects/Hwaseung/data/화승 회귀분석_250919.xlsx'
+db_path = DB_PATH
+
+# 엑셀 파일 경로 (프로젝트 루트 기준)
+project_root = Path(__file__).parent.parent
+excel_path = project_root / 'data' / '화승 회귀분석_250919.xlsx'
 
 # 연결 생성
-conn = sqlite3.connect(db_path)
+conn = sqlite3.connect(str(db_path))
 cursor = conn.cursor()
 
 # 팀별 시트 정보
@@ -43,7 +48,7 @@ for team_name, team_info in team_sheets.items():
     print(f"\n### {team_name} 처리 중 ###")
 
     # Excel 시트 읽기
-    df = pd.read_excel(excel_path, sheet_name=team_name)
+    df = pd.read_excel(str(excel_path), sheet_name=team_name)
 
     # 1. 팀별 회귀 모델 저장
     cursor.execute('''

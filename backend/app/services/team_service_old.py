@@ -11,7 +11,9 @@ from datetime import datetime
 import os
 
 class TeamService:
-    def __init__(self, db_path: str = "/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db"):
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            db_path = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../hwaseung_RnD.db'))
         self.db_path = db_path
 
     def get_db_connection(self):

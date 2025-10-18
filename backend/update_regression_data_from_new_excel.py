@@ -4,16 +4,19 @@
 import sqlite3
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
+from db_config import DB_PATH
 
 def update_team_headcount_from_new_excel():
     """새로운 엑셀 파일에서 25년도 6/7/8월 인력 데이터 업데이트"""
 
     # 데이터베이스 연결
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # 엑셀 파일 경로
-    excel_file = '/Users/hanskim/Projects/Hwaseung/data/화승 회귀분석_250919.xlsx'
+    # 엑셀 파일 경로 (프로젝트 루트 기준 상대 경로)
+    project_root = Path(__file__).parent.parent
+    excel_file = project_root / 'data' / '화승 회귀분석_250919.xlsx'
 
     # 팀별 시트 이름들
     teams = ['시스템개발 운영팀', 'SPECIALTY개발팀', 'SL운영팀', '관체사업팀']

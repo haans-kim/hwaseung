@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import json
 
-file_path = '/Users/hanskim/Projects/Hwaseung/data/화승 회귀분석_250919.xlsx'
+file_path = str(Path(__file__).parent.parent / 'data/화승 회귀분석_250919.xlsx'
 
 print("=" * 80)
 print("화승 회귀분석 Excel 파일 상세 분석 리포트")

@@ -1,8 +1,9 @@
 import sqlite3
 import os
+from db_config import DB_PATH
 
 # 데이터베이스 경로
-db_path = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
+db_path = DB_PATH
 
 # 연결 생성
 conn = sqlite3.connect(db_path)

@@ -6,7 +6,7 @@ import sqlite3
 def update_exact_coefficients():
     """스크린샷에서 확인한 정확한 회귀 계수를 DB에 업데이트"""
 
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     print("=== 엑셀 스크린샷 회귀 계수 업데이트 ===")

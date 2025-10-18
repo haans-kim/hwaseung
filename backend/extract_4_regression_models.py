@@ -10,7 +10,7 @@ def extract_4_regression_models():
     """새로운 엑셀 파일에서 4개 회귀 모델(전체/책임/선임/사원) 추출 및 DB 업데이트"""
 
     # 데이터베이스 연결
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     # 엑셀 파일 경로

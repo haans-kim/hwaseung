@@ -6,7 +6,7 @@ import sqlite3
 def adjust_realistic_coefficients():
     """회귀 계수를 더 현실적인 값으로 조정"""
 
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     print("=== 현실적인 회귀 계수로 조정 ===")

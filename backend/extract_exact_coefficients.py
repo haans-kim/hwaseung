@@ -7,7 +7,7 @@ import sqlite3
 def extract_exact_coefficients():
     """스크린샷에서 확인한 정확한 회귀 계수를 추출해서 DB에 저장"""
 
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     print("=== 엑셀에서 정확한 회귀 계수 추출 ===")

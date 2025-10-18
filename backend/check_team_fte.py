@@ -6,7 +6,7 @@ import sqlite3
 def check_team_fte():
     """시스템개발 운영팀의 FTE 데이터 확인"""
 
-    conn = sqlite3.connect('/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     print("=== 시스템개발 운영팀 FTE 데이터 ===")
