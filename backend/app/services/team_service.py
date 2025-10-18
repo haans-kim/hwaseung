@@ -790,5 +790,98 @@ class TeamService:
         finally:
             conn.close()
 
+    def process_regression_excel(self, file_path: str) -> Dict[str, Any]:
+        """
+        조직인력산정용 엑셀 파일을 처리하여 DB에 저장
+        - team_metrics
+        - team_feature_definitions
+        - regression_models (향후 추가 예정)
+        - regression_parameters (향후 추가 예정)
+        """
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            result = {
+                "processed_teams": [],
+                "team_metrics_count": 0,
+                "feature_definitions_count": 0,
+                "errors": []
+            }
+
+            # 엑셀 파일 읽기
+            xl = pd.ExcelFile(file_path)
+
+            # feature matching 시트에서 feature_definitions 읽기
+            if 'feature matching' in xl.sheet_names:
+                feature_df = pd.read_excel(file_path, sheet_name='feature matching')
+
+                # 각 팀별로 feature_definitions 처리
+                for _, row in feature_df.iterrows():
+                    if pd.notna(row.get('팀')):
+                        team_name = row['팀']
+                        company = row.get('HQ', '화승')
+
+                        # 기존 feature_definitions 삭제
+                        cursor.execute("DELETE FROM team_feature_definitions WHERE team = ?", (team_name,))
+
+                        # F1~F9 컬럼 처리
+                        for col in feature_df.columns:
+                            if col.startswith('F') and pd.notna(row.get(col)):
+                                cursor.execute('''
+                                    INSERT INTO team_feature_definitions
+                                    (company, team, feature_number, feature_name)
+                                    VALUES (?, ?, ?, ?)
+                                ''', (company, team_name, col, row[col]))
+                                result["feature_definitions_count"] += 1
+
+            # master 시트에서 team_metrics 읽기
+            if 'master' in xl.sheet_names:
+                master_df = pd.read_excel(file_path, sheet_name='master')
+
+                # 팀별로 그룹화
+                teams = master_df['팀'].dropna().unique()
+
+                for team_name in teams:
+                    team_data = master_df[master_df['팀'] == team_name]
+
+                    # 기존 team_metrics 삭제
+                    cursor.execute("DELETE FROM team_metrics WHERE team_name = ?", (team_name,))
+
+                    # 각 행 처리
+                    for _, row in team_data.iterrows():
+                        year = int(row['년']) if pd.notna(row.get('년')) else None
+                        month = int(row['월']) if pd.notna(row.get('월')) else None
+
+                        if year and month:
+                            # F1~F9 컬럼들을 team_metrics에 삽입
+                            for col in master_df.columns:
+                                if col.startswith('F') and pd.notna(row.get(col)):
+                                    try:
+                                        cursor.execute('''
+                                            INSERT INTO team_metrics
+                                            (team_name, year, month, metric_category, metric_name, metric_value)
+                                            VALUES (?, ?, ?, ?, ?, ?)
+                                        ''', (team_name, year, month, 'operation', col, float(row[col])))
+                                        result["team_metrics_count"] += 1
+                                    except Exception as e:
+                                        result["errors"].append(f"Error inserting metric {col} for {team_name}: {str(e)}")
+
+                    result["processed_teams"].append(team_name)
+
+            conn.commit()
+            logging.info(f"Processed regression excel: {len(result['processed_teams'])} teams, "
+                        f"{result['team_metrics_count']} metrics, "
+                        f"{result['feature_definitions_count']} feature definitions")
+
+            return result
+
+        except Exception as e:
+            conn.rollback()
+            logging.error(f"Error processing regression excel: {str(e)}")
+            raise
+        finally:
+            conn.close()
+
 # Singleton instance
 team_service = TeamService()

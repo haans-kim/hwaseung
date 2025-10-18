@@ -18,6 +18,10 @@ async def upload_team_data(file: UploadFile = File(...)) -> Dict[str, Any]:
     조직인력산정용 Excel 파일 업로드
     - Sheet 1: feature matching (조직 정보)
     - Sheet 2: master (HQ, 팀, 년, 월, 구분, F1-F9, 인력규모)
+
+    자동으로 다음을 생성:
+    - team_metrics: 팀별 월별 업무지표 값
+    - team_feature_definitions: F1, F2 등을 실제 feature 이름으로 매핑
     """
     # 파일 검증
     if not file.filename:
@@ -36,56 +40,16 @@ async def upload_team_data(file: UploadFile = File(...)) -> Dict[str, Any]:
         with open(file_path, 'wb') as f:
             f.write(contents)
 
-        # 파일 검증
-        validation_result = team_service.validate_excel_file(file_path)
-
-        if not validation_result['valid']:
-            os.remove(file_path)
-            raise HTTPException(status_code=400, detail=validation_result['error'])
-
-        # 데이터베이스에 저장
-        save_result = team_service.save_to_database(
-            validation_result['df_master'],
-            validation_result['df_matching'],
-            validation_result['feature_columns']
-        )
-
-        if not save_result['success']:
-            raise HTTPException(status_code=500, detail=save_result.get('error', 'Save failed'))
-
-        # 🔧 NEW: 회귀 모델 자동 학습
-        model_result = team_service.train_regression_models()
-
-        # 🔧 NEW: 예측값 자동 계산
-        prediction_result = team_service.calculate_predictions_from_features()
+        # 엑셀 파일 처리 및 DB 저장
+        result = team_service.process_regression_excel(file_path)
 
         return {
-            "message": "Team data uploaded successfully",
+            "message": "Team data uploaded and processed successfully",
             "filename": file.filename,
-            "validation": {
-                "companies": validation_result['companies'],
-                "teams": validation_result['teams'],
-                "years": [int(y) for y in validation_result['years']],
-                "months": [int(m) for m in validation_result['months']],
-                "positions": validation_result['positions'],
-                "row_count": validation_result['row_count'],
-                "team_count": validation_result['team_count'],
-                "feature_count": validation_result['feature_count']
-            },
-            "saved": {
-                "count": save_result['saved_count'],
-                "errors": save_result.get('errors')
-            },
-            "models": {
-                "trained": model_result.get('models_trained', 0),
-                "teams_processed": model_result.get('teams_processed', 0),
-                "errors": model_result.get('errors')
-            },
-            "predictions": {
-                "saved": prediction_result.get('predictions_saved', 0),
-                "deleted": prediction_result.get('deleted_count', 0),
-                "errors": prediction_result.get('errors')
-            }
+            "processed_teams": result['processed_teams'],
+            "team_metrics_count": result['team_metrics_count'],
+            "feature_definitions_count": result['feature_definitions_count'],
+            "errors": result.get('errors', [])
         }
 
     except HTTPException:
