@@ -790,6 +790,30 @@ class TeamService:
         finally:
             conn.close()
 
+    def get_analysis_ready_teams(self) -> List[str]:
+        """
+        회귀 모델이 있는 팀 목록 반환 (분석가능팀)
+        """
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                SELECT DISTINCT org_name
+                FROM regression_models
+                WHERE model_type IN ('총', '책임', '선임', '사원')
+                ORDER BY org_name
+            """)
+
+            teams = [row[0] for row in cursor.fetchall()]
+            return teams
+
+        except Exception as e:
+            logging.error(f"Error getting analysis-ready teams: {str(e)}")
+            raise
+        finally:
+            conn.close()
+
     def process_regression_excel(self, file_path: str) -> Dict[str, Any]:
         """
         조직인력산정용 엑셀 파일을 처리하여 DB에 저장
@@ -812,14 +836,25 @@ class TeamService:
             # 엑셀 파일 읽기
             xl = pd.ExcelFile(file_path)
 
-            # feature matching 시트에서 feature_definitions 읽기
-            if 'feature matching' in xl.sheet_names:
+            # master 시트에서 팀 목록 먼저 얻기
+            valid_teams = []
+            if 'master' in xl.sheet_names:
+                master_df = pd.read_excel(file_path, sheet_name='master')
+                valid_teams = master_df['팀'].dropna().unique().tolist()
+
+            # feature matching 시트에서 feature_definitions 읽기 (master에 있는 팀만)
+            if 'feature matching' in xl.sheet_names and valid_teams:
                 feature_df = pd.read_excel(file_path, sheet_name='feature matching')
 
-                # 각 팀별로 feature_definitions 처리
+                # master 시트에 있는 팀만 처리
                 for _, row in feature_df.iterrows():
                     if pd.notna(row.get('팀')):
                         team_name = row['팀']
+
+                        # master 시트에 없는 팀은 스킵
+                        if team_name not in valid_teams:
+                            continue
+
                         company = row.get('HQ', '화승')
 
                         # 기존 feature_definitions 삭제
@@ -837,10 +872,8 @@ class TeamService:
 
             # master 시트에서 team_metrics 읽기
             if 'master' in xl.sheet_names:
-                master_df = pd.read_excel(file_path, sheet_name='master')
-
                 # 팀별로 그룹화
-                teams = master_df['팀'].dropna().unique()
+                teams = valid_teams
 
                 for team_name in teams:
                     team_data = master_df[master_df['팀'] == team_name]

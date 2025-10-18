@@ -57,6 +57,23 @@ async def upload_team_data(file: UploadFile = File(...)) -> Dict[str, Any]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
+@router.get("/team/analysis-ready")
+async def get_analysis_ready_teams() -> Dict[str, Any]:
+    """분석가능팀 목록 조회 (회귀 모델이 있는 팀)"""
+    try:
+        teams = team_service.get_analysis_ready_teams()
+
+        return {
+            "message": "Analysis-ready teams retrieved successfully",
+            "count": len(teams),
+            "data": {
+                "teams": teams
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving analysis-ready teams: {str(e)}")
+
 @router.get("/team/features")
 async def get_team_features(
     company: Optional[str] = Query(None, description="회사명 (선택)")
