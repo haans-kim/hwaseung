@@ -17,16 +17,16 @@ class FTEService:
 
     def validate_excel_file(self, file_path: str) -> Dict[str, Any]:
         """
-        Excel 파일 검증 (평균FTE 시트)
+        Excel 파일 검증 (평균FTE 시트 또는 첫 번째 시트)
 
-        Template 구조:
-        - 계열사, 부서, 사용자직위, 평균FTE, 인원수, 평균FTE/인원수
-        - 각 팀의 직급별 데이터를 피벗하여 저장
+        지원하는 Template 구조:
+        1. 구 형식: 계열사, 부서, 사용자직위, 평균FTE, 인원수, 평균FTE/인원수
+        2. 신 형식: 계열사, 부서, 사용자직위, 년, 월, 총근무시간_합, 평균정규근무일수, FTE, 인원수
         """
         try:
             excel_file = pd.ExcelFile(file_path)
 
-            # "평균FTE" 시트 찾기
+            # "평균FTE" 시트 찾기, 없으면 첫 번째 시트 사용
             fte_sheet_name = None
             for sheet_name in excel_file.sheet_names:
                 if '평균FTE' in sheet_name or '평균' in sheet_name:
@@ -34,23 +34,28 @@ class FTEService:
                     break
 
             if not fte_sheet_name:
-                return {
-                    'valid': False,
-                    'error': f'"평균FTE" 시트를 찾을 수 없습니다. 사용 가능한 시트: {", ".join(excel_file.sheet_names)}'
-                }
+                fte_sheet_name = excel_file.sheet_names[0]
 
             # 데이터 읽기
             df = excel_file.parse(fte_sheet_name)
 
-            # 필수 컬럼 확인
-            required_cols = ['계열사', '부서', '사용자직위', '평균FTE', '인원수', '평균FTE/인원수']
-            missing_cols = [col for col in required_cols if col not in df.columns]
+            # 필수 컬럼 확인 (두 가지 형식 지원)
+            has_old_format = all(col in df.columns for col in ['계열사', '부서', '사용자직위', '평균FTE', '인원수'])
+            has_new_format = all(col in df.columns for col in ['계열사', '부서', '사용자직위', 'FTE', '인원수'])
 
-            if missing_cols:
+            if not has_old_format and not has_new_format:
                 return {
                     'valid': False,
-                    'error': f'필수 컬럼이 없습니다: {", ".join(missing_cols)}'
+                    'error': f'필수 컬럼이 없습니다. 현재 컬럼: {", ".join(df.columns.tolist())}'
                 }
+
+            # 신 형식인 경우 컬럼 이름 변경
+            if has_new_format and 'FTE' in df.columns and '평균FTE' not in df.columns:
+                df = df.rename(columns={'FTE': '평균FTE'})
+
+                # 평균FTE/인원수 컬럼이 없으면 계산
+                if '평균FTE/인원수' not in df.columns:
+                    df['평균FTE/인원수'] = df['평균FTE'] / df['인원수'].replace(0, 1)
 
             # 데이터 검증
             if df.empty:
