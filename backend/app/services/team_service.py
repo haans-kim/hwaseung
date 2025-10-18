@@ -134,7 +134,38 @@ class TeamService:
         errors = []
 
         try:
-            # 1. Feature Definitions 저장
+            # 1. 전체 데이터 삭제 (REPLACE 방식 - 업로드 파일에 있는 팀만 남김)
+            # 모든 기존 team_features 데이터 삭제
+            cursor.execute("DELETE FROM team_features")
+            deleted_features = cursor.rowcount
+
+            # 모든 기존 team_headcount 데이터 삭제
+            cursor.execute("DELETE FROM team_headcount")
+            deleted_headcount = cursor.rowcount
+
+            # 모든 기존 regression_models 데이터 삭제
+            cursor.execute("DELETE FROM regression_models")
+            deleted_models = cursor.rowcount
+
+            # 모든 기존 regression_parameters 데이터 삭제
+            cursor.execute("DELETE FROM regression_parameters")
+            deleted_params = cursor.rowcount
+
+            # 모든 기존 team_feature_definitions 데이터 삭제
+            cursor.execute("DELETE FROM team_feature_definitions")
+            deleted_definitions = cursor.rowcount
+
+            conn.commit()
+            logging.info(f"🗑️ Deleted all existing data: {deleted_features} team_features, {deleted_headcount} team_headcount, {deleted_models} regression_models, {deleted_params} regression_parameters, {deleted_definitions} team_feature_definitions rows")
+
+            teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
+            logging.info(f"✅ Will insert data for {len(teams_in_file)} teams")
+
+            # 2. Feature Definitions 저장 (Master 시트에 있는 팀만)
+            # Master 시트에 있는 팀 목록 추출
+            master_teams = set(df_master['팀'].dropna().unique())
+            logging.info(f"📋 Master sheet teams: {master_teams}")
+
             for _, row in df_matching.iterrows():
                 company = row.get('HQ')
                 team = row.get('팀')
@@ -142,13 +173,12 @@ class TeamService:
                 if pd.isna(company) or pd.isna(team):
                     continue
 
-                # 기존 feature definitions 삭제
-                cursor.execute("""
-                    DELETE FROM team_feature_definitions
-                    WHERE company = ? AND team = ?
-                """, (company, team))
+                # Master 시트에 있는 팀만 저장
+                if team not in master_teams:
+                    continue
 
                 # 새로운 feature definitions 저장
+                has_any_feature = False
                 for col in feature_cols:
                     feature_name = row.get(col)
                     if pd.notna(feature_name):
@@ -158,31 +188,19 @@ class TeamService:
                             VALUES (?, ?, ?, ?)
                         """, (company, team, col, feature_name))
                         feature_def_count += 1
+                        has_any_feature = True
 
-            conn.commit()
-            logging.info(f"✅ Saved {feature_def_count} feature definitions")
+                # Feature 값이 하나도 없어도 팀 정보는 최소 1개 저장 (F1에 빈 값)
+                if not has_any_feature:
+                    cursor.execute("""
+                        INSERT INTO team_feature_definitions
+                        (company, team, feature_number, feature_name)
+                        VALUES (?, ?, ?, ?)
+                    """, (company, team, 'F1', ''))
+                    feature_def_count += 1
+                    logging.info(f"⚠️ Team {team} has no feature definitions, saved empty F1")
 
-        except Exception as e:
-            conn.rollback()
-            error_msg = f"Error saving feature definitions: {str(e)}"
-            errors.append(error_msg)
-            logging.error(error_msg)
-
-        try:
-            # 2. 전체 데이터 삭제 (REPLACE 방식 - 업로드 파일에 있는 팀만 남김)
-            # 모든 기존 team_features 데이터 삭제
-            cursor.execute("DELETE FROM team_features")
-            deleted_features = cursor.rowcount
-
-            # 모든 기존 team_headcount 데이터 삭제
-            cursor.execute("DELETE FROM team_headcount")
-            deleted_headcount = cursor.rowcount
-
-            conn.commit()
-            logging.info(f"🗑️ Deleted all existing data: {deleted_features} team_features, {deleted_headcount} team_headcount rows")
-
-            teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
-            logging.info(f"✅ Will insert data for {len(teams_in_file)} teams")
+            logging.info(f"✅ Saved {feature_def_count} feature definitions for {len(master_teams)} teams")
 
             # 3. 새 데이터 저장
             for _, row in df_master.iterrows():
