@@ -141,3 +141,28 @@ async def get_team_predictions() -> Dict[str, Any]:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving team predictions: {str(e)}")
+
+@router.get("/team/{team_name}/simulation-data")
+async def get_team_simulation_data(team_name: str) -> Dict[str, Any]:
+    """
+    특정 팀의 시뮬레이션에 필요한 모든 데이터 조회
+    - Regression models & parameters (총, 책임, 선임, 사원)
+    - Team metrics (평균값)
+    - Current headcount (최신 데이터)
+    - FTE data
+    """
+    try:
+        simulation_data = team_service.get_team_simulation_data(team_name)
+
+        if not simulation_data:
+            raise HTTPException(status_code=404, detail=f"Team '{team_name}' not found")
+
+        return {
+            "message": "Team simulation data retrieved successfully",
+            "data": simulation_data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving team simulation data: {str(e)}")

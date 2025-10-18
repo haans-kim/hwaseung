@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import initSqlJs from 'sql.js';
 import { Card } from '../components/ui/card';
+import { apiClient } from '../lib/api';
 
 interface OrganizationData {
   회사: string;
@@ -55,91 +55,47 @@ const OrganizationSimulation: React.FC = () => {
   const [predictedHeadcount, setPredictedHeadcount] = useState<{ [key: string]: number }>({});
   const [currentFTE, setCurrentFTE] = useState<{ [key: string]: number }>({});
 
-  // SQLite 데이터 로드
+  // API로 데이터 로드
   useEffect(() => {
     const loadData = async () => {
       try {
-        const SQL = await initSqlJs({
-          // CDN 사용 (외부 접속 지원)
-          locateFile: (file: string) => `https://sql.js.org/dist/${file}`
-        });
+        // 1. 조직 데이터 로드 (API)
+        const orgResponse = await apiClient.getOrganizationChartData();
+        console.log('📊 Organization data from API:', orgResponse);
 
-        const response = await fetch(`/hwaseung_RnD.db?t=${Date.now()}`);
-        const buffer = await response.arrayBuffer();
-        console.log('📦 DB file loaded, size:', buffer.byteLength, 'bytes');
-        const db = new SQL.Database(new Uint8Array(buffer));
-
-        // DB 테이블 확인
-        const tablesResult = db.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
-        console.log('📋 Available tables:', tablesResult[0]?.values.map(row => row[0]));
-
-        // 조직 데이터 로드
-        const orgResult = db.exec('SELECT * FROM organization');
-        if (orgResult.length > 0) {
-          const orgData = orgResult[0].values.map(row => ({
-            회사: row[1] as string,
-            본부: row[2] as string,
-            담당_사업단_센터: row[3] as string | null,
-            실: row[4] as string | null,
-            팀: row[5] as string | null,
+        if (orgResponse && orgResponse.data) {
+          const orgData = orgResponse.data.map((row: any) => ({
+            회사: row.회사,
+            본부: row.본부,
+            담당_사업단_센터: row.담당_사업단_센터,
+            실: row.실,
+            팀: row.팀,
           }));
           setOrganizationData(orgData);
 
-          // 초기 본부 설정 (선택된 회사에 맞춰서)
+          // 초기 본부 설정
           if (orgData.length > 0) {
             const uniqueDepartments = Array.from(new Set(
               orgData
-                .filter(org => org.회사 === '화승 R&A')  // 공백 추가
-                .map(org => org.본부)
-            ));
+                .filter((org: any) => org.회사 === '화승 R&A')
+                .map((org: any) => org.본부)
+            )) as string[];
             setDepartments(uniqueDepartments);
           }
         }
 
-        // 분석가능팀 목록 로드 (API 우선, 실패시 DB 폴백)
-        let teamsLoaded = false;
+        // 2. 분석가능팀 목록 로드 (API)
+        const teamsResponse = await apiClient.getAnalysisReadyTeams();
+        console.log('🌐 Analysis-ready teams from API:', teamsResponse);
 
-        try {
-          // API로 분석가능팀 조회 시도
-          const apiResponse = await fetch('http://localhost:8000/api/organization-chart/analysis-ready-teams');
-          if (apiResponse.ok) {
-            const apiData = await apiResponse.json();
-            console.log('🌐 API Response:', apiData);
-
-            if (apiData.teams && apiData.teams.length > 0) {
-              const teams = apiData.teams.map((team: { team: string }) => team.team);
-              console.log('✅ Analysis-ready teams from API:', teams);
-              setAvailableRegressionTeams(teams);
-              teamsLoaded = true;
-            }
-          }
-        } catch (apiError) {
-          console.warn('⚠️ API call failed, falling back to DB query:', apiError);
+        if (teamsResponse && teamsResponse.teams && teamsResponse.teams.length > 0) {
+          const teams = teamsResponse.teams.map((team: { team: string }) => team.team);
+          console.log('✅ Analysis-ready teams:', teams);
+          setAvailableRegressionTeams(teams);
         }
 
-        // API 실패시 DB에서 직접 조회
-        if (!teamsLoaded) {
-          const regressionTeamsResult = db.exec(`
-            SELECT DISTINCT org_name
-            FROM regression_models
-            WHERE model_type IN ('총', '책임', '선임', '사원')
-            ORDER BY org_name
-          `);
-
-          console.log('🔍 Regression Teams Query Result (DB fallback):', regressionTeamsResult);
-
-          if (regressionTeamsResult.length > 0) {
-            const teams = regressionTeamsResult[0].values.map(row => row[0] as string);
-            console.log('✅ Available Regression Teams (from DB):', teams);
-            setAvailableRegressionTeams(teams);
-          } else {
-            console.warn('⚠️ No regression teams found in database');
-          }
-        }
-
-        db.close();
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('❌ Error loading data from API:', error);
       }
     };
 
@@ -235,152 +191,58 @@ const OrganizationSimulation: React.FC = () => {
 
   const loadTeam4Models = async (teamName: string) => {
     try {
-      const SQL = await initSqlJs({
-        locateFile: (file: string) => `https://sql.js.org/dist/${file}`
-      });
+      // API로 팀 시뮬레이션 데이터 조회
+      const response = await apiClient.getTeamSimulationData(teamName);
+      console.log('📊 Team simulation data from API:', response);
 
-      const response = await fetch(`/hwaseung_RnD.db?t=${Date.now()}`);
-      const buffer = await response.arrayBuffer();
-      const db = new SQL.Database(new Uint8Array(buffer));
+      if (!response || !response.data) {
+        console.error('No simulation data available for team:', teamName);
+        return;
+      }
 
+      const data = response.data;
+
+      // 1. Regression Models & Parameters 설정
       const models: { [key: string]: RegressionModel } = {};
       const allParameters: { [key: string]: RegressionParameter[] } = {};
-      const modelTypes = ['총', '책임', '선임', '사원'];
 
-      // 4개 모델 로드
-      for (const modelType of modelTypes) {
-        const modelResult = db.exec(`
-          SELECT * FROM regression_models
-          WHERE org_name = '${teamName}' AND model_type = '${modelType}'
-          LIMIT 1
-        `);
+      Object.entries(data.regression_models).forEach(([modelType, modelData]: [string, any]) => {
+        models[modelType] = {
+          id: modelData.id,
+          org_name: modelData.org_name,
+          model_type: modelData.model_type,
+        };
 
-        if (modelResult.length > 0 && modelResult[0].values.length > 0) {
-          const model: RegressionModel = {
-            id: modelResult[0].values[0][0] as number,
-            org_name: modelResult[0].values[0][1] as string,
-            model_type: modelResult[0].values[0][2] as string,
-          };
-          models[modelType] = model;
-
-          const paramResult = db.exec(`
-            SELECT * FROM regression_parameters
-            WHERE model_id = ${model.id}
-          `);
-
-          if (paramResult.length > 0) {
-            const params = paramResult[0].values.map(row => ({
-              id: row[0] as number,
-              model_id: row[1] as number,
-              parameter_name: row[2] as string,
-              coefficient: row[3] as number,
-            }));
-            allParameters[modelType] = params;
-          }
-        }
-      }
+        // Parameters를 배열로 변환
+        const params: RegressionParameter[] = [];
+        Object.entries(modelData.parameters).forEach(([paramName, coefficient]: [string, any]) => {
+          params.push({
+            id: 0,
+            model_id: modelData.id,
+            parameter_name: paramName,
+            coefficient: coefficient,
+          });
+        });
+        allParameters[modelType] = params;
+      });
 
       setRegressionModels(models);
       setRegressionParameters(allParameters);
 
-      // 팀 메트릭 평균값 로드
-      const metricResult = db.exec(`
-        SELECT metric_name, AVG(metric_value) as avg_value
-        FROM team_metrics
-        WHERE team_name = '${teamName}'
-        GROUP BY metric_name
-      `);
+      // 2. Team Metrics 설정
+      setTeamMetrics(data.team_metrics);
+      setAdjustedMetrics(data.team_metrics);
 
-      if (metricResult.length > 0) {
-        const metrics: { [key: string]: number } = {};
-        metricResult[0].values.forEach(row => {
-          metrics[row[0] as string] = row[1] as number;
-        });
-        setTeamMetrics(metrics);
-        setAdjustedMetrics(metrics);
-      }
+      // 3. Current Headcount 설정
+      setCurrentHeadcount(data.current_headcount);
 
-      // 현재 인원 로드 (team_headcount 테이블에서 25년 8월 최신 데이터)
-      const currentHeadcountData: { [key: string]: number } = {};
+      // 4. Current FTE 설정
+      setCurrentFTE(data.current_fte);
 
-      const totalResult = db.exec(`
-        SELECT headcount FROM team_headcount
-        WHERE team_name = '${teamName}' AND year = 25 AND month = 8 AND position = '총합'
-        LIMIT 1
-      `);
-      if (totalResult.length > 0 && totalResult[0].values.length > 0) {
-        currentHeadcountData['총'] = totalResult[0].values[0][0] as number;
-      }
+      console.log('✅ Team data loaded successfully from API');
 
-      const managerResult = db.exec(`
-        SELECT headcount FROM team_headcount
-        WHERE team_name = '${teamName}' AND year = 25 AND month = 8 AND position = '책임'
-        LIMIT 1
-      `);
-      if (managerResult.length > 0 && managerResult[0].values.length > 0) {
-        currentHeadcountData['책임'] = managerResult[0].values[0][0] as number;
-      }
-
-      const seniorResult = db.exec(`
-        SELECT headcount FROM team_headcount
-        WHERE team_name = '${teamName}' AND year = 25 AND month = 8 AND position = '선임'
-        LIMIT 1
-      `);
-      if (seniorResult.length > 0 && seniorResult[0].values.length > 0) {
-        currentHeadcountData['선임'] = seniorResult[0].values[0][0] as number;
-      }
-
-      const juniorResult = db.exec(`
-        SELECT headcount FROM team_headcount
-        WHERE team_name = '${teamName}' AND year = 25 AND month = 8 AND position = '사원'
-        LIMIT 1
-      `);
-      if (juniorResult.length > 0 && juniorResult[0].values.length > 0) {
-        currentHeadcountData['사원'] = juniorResult[0].values[0][0] as number;
-      }
-
-      setCurrentHeadcount(currentHeadcountData);
-
-      // FTE 데이터 로드 (실제 FTE 테이블에서 조회)
-      const currentFTEData: { [key: string]: number } = {};
-
-      try {
-        const fteResult = db.exec(`
-          SELECT FTE_전체, FTE_책임, FTE_선임, FTE_사원
-          FROM FTE
-          WHERE 팀명 = '${teamName}'
-          LIMIT 1
-        `);
-
-        if (fteResult.length > 0 && fteResult[0].values.length > 0) {
-          const fteRow = fteResult[0].values[0];
-          currentFTEData['총'] = fteRow[0] as number || 0;
-          currentFTEData['책임'] = fteRow[1] as number || 0;
-          currentFTEData['선임'] = fteRow[2] as number || 0;
-          currentFTEData['사원'] = fteRow[3] as number || 0;
-          // console.log(`${teamName} FTE 데이터 로드:`, currentFTEData);
-        } else {
-          // FTE 데이터가 없으면 인원수 기반으로 계산 (정규직 풀타임 가정)
-          currentFTEData['총'] = currentHeadcountData['총'] || 0;
-          currentFTEData['책임'] = currentHeadcountData['책임'] || 0;
-          currentFTEData['선임'] = currentHeadcountData['선임'] || 0;
-          currentFTEData['사원'] = currentHeadcountData['사원'] || 0;
-          // console.log(`${teamName} FTE 데이터 없음, 인원수로 대체:`, currentFTEData);
-        }
-      } catch (error) {
-        console.error('FTE 데이터 로드 오류:', error);
-        // 오류 시 인원수로 대체
-        currentFTEData['총'] = currentHeadcountData['총'] || 0;
-        currentFTEData['책임'] = currentHeadcountData['책임'] || 0;
-        currentFTEData['선임'] = currentHeadcountData['선임'] || 0;
-        currentFTEData['사원'] = currentHeadcountData['사원'] || 0;
-      }
-
-      setCurrentFTE(currentFTEData);
-
-      db.close();
     } catch (error) {
-      console.error('Error loading team 4 models:', error);
+      console.error('❌ Error loading team data from API:', error);
     }
   };
 

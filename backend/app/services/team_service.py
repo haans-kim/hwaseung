@@ -647,5 +647,134 @@ class TeamService:
         finally:
             conn.close()
 
+    def get_team_simulation_data(self, team_name: str) -> Dict[str, Any]:
+        """
+        특정 팀의 시뮬레이션에 필요한 모든 데이터를 한 번에 조회
+        - Regression models & parameters (총, 책임, 선임, 사원)
+        - Team metrics (평균값)
+        - Current headcount (최신 데이터)
+        - FTE data
+        """
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            result = {
+                "team_name": team_name,
+                "regression_models": {},
+                "team_metrics": {},
+                "current_headcount": {},
+                "current_fte": {}
+            }
+
+            model_types = ['총', '책임', '선임', '사원']
+
+            # 1. Regression Models & Parameters 조회
+            for model_type in model_types:
+                # 모델 조회
+                cursor.execute("""
+                    SELECT id, org_name, model_type
+                    FROM regression_models
+                    WHERE org_name = ? AND model_type = ?
+                    LIMIT 1
+                """, (team_name, model_type))
+
+                model_row = cursor.fetchone()
+                if model_row:
+                    model_id, org_name, model_type_db = model_row
+
+                    # Parameters 조회
+                    cursor.execute("""
+                        SELECT parameter_name, coefficient
+                        FROM regression_parameters
+                        WHERE model_id = ?
+                    """, (model_id,))
+
+                    parameters = {}
+                    for param_row in cursor.fetchall():
+                        param_name, coefficient = param_row
+                        parameters[param_name] = coefficient
+
+                    result["regression_models"][model_type] = {
+                        "id": model_id,
+                        "org_name": org_name,
+                        "model_type": model_type_db,
+                        "parameters": parameters
+                    }
+
+            # 2. Team Metrics 평균값 조회
+            cursor.execute("""
+                SELECT metric_name, AVG(metric_value) as avg_value
+                FROM team_metrics
+                WHERE team_name = ?
+                GROUP BY metric_name
+            """, (team_name,))
+
+            for metric_row in cursor.fetchall():
+                metric_name, avg_value = metric_row
+                result["team_metrics"][metric_name] = avg_value
+
+            # 3. Current Headcount 조회 (최신 년월 데이터)
+            # 먼저 최신 년월 찾기
+            cursor.execute("""
+                SELECT MAX(year || '-' || printf('%02d', month))
+                FROM team_headcount
+                WHERE team_name = ?
+            """, (team_name,))
+
+            latest_date = cursor.fetchone()[0]
+
+            if latest_date:
+                latest_year, latest_month = latest_date.split('-')
+
+                # 각 position별 headcount 조회
+                positions = {'총합': '총', '책임': '책임', '선임': '선임', '사원': '사원'}
+
+                for position_db, position_key in positions.items():
+                    cursor.execute("""
+                        SELECT headcount
+                        FROM team_headcount
+                        WHERE team_name = ? AND year = ? AND month = ? AND position = ?
+                        LIMIT 1
+                    """, (team_name, int(latest_year), int(latest_month), position_db))
+
+                    headcount_row = cursor.fetchone()
+                    if headcount_row:
+                        result["current_headcount"][position_key] = headcount_row[0]
+
+            # 4. FTE Data 조회
+            cursor.execute("""
+                SELECT FTE_전체, FTE_책임, FTE_선임, FTE_사원
+                FROM fte
+                WHERE 팀명 = ?
+                LIMIT 1
+            """, (team_name,))
+
+            fte_row = cursor.fetchone()
+            if fte_row:
+                result["current_fte"]["총"] = fte_row[0] if fte_row[0] is not None else 0
+                result["current_fte"]["책임"] = fte_row[1] if fte_row[1] is not None else 0
+                result["current_fte"]["선임"] = fte_row[2] if fte_row[2] is not None else 0
+                result["current_fte"]["사원"] = fte_row[3] if fte_row[3] is not None else 0
+            else:
+                # FTE 데이터가 없으면 headcount로 대체
+                result["current_fte"]["총"] = result["current_headcount"].get("총", 0)
+                result["current_fte"]["책임"] = result["current_headcount"].get("책임", 0)
+                result["current_fte"]["선임"] = result["current_headcount"].get("선임", 0)
+                result["current_fte"]["사원"] = result["current_headcount"].get("사원", 0)
+
+            # 데이터가 하나라도 있으면 반환, 모두 비어있으면 None
+            if (result["regression_models"] or result["team_metrics"] or
+                result["current_headcount"] or result["current_fte"]):
+                return result
+            else:
+                return None
+
+        except Exception as e:
+            logging.error(f"Error retrieving team simulation data for {team_name}: {str(e)}")
+            raise
+        finally:
+            conn.close()
+
 # Singleton instance
 team_service = TeamService()

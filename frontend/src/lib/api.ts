@@ -743,6 +743,40 @@ export class ApiClient {
 
     return response.json();
   }
+
+  // Organization Chart API methods
+  async getOrganizationChartData(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/api/organization-chart/data`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getAnalysisReadyTeams(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/api/organization-chart/analysis-ready-teams`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getTeamSimulationData(teamName: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/api/team/${encodeURIComponent(teamName)}/simulation-data`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const apiClient = new ApiClient();
