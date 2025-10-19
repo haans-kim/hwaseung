@@ -79,10 +79,10 @@ class CompanyWideDashboardService:
 
     def predict_2026(self, organization: str) -> Dict[str, Any]:
         """
-        2025년 및 2026년 적정인력 예측
+        다음 년도 적정인력 예측 (동적 년도 계산)
 
-        - 2025년 예측: 2025년 features로 예측 (기준: 2024년 실제 headcount)
-        - 2026년 예측: 있으면 2026년 features로 예측, 없으면 2025년 예측만 반환
+        - 데이터베이스에서 최신 년도를 찾아서 다음 년도 예측
+        - 예: 2024년이 최신 → 2025년 예측, 2025년이 최신 → 2026년 예측
 
         Args:
             organization: 'R&A' or 'tonggibon'
@@ -108,33 +108,50 @@ class CompanyWideDashboardService:
             # DB에서 데이터 가져오기
             conn = sqlite3.connect(DB_PATH)
 
-            # 2024년 실제 headcount 가져오기 (기준값)
-            query_2024 = """
+            # 최신 년도 찾기 (동적)
+            query_latest_year = """
+                SELECT MAX(year) as latest_year
+                FROM company_wide_features
+                WHERE organization = ? AND headcount IS NOT NULL
+            """
+            latest_year_result = pd.read_sql_query(query_latest_year, conn, params=(organization,))
+            latest_year_with_headcount = int(latest_year_result.iloc[0]['latest_year']) if len(latest_year_result) > 0 else 2024
+
+            # 현재 년도와 다음 년도 계산
+            current_year = latest_year_with_headcount
+            next_year = current_year + 1
+            following_year = next_year + 1
+
+            print(f"📅 Latest year with headcount: {current_year}")
+            print(f"📅 Predicting for: {next_year}")
+
+            # 기준 년도 headcount 가져오기
+            query_base = f"""
                 SELECT headcount
                 FROM company_wide_features
-                WHERE organization = ? AND year = 2024 AND headcount IS NOT NULL
+                WHERE organization = ? AND year = {current_year} AND headcount IS NOT NULL
                 LIMIT 1
             """
-            result_2024 = pd.read_sql_query(query_2024, conn, params=(organization,))
-            headcount_2024 = result_2024.iloc[0]['headcount'] if len(result_2024) > 0 else None
+            result_base = pd.read_sql_query(query_base, conn, params=(organization,))
+            headcount_base = result_base.iloc[0]['headcount'] if len(result_base) > 0 else None
 
-            # 2025년 features 가져오기
-            query_2025 = """
+            # 다음 년도 features 가져오기
+            query_next = f"""
                 SELECT *
                 FROM company_wide_features
-                WHERE organization = ? AND year = 2025
+                WHERE organization = ? AND year = {next_year}
                 LIMIT 1
             """
-            data_2025 = pd.read_sql_query(query_2025, conn, params=(organization,))
+            data_next = pd.read_sql_query(query_next, conn, params=(organization,))
 
-            # 2026년 features 가져오기 (있을 경우)
-            query_2026 = """
+            # 그 다음 년도 features 가져오기 (있을 경우)
+            query_following = f"""
                 SELECT *
                 FROM company_wide_features
-                WHERE organization = ? AND year = 2026
+                WHERE organization = ? AND year = {following_year}
                 LIMIT 1
             """
-            data_2026 = pd.read_sql_query(query_2026, conn, params=(organization,))
+            data_following = pd.read_sql_query(query_following, conn, params=(organization,))
             conn.close()
 
             # 컬럼 제거 함수
@@ -146,29 +163,29 @@ class CompanyWideDashboardService:
                         df = df.drop(columns=[col])
                 return df
 
-            # 2025년 예측
-            prediction_2025 = None
-            if len(data_2025) > 0:
-                pred_df_2025 = prepare_prediction_data(data_2025)
+            # 다음 년도 예측
+            prediction_next = None
+            if len(data_next) > 0:
+                pred_df_next = prepare_prediction_data(data_next)
 
                 old_stdout = sys.stdout
                 sys.stdout = io.StringIO()
                 try:
-                    predictions = predict_model(model, data=pred_df_2025)
-                    prediction_2025 = predictions['prediction_label'].iloc[0]
+                    predictions = predict_model(model, data=pred_df_next)
+                    prediction_next = predictions['prediction_label'].iloc[0]
                 finally:
                     sys.stdout = old_stdout
 
-            # 2026년 예측 (2026 데이터가 있을 경우만)
-            prediction_2026 = None
-            if len(data_2026) > 0:
-                pred_df_2026 = prepare_prediction_data(data_2026)
+            # 그 다음 년도 예측 (데이터가 있을 경우만)
+            prediction_following = None
+            if len(data_following) > 0:
+                pred_df_following = prepare_prediction_data(data_following)
 
                 old_stdout = sys.stdout
                 sys.stdout = io.StringIO()
                 try:
-                    predictions = predict_model(model, data=pred_df_2026)
-                    prediction_2026 = predictions['prediction_label'].iloc[0]
+                    predictions = predict_model(model, data=pred_df_following)
+                    prediction_following = predictions['prediction_label'].iloc[0]
                 finally:
                     sys.stdout = old_stdout
 
@@ -208,33 +225,33 @@ class CompanyWideDashboardService:
                 logging.error(f"Failed to load metrics from DB: {e}")
                 r2_score = 0.85
 
-            # 결과 구성
-            if prediction_2026 is not None:
-                # 2026년 데이터가 있으면 2026년 예측 반환 (기준: 2025년 예측)
+            # 결과 구성 (동적 년도 사용)
+            if prediction_following is not None:
+                # 그 다음 년도 데이터가 있으면 그 다음 년도 예측 반환 (기준: 다음 년도 예측)
                 return {
-                    'year': 2026,
-                    'predicted_headcount': round(prediction_2026),
-                    'previous_year': 2025,
-                    'previous_headcount': round(prediction_2025) if prediction_2025 else None,
-                    'change': round(prediction_2026 - prediction_2025) if prediction_2025 else 0,
-                    'change_percent': round((prediction_2026 - prediction_2025) / prediction_2025 * 100, 1) if prediction_2025 else 0,
-                    'model_r2': r2_score,  # 🔧 FIX: 반올림하지 않고 DB 원본 값 그대로 반환
+                    'year': following_year,
+                    'predicted_headcount': round(prediction_following),
+                    'previous_year': next_year,
+                    'previous_headcount': round(prediction_next) if prediction_next else None,
+                    'change': round(prediction_following - prediction_next) if prediction_next else 0,
+                    'change_percent': round((prediction_following - prediction_next) / prediction_next * 100, 1) if prediction_next else 0,
+                    'model_r2': r2_score,
                     'organization': organization,
-                    'prediction_2025': round(prediction_2025) if prediction_2025 else None,
-                    'actual_2024': int(headcount_2024) if headcount_2024 else None
+                    f'prediction_{next_year}': round(prediction_next) if prediction_next else None,
+                    f'actual_{current_year}': int(headcount_base) if headcount_base else None
                 }
             else:
-                # 2026년 데이터가 없으면 2025년 features로 2026년 예측 (기준: 2024년 실제)
+                # 그 다음 년도 데이터가 없으면 다음 년도 features로 다음 년도 예측 (기준: 현재 년도 실제)
                 return {
-                    'year': 2026,  # Dashboard 표시를 위해 2026년으로
-                    'predicted_headcount': round(prediction_2025) if prediction_2025 else None,
-                    'previous_year': 2024,
-                    'previous_headcount': int(headcount_2024) if headcount_2024 else None,
-                    'change': round(prediction_2025 - headcount_2024) if (prediction_2025 and headcount_2024) else 0,
-                    'change_percent': round((prediction_2025 - headcount_2024) / headcount_2024 * 100, 1) if (prediction_2025 and headcount_2024) else 0,
-                    'model_r2': r2_score,  # 🔧 FIX: 반올림하지 않고 DB 원본 값 그대로 반환
+                    'year': next_year,
+                    'predicted_headcount': round(prediction_next) if prediction_next else None,
+                    'previous_year': current_year,
+                    'previous_headcount': int(headcount_base) if headcount_base else None,
+                    'change': round(prediction_next - headcount_base) if (prediction_next and headcount_base) else 0,
+                    'change_percent': round((prediction_next - headcount_base) / headcount_base * 100, 1) if (prediction_next and headcount_base) else 0,
+                    'model_r2': r2_score,
                     'organization': organization,
-                    'note': '2025 features로 2026 예측'
+                    'note': f'{next_year} features로 {next_year} 예측'
                 }
 
         except Exception as e:
@@ -414,34 +431,30 @@ class CompanyWideDashboardService:
         try:
             conn = sqlite3.connect(DB_PATH)
 
-            # 과거 데이터
+            # 과거 데이터 (headcount가 있는 것만)
             query = """
                 SELECT year, headcount
                 FROM company_wide_features
-                WHERE organization = ?
+                WHERE organization = ? AND headcount IS NOT NULL
                 ORDER BY year
             """
 
             df = pd.read_sql_query(query, conn, params=(organization,))
             conn.close()
 
-            # 2026년 예측
+            # 다음 년도 예측 (동적)
             prediction = self.predict_2026(organization)
 
-            # 데이터 결합 - 연도를 +1하여 표시 (예측 대상 연도)
-            # 예: 2021년 데이터로 2022년 예측, 2022년 데이터로 2023년 예측
-            years = [y + 1 for y in df['year'].tolist()]
+            # 데이터 결합 - 실제 연도 그대로 사용
+            years = df['year'].tolist()
             actual = df['headcount'].tolist()
             predicted = [None] * len(df)
 
-            # 마지막 연도가 2026이 아니면 2026 예측 추가
-            if years[-1] != 2026:
-                years.append(prediction['year'])
-                actual.append(None)
-                predicted.append(prediction['predicted_headcount'])
-            else:
-                # 마지막 항목이 2026이면 예측값만 설정
-                predicted[-1] = prediction['predicted_headcount']
+            # 예측 년도 추가
+            prediction_year = prediction['year']
+            years.append(prediction_year)
+            actual.append(None)  # 예측 년도는 실제 값 없음
+            predicted.append(prediction['predicted_headcount'])
 
             return {
                 'years': years,

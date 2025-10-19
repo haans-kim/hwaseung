@@ -260,16 +260,17 @@ export const Dashboard: React.FC = () => {
     if (!trendData || !trendData.trend_data) return null;
 
     const labels = trendData.trend_data.map((d: any) => d.year);
-    
+
     // 총 인상률
     const totalData = trendData.trend_data.map((d: any) => d.value);
-    
+
     // Base-up 데이터 (있는 경우만)
     const baseupData = trendData.trend_data.map((d: any) => d.base_up);
     const hasBaseupData = baseupData.some((v: any) => v !== null && v !== undefined);
-    
-    // 2026년 예측값 인덱스 찾기
-    const prediction2026Index = trendData.trend_data.findIndex((d: any) => d.year === 2026);
+
+    // 예측값 인덱스 동적으로 찾기 (type이 'prediction'인 데이터)
+    const predictionIndex = trendData.trend_data.findIndex((d: any) => d.type === 'prediction');
+    const predictionYear = predictionIndex >= 0 ? trendData.trend_data[predictionIndex].year : null;
     
     const datasets = [];
     
@@ -307,8 +308,8 @@ export const Dashboard: React.FC = () => {
           label: '총 인상률',
           data: totalData,
           borderColor: (ctx: any) => {
-            // 2026년 구간은 빨간색으로 표시
-            if (ctx.type === 'segment' && ctx.p0DataIndex === prediction2026Index - 1) {
+            // 예측 구간은 빨간색으로 표시
+            if (ctx.type === 'segment' && ctx.p0DataIndex === predictionIndex - 1) {
               return 'rgb(239, 68, 68)';
             }
             return 'rgb(34, 197, 94)'; // 기본 초록색
@@ -317,27 +318,27 @@ export const Dashboard: React.FC = () => {
           borderWidth: 2.5,
           tension: 0.4,
           pointRadius: (ctx: any) => {
-            // 2026년 예측값은 더 큰 포인트로 표시
-            return ctx.dataIndex === prediction2026Index ? 8 : 4;
+            // 예측값은 더 큰 포인트로 표시
+            return ctx.dataIndex === predictionIndex ? 8 : 4;
           },
           pointHoverRadius: (ctx: any) => {
-            return ctx.dataIndex === prediction2026Index ? 10 : 6;
+            return ctx.dataIndex === predictionIndex ? 10 : 6;
           },
           pointBackgroundColor: (ctx: any) => {
-            // 2026년 예측값은 빨간색으로 표시
-            return ctx.dataIndex === prediction2026Index ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
+            // 예측값은 빨간색으로 표시
+            return ctx.dataIndex === predictionIndex ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
           },
           pointBorderColor: (ctx: any) => {
-            return ctx.dataIndex === prediction2026Index ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
+            return ctx.dataIndex === predictionIndex ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
           },
           pointBorderWidth: (ctx: any) => {
-            return ctx.dataIndex === prediction2026Index ? 3 : 1;
+            return ctx.dataIndex === predictionIndex ? 3 : 1;
           },
           fill: false,
           segment: {
             borderDash: (ctx: any) => {
-              // 2025-2026 구간은 점선으로 표시
-              return ctx.p0DataIndex === prediction2026Index - 1 ? [5, 5] : undefined;
+              // 예측 구간은 점선으로 표시
+              return ctx.p0DataIndex === predictionIndex - 1 ? [5, 5] : undefined;
             }
           },
           datalabels: {
@@ -350,7 +351,7 @@ export const Dashboard: React.FC = () => {
               weight: 'bold' as const
             },
             color: (ctx: any) => {
-              return ctx.dataIndex === prediction2026Index ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
+              return ctx.dataIndex === predictionIndex ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
             }
           }
         });
@@ -361,7 +362,11 @@ export const Dashboard: React.FC = () => {
     };
   };
 
-  const getChartOptions = () => ({
+  const getChartOptions = () => {
+    // 차트 제목을 백엔드 설정에서 가져오기
+    const chartTitle = trendData?.chart_config?.title || '인원 수 추이 및 예측';
+
+    return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -373,7 +378,7 @@ export const Dashboard: React.FC = () => {
       },
       title: {
         display: true,
-        text: '인원 수 추이 및 2026년 예측',
+        text: chartTitle,
         font: {
           size: 16,
           weight: 'bold' as const
@@ -387,10 +392,12 @@ export const Dashboard: React.FC = () => {
           label: (context: any) => {
             if (context.dataset.label?.includes('신뢰구간')) return '';
             const value = context.parsed.y;
-            const year = trendData.trend_data[context.dataIndex]?.year;
-            
-            if (year === 2026) {
-              return `🎯 2026년 예측값: ${value.toLocaleString()}명`;
+            const dataPoint = trendData.trend_data[context.dataIndex];
+            const year = dataPoint?.year;
+            const isPrediction = dataPoint?.type === 'prediction';
+
+            if (isPrediction) {
+              return `🎯 ${year}년 예측값: ${value.toLocaleString()}명`;
             }
             return `${year}년 실적: ${value.toLocaleString()}명`;
           },
@@ -426,7 +433,8 @@ export const Dashboard: React.FC = () => {
       intersect: false,
       mode: 'index' as const,
     }
-  });
+    };
+  };
 
 
   const getWaterfallChartData = () => {
@@ -623,15 +631,22 @@ export const Dashboard: React.FC = () => {
 
       {/* 주요 메트릭 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {(() => {
+          // 예측 년도 동적 계산
+          const predictionData = trendData?.trend_data?.find((d: any) => d.type === 'prediction');
+          const predictionYear = predictionData?.year || '다음';
+
+          return (
+            <>
         {/* 현재 예측 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">2026년 적정인력</CardTitle>
+            <CardTitle className="text-sm font-medium">{predictionYear}년 적정인력</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              {currentPrediction?.headcount_prediction ? 
+              {currentPrediction?.headcount_prediction ?
                 `${currentPrediction.headcount_prediction.predicted_headcount.toLocaleString()}명` : '-명'}
             </div>
           </CardContent>
@@ -673,16 +688,16 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* 2026년 예상 직원수 */}
+        {/* 예상 직원수 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">2026년 예상 직원수</CardTitle>
+            <CardTitle className="text-sm font-medium">{predictionYear}년 예상 직원수</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {currentPrediction?.headcount_prediction ? 
-                `${currentPrediction.headcount_prediction.predicted_headcount.toLocaleString()}명` : 
+              {currentPrediction?.headcount_prediction ?
+                `${currentPrediction.headcount_prediction.predicted_headcount.toLocaleString()}명` :
                 '-명'
               }
             </div>
@@ -697,6 +712,9 @@ export const Dashboard: React.FC = () => {
             )}
           </CardContent>
         </Card>
+            </>
+          );
+        })()}
       </div>
 
       {/* 변수 조정과 분석 차트를 2열로 배치 */}

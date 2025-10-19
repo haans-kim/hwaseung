@@ -282,13 +282,13 @@ class DashboardService:
             raise e
     
     def _predict_performance_trend(self) -> float:
-        """과거 성과 인상률 데이터를 기반으로 2026년 성과 인상률 예측
-        
+        """과거 성과 인상률 데이터를 기반으로 다음 년도 성과 인상률 예측
+
         데이터 구조:
-        - 2021-2024년: 각 연도의 경제지표 + 다음 해 임금인상률
-        - 2025년: 경제지표만 있음 (2026년 임금인상률이 예측 대상)
-        
-        성과 인상률 트렌드는 2022-2025년 임금인상률을 기반으로 2026년 예측
+        - 과거 데이터: 각 연도의 경제지표 + 다음 해 임금인상률
+        - 최신 년도: 경제지표만 있음 (다음 년도 임금인상률이 예측 대상)
+
+        성과 인상률 트렌드는 과거 임금인상률을 기반으로 다음 년도 예측
         """
         try:
             from app.services.data_service import data_service
@@ -397,14 +397,16 @@ class DashboardService:
             # 회귀 계수 출력
             print(f"   Regression coefficient (slope): {lr_model.coef_[0]:.6f}")
             print(f"   Regression intercept: {lr_model.intercept_:.6f}")
-            
-            # 2026년 예측
-            prediction_year = np.array([[2026]])
-            predicted_performance = lr_model.predict(prediction_year)[0]
-            
-            print(f"   Raw prediction for 2026: {predicted_performance:.4f} ({predicted_performance*100:.2f}%)")
-            
-            print(f"📊 Final Performance rate prediction for 2026: {predicted_performance:.3f} ({predicted_performance*100:.1f}%)")
+
+            # 동적으로 예측 년도 계산 (최신 년도 + 1)
+            latest_year = int(trend_data[year_col].max())
+            next_year = latest_year + 1
+            prediction_year_arr = np.array([[next_year]])
+            predicted_performance = lr_model.predict(prediction_year_arr)[0]
+
+            print(f"   Raw prediction for {next_year}: {predicted_performance:.4f} ({predicted_performance*100:.2f}%)")
+
+            print(f"📊 Final Performance rate prediction for {next_year}: {predicted_performance:.3f} ({predicted_performance*100:.1f}%)")
             print(f"   Based on {len(trend_data)} years of data from column '{available_col}'")
             
             return float(predicted_performance)
@@ -414,8 +416,8 @@ class DashboardService:
             # 오류 시 에러 발생
             raise
     
-    def _predict_headcount_2026(self) -> Dict[str, Any]:
-        """PyCaret을 사용하여 2026년 headcount 예측"""
+    def _predict_headcount_next_year(self) -> Dict[str, Any]:
+        """선형 회귀를 사용하여 다음 년도 headcount 예측"""
         try:
             from app.services.data_service import data_service
             from sklearn.linear_model import LinearRegression
@@ -473,9 +475,12 @@ class DashboardService:
                 print(f"   Recent trend coefficient (slope): {lr_model.coef_[0]:.2f}")
                 print(f"   Recent trend intercept: {lr_model.intercept_:.2f}")
                 
-                # 기본 2026년 예측
-                prediction_year = np.array([[2026]])
-                base_prediction = lr_model.predict(prediction_year)[0]
+                # 동적으로 다음 년도 예측 계산
+                latest_year = int(recent_data['year'].max())
+                next_year = latest_year + 1
+                prediction_year_arr = np.array([[next_year]])
+                base_prediction = lr_model.predict(prediction_year_arr)[0]
+                print(f"   Predicting for year: {next_year}")
                 
                 # 보수적 조정: 급격한 변화 방지
                 latest_headcount = recent_data.iloc[-1]['headcount']
@@ -493,14 +498,18 @@ class DashboardService:
                 predicted_headcount = round(latest_headcount * 1.02)  # 2% 성장 가정
                 lr_model = None
             
-            print(f"📊 Headcount prediction for 2026: {predicted_headcount} people")
-            
+            # 예측 년도 계산
+            latest_year = int(headcount_data['year'].max()) if len(headcount_data) > 0 else 2024
+            next_year = latest_year + 1
+
+            print(f"📊 Headcount prediction for {next_year}: {predicted_headcount} people")
+
             # 성장률 계산 (최근년도 대비)
             if len(headcount_data) > 0:
                 latest_headcount = headcount_data.iloc[-1]['headcount']
                 growth_rate = (predicted_headcount - latest_headcount) / latest_headcount
                 print(f"   Growth vs latest year: {growth_rate*100:.1f}%")
-                print(f"📊 Final headcount prediction for 2026: {predicted_headcount} people")
+                print(f"📊 Final headcount prediction for {next_year}: {predicted_headcount} people")
             else:
                 growth_rate = 0
             
@@ -527,25 +536,33 @@ class DashboardService:
             }
 
     def predict_wage_increase(self, model, input_data: Dict[str, float], confidence_level: float = 0.95) -> Dict[str, Any]:
-        """2026년 임금인상률 예측
-        
+        """2025년 임금인상률 예측
+
         Args:
             model: 학습된 모델
             input_data: 예측에 사용할 2025년 경제지표 데이터
             confidence_level: 신뢰구간 수준
             
         Returns:
-            2026년 임금인상률 예측 결과
+            예측 년도의 임금인상률 예측 결과
         """
-        
+
         try:
-            # ModelingService에서 2025년 데이터 확인
+            # ModelingService에서 최신 년도 데이터 확인
             from app.services.modeling_service import modeling_service
-            
-            # input_data가 없고 modeling_service에 2025년 데이터가 있으면 사용
+            from app.services.data_service import data_service
+
+            # 예측 년도 동적 계산: 데이터의 마지막 년도 + 1
+            prediction_year = None
+            if data_service.current_data is not None and 'year' in data_service.current_data.columns:
+                latest_year = int(data_service.current_data['year'].max())
+                prediction_year = latest_year + 1
+                print(f"📊 Prediction year calculated: {prediction_year} (based on latest data year: {latest_year})")
+
+            # input_data가 없고 modeling_service에 최신 년도 데이터가 있으면 사용
             if not input_data and hasattr(modeling_service, 'prediction_data') and modeling_service.prediction_data is not None:
-                # 2025년 데이터 사용
-                print("📊 Using 2025 data from modeling service for 2026 prediction")
+                # 최신 년도 데이터 사용
+                print(f"📊 Using latest year data from modeling service for {prediction_year} prediction")
                 model_input = modeling_service.prediction_data.iloc[[0]]  # 첫 번째 행만 사용
                 
                 # 데이터 누수 방지: 임금 관련 컬럼 모두 제거
@@ -603,7 +620,8 @@ class DashboardService:
             }
             
             # PyCaret 모델의 원본 예측값 사용
-            print(f"🔍 Final ML model prediction: {predicted_headcount} people for 2026")
+            # 예측 년도 출력 (동적)
+            print(f"🔍 Final ML model prediction: {predicted_headcount} people for {prediction_year if prediction_year else 'next year'}")
             
             # headcount 예측의 신뢰구간 계산
             try:
@@ -829,33 +847,37 @@ class DashboardService:
                             
                             historical_data.append(data_point)
                     
-                    # 2026년 예측 데이터 추가 (모델이 있는 경우)
-                    # 이미 2026년 데이터가 있는지 확인
-                    has_2026 = any(d.get('year') == 2026 for d in historical_data)
-                    
+                    # 다음 년도 예측 데이터 추가 (모델이 있는 경우)
+                    # 동적으로 예측 년도 계산
+                    latest_year = int(df[year_col].max())
+                    next_year = latest_year + 1
+
+                    # 이미 다음 년도 데이터가 있는지 확인
+                    has_next_year = any(d.get('year') == next_year for d in historical_data)
+
                     from app.services.modeling_service import modeling_service
-                    if modeling_service.current_model and not has_2026:
+                    if modeling_service.current_model and not has_next_year:
                         try:
-                            # 2025년 데이터로 PyCaret 모델 예측 수행
-                            # 2025년 행(마지막 행)의 실제 데이터 사용
-                            year_2025_data = df[df[year_col] == 2025]
+                            # 최신 년도 데이터로 PyCaret 모델 예측 수행
+                            # 최신 년도 행(마지막 행)의 실제 데이터 사용
+                            year_latest_data = df[df[year_col] == latest_year]
                             
-                            if len(year_2025_data) > 0:
-                                # 2025년 데이터에서 feature 값들 추출
-                                row_2025 = year_2025_data.iloc[0]
+                            if len(year_latest_data) > 0:
+                                # 최신 년도 데이터에서 feature 값들 추출
+                                row_latest = year_latest_data.iloc[0]
                                 feature_columns = [col for col in df.columns if col not in ['headcount', year_col]]
-                                
+
                                 model_input = {}
                                 for col in feature_columns:
-                                    value = pd.to_numeric(row_2025[col], errors='coerce')
+                                    value = pd.to_numeric(row_latest[col], errors='coerce')
                                     if pd.notna(value):
                                         model_input[col] = value
                                     else:
                                         model_input[col] = 0.0
-                                        
-                                print(f"✅ Using 2025 data for prediction: {list(model_input.keys())[:5]}...")
+
+                                print(f"✅ Using {latest_year} data for prediction: {list(model_input.keys())[:5]}...")
                             else:
-                                # 2025년 데이터가 없으면 기본값 사용
+                                # 최신 년도 데이터가 없으면 기본값 사용
                                 model_input = {
                                     'operating_income': 5.2,
                                     'ev_growth_gl': 8.5,
@@ -863,9 +885,9 @@ class DashboardService:
                                     'labor_costs': 4.8,
                                     'v_growth_gl': 7.2
                                 }
-                                print(f"⚠️ No 2025 data found, using default values")
-                            
-                            # PyCaret 모델로 2026년 headcount 예측
+                                print(f"⚠️ No {latest_year} data found, using default values")
+
+                            # PyCaret 모델로 다음 년도 headcount 예측
                             prediction_result = self.predict_wage_increase(
                                 modeling_service.current_model,
                                 model_input,
@@ -885,25 +907,28 @@ class DashboardService:
                             
                             # headcount 예측 결과 추가 (절대값으로 사용)
                             prediction_data = {
-                                "year": 2026,
+                                "year": next_year,
                                 "value": int(round(pred_value)),  # headcount는 절대값
                                 "type": "prediction",
-                                "input_year": 2025  # 2025년 데이터로 예측
+                                "input_year": latest_year  # 최신 년도 데이터로 예측
                             }
                             historical_data.append(prediction_data)
-                            
-                            print(f"✅ Added 2026 headcount prediction: {prediction_data['value']}명 (from 2025 data)")
+
+                            print(f"✅ Added {next_year} headcount prediction: {prediction_data['value']}명 (from {latest_year} data)")
                         except Exception as e:
                             print(f"⚠️ Could not generate prediction: {e}")
                             # 오류 시 ML 예측값을 추가하지 않음
                             pass
                     
+                    # 예측 년도 계산 (마지막 데이터 년도 + 1)
+                    chart_prediction_year = latest_year + 1 if 'latest_year' in locals() else 2025
+
                     return {
                         "message": "Trend data retrieved successfully",
                         "trend_data": historical_data,
                         "baseup_data": baseup_data if 'baseup_data' in locals() else [],
                         "chart_config": {
-                            "title": "인원 수 추이 및 2026년 예측",
+                            "title": f"인원 수 추이 및 {chart_prediction_year}년 예측",
                             "y_axis_label": "인원 수 (명)",
                             "x_axis_label": "연도"
                         }

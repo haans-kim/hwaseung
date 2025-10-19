@@ -191,7 +191,7 @@ const DashboardRNA: React.FC = () => {
       {
         label: '인력 추이 및 예측',
         data: trendData.actual.map((val, idx) => {
-          // actual 값이 있으면 actual, 없으면 predicted 사용 (2026년)
+          // actual 값이 있으면 actual, 없으면 predicted 사용 (예측 년도)
           return val !== null ? val : trendData.predicted[idx];
         }),
         borderColor: 'rgb(59, 130, 246)',
@@ -201,9 +201,9 @@ const DashboardRNA: React.FC = () => {
         tension: 0.4,
         segment: {
           borderColor: (ctx: any) => {
-            // 2025 → 2026 구간은 빨간색으로
+            // 마지막 구간 (예측 구간)은 빨간색으로
             const years = trendData.years;
-            if (ctx.p0DataIndex === years.length - 2 && years[ctx.p0DataIndex] === 2025) {
+            if (ctx.p0DataIndex === years.length - 2) {
               return 'rgb(239, 68, 68)';
             }
             return 'rgb(59, 130, 246)';
@@ -242,7 +242,7 @@ const DashboardRNA: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">R&A 적정인력 산정</h1>
-          <p className="text-muted-foreground">2026년 적정인력 예측 및 시나리오 분석</p>
+          <p className="text-muted-foreground">{prediction?.year || '다음'}년 적정인력 예측 및 시나리오 분석</p>
         </div>
         <Button onClick={loadAllData} variant="outline">
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -261,10 +261,10 @@ const DashboardRNA: React.FC = () => {
 
       {/* 주요 지표 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* 2026년 예측 */}
+        {/* 예측년도 적정인력 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">2026년 적정인력</CardTitle>
+            <CardTitle className="text-sm font-medium">{prediction?.year || '다음'}년 적정인력</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -334,7 +334,7 @@ const DashboardRNA: React.FC = () => {
       {trendChartData && (
         <Card>
           <CardHeader>
-            <CardTitle>인력 추이 및 2026년 예측</CardTitle>
+            <CardTitle>인력 추이 및 {prediction?.year || '다음'}년 예측</CardTitle>
             <CardDescription>과거 실적과 미래 예측</CardDescription>
           </CardHeader>
           <CardContent>
