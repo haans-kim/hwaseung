@@ -56,6 +56,10 @@ const OrganizationSimulation: React.FC = () => {
   const [predictedHeadcount, setPredictedHeadcount] = useState<{ [key: string]: number }>({});
   const [currentFTE, setCurrentFTE] = useState<{ [key: string]: number }>({});
 
+  // 기간 정보 (동적 년월)
+  const [currentPeriod, setCurrentPeriod] = useState<string | null>(null);
+  const [predictionPeriod, setPredictionPeriod] = useState<string | null>(null);
+
   // API로 데이터 로드
   useEffect(() => {
     const loadData = async () => {
@@ -243,7 +247,12 @@ const OrganizationSimulation: React.FC = () => {
       // 4. Current FTE 설정
       setCurrentFTE(data.current_fte);
 
+      // 5. 기간 정보 설정 (동적 년월)
+      setCurrentPeriod(data.current_period);
+      setPredictionPeriod(data.prediction_period);
+
       console.log('✅ Team data loaded successfully from API');
+      console.log('📅 Current period:', data.current_period, '| Prediction period:', data.prediction_period);
 
     } catch (error) {
       console.error('❌ Error loading team data from API:', error);
@@ -456,10 +465,10 @@ const OrganizationSimulation: React.FC = () => {
       {/* 전체 인력 변동 요약 카드 */}
       {selectedTeam && availableRegressionTeams.includes(selectedTeam) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* 2025년 정원 */}
+          {/* 현재 정원 */}
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-600">2025년 정원</h3>
+              <h3 className="text-sm font-medium text-gray-600">{currentPeriod || '현재'} 정원</h3>
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-blue-600 text-sm font-semibold">👥</span>
               </div>
@@ -470,10 +479,10 @@ const OrganizationSimulation: React.FC = () => {
             <div className="text-xs text-green-600">현재 인원</div>
           </div>
 
-          {/* 2026년 예상 정원 */}
+          {/* 예상 정원 */}
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-600">2026년 예상 정원</h3>
+              <h3 className="text-sm font-medium text-gray-600">{predictionPeriod || '다음'} 예상 정원</h3>
               <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                 <span className="text-purple-600 text-sm font-semibold">🎯</span>
               </div>

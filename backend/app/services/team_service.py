@@ -675,7 +675,9 @@ class TeamService:
                 "team_metrics": {},
                 "current_headcount": {},
                 "current_fte": {},
-                "feature_definitions": {}
+                "feature_definitions": {},
+                "current_period": None,  # 현재 기간 (예: "2025.7")
+                "prediction_period": None  # 예측 기간 (예: "2025.8")
             }
 
             model_types = ['총', '책임', '선임', '사원']
@@ -737,20 +739,40 @@ class TeamService:
                 feature_number, feature_name = feature_row
                 result["feature_definitions"][feature_number] = feature_name
 
-            # 3. Current Headcount 조회 (최신 년월 데이터)
-            # 먼저 최신 년월 찾기
+            # 3. Current Headcount 조회 및 기간 정보 설정
+            # 모든 년월 데이터를 조회 (최신 2개 기간)
             cursor.execute("""
-                SELECT MAX(year || '-' || printf('%02d', month))
+                SELECT DISTINCT year, month
                 FROM team_headcount
                 WHERE team_name = ?
+                ORDER BY year DESC, month DESC
+                LIMIT 2
             """, (team_name,))
 
-            latest_date = cursor.fetchone()[0]
+            periods = cursor.fetchall()
 
-            if latest_date:
-                latest_year, latest_month = latest_date.split('-')
+            if len(periods) >= 2:
+                # 최신 2개가 있는 경우: 마지막 것을 예측, 그 이전을 현재로
+                prediction_year, prediction_month = periods[0]
+                current_year, current_month = periods[1]
 
-                # 각 position별 headcount 조회
+                result["current_period"] = f"{current_year}년{current_month}월"
+                result["prediction_period"] = f"{prediction_year}년{prediction_month}월"
+
+                # Current headcount는 prediction_period (최신 데이터)로 설정
+                headcount_year, headcount_month = prediction_year, prediction_month
+            elif len(periods) == 1:
+                # 데이터가 1개만 있는 경우: 그것을 현재로
+                current_year, current_month = periods[0]
+                result["current_period"] = f"{current_year}년{current_month}월"
+                result["prediction_period"] = None
+
+                headcount_year, headcount_month = current_year, current_month
+            else:
+                headcount_year, headcount_month = None, None
+
+            # 각 position별 headcount 조회 (최신 데이터)
+            if headcount_year is not None and headcount_month is not None:
                 positions = {'총합': '총', '책임': '책임', '선임': '선임', '사원': '사원'}
 
                 for position_db, position_key in positions.items():
@@ -759,7 +781,7 @@ class TeamService:
                         FROM team_headcount
                         WHERE team_name = ? AND year = ? AND month = ? AND position = ?
                         LIMIT 1
-                    """, (team_name, int(latest_year), int(latest_month), position_db))
+                    """, (team_name, headcount_year, headcount_month, position_db))
 
                     headcount_row = cursor.fetchone()
                     if headcount_row:
