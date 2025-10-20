@@ -159,8 +159,12 @@ class TeamService:
             cursor.execute("DELETE FROM team_predictions")
             deleted_predictions = cursor.rowcount
 
+            # 모든 기존 team_metrics 데이터 삭제
+            cursor.execute("DELETE FROM team_metrics")
+            deleted_metrics = cursor.rowcount
+
             conn.commit()
-            logging.info(f"🗑️ Deleted all existing data: {deleted_features} team_features, {deleted_headcount} team_headcount, {deleted_models} regression_models, {deleted_params} regression_parameters, {deleted_definitions} team_feature_definitions, {deleted_predictions} team_predictions rows")
+            logging.info(f"🗑️ Deleted all existing data: {deleted_features} team_features, {deleted_headcount} team_headcount, {deleted_models} regression_models, {deleted_params} regression_parameters, {deleted_definitions} team_feature_definitions, {deleted_predictions} team_predictions, {deleted_metrics} team_metrics rows")
 
             teams_in_file = df_master[['HQ', '팀']].drop_duplicates()
             logging.info(f"✅ Will insert data for {len(teams_in_file)} teams")
@@ -264,6 +268,22 @@ class TeamService:
                         position_for_headcount,
                         headcount
                     ))
+
+                    # team_metrics 테이블에 F1~F9 값 저장 (업무지표조정 페이지용)
+                    for feature_col in feature_cols:
+                        if feature_col in feature_values:
+                            cursor.execute("""
+                                INSERT INTO team_metrics (
+                                    team_name, year, month, metric_category, metric_name, metric_value
+                                ) VALUES (?, ?, ?, ?, ?, ?)
+                            """, (
+                                team,
+                                year,
+                                month,
+                                'operation',
+                                feature_col,
+                                feature_values[feature_col]
+                            ))
 
                     saved_count += 1
 

@@ -235,8 +235,16 @@ const OrganizationSimulation: React.FC = () => {
       setRegressionParameters(allParameters);
 
       // 2. Team Metrics 설정
-      setTeamMetrics(data.team_metrics);
-      setAdjustedMetrics(data.team_metrics);
+      // team_metrics가 비어있으면 feature_definitions를 기반으로 기본값 0으로 초기화
+      const metrics = Object.keys(data.team_metrics).length > 0
+        ? data.team_metrics
+        : Object.keys(data.feature_definitions || {}).reduce((acc, key) => {
+            acc[key] = 0;
+            return acc;
+          }, {} as { [key: string]: number });
+
+      setTeamMetrics(metrics);
+      setAdjustedMetrics(metrics);
 
       // 2-1. Feature Definitions 설정 (F1, F2 -> 실제 이름)
       setFeatureDefinitions(data.feature_definitions || {});
