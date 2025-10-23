@@ -93,19 +93,16 @@ class CompanyWideService:
             df = df_raw.iloc[2:].reset_index(drop=True)
             df.columns = ['year'] + korean_columns
 
-            # 6. 조직에 맞는 컬럼 매핑 가져오기
+            # 6. 조직에 맞는 컬럼 매핑 가져오기 (참고용, 필수는 아님)
             column_mapping = get_column_mapping(organization)
 
-            # 7. 필수 컬럼 확인
-            missing_columns = [col for col in column_mapping.keys() if col not in df.columns]
-            if missing_columns:
-                raise ValueError(f"필수 컬럼 누락: {missing_columns}")
-
-            # 8. 데이터 타입 변환
+            # 7. 데이터 타입 변환
             df['year'] = pd.to_numeric(df['year'], errors='coerce')
 
-            for col in column_mapping.keys():
-                df[col] = pd.to_numeric(df[col], errors='coerce')
+            # year를 제외한 모든 컬럼을 numeric으로 변환 시도
+            for col in df.columns:
+                if col != 'year':
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
 
             # 8. 유효한 데이터만 필터링 (연도가 있는 행만)
             df = df.dropna(subset=['year'])
@@ -167,18 +164,43 @@ class CompanyWideService:
                     'year': year
                 }
 
-                # 조직별 컬럼 매핑
+                # 조직별 컬럼 매핑 (참고용)
                 column_mapping = get_column_mapping(organization)
+
+                # 모든 feature를 저장할 JSON 객체
+                features_dict = {}
+
+                # 기존 컬럼 매핑에 있는 컬럼은 기존 방식으로 저장 (호환성)
                 for kor_col, eng_col in column_mapping.items():
-                    value = row[kor_col]
-                    # NaN 처리
-                    if pd.isna(value):
-                        data[eng_col] = None
-                    else:
-                        if eng_col == 'headcount':
-                            data[eng_col] = int(value)
+                    if kor_col in row.index:
+                        value = row[kor_col]
+                        # NaN 처리
+                        if pd.isna(value):
+                            data[eng_col] = None
+                            features_dict[kor_col] = None
                         else:
-                            data[eng_col] = float(value)
+                            if eng_col == 'headcount':
+                                data[eng_col] = int(value)
+                                features_dict[kor_col] = int(value)
+                            else:
+                                data[eng_col] = float(value)
+                                features_dict[kor_col] = float(value)
+
+                # 매핑에 없는 나머지 컬럼들도 features_dict에 추가
+                for col in row.index:
+                    if col != 'year' and col not in column_mapping:
+                        value = row[col]
+                        if pd.isna(value):
+                            features_dict[col] = None
+                        else:
+                            try:
+                                features_dict[col] = float(value)
+                            except:
+                                features_dict[col] = str(value)
+
+                # JSON으로 변환하여 저장
+                import json
+                data['features_json'] = json.dumps(features_dict, ensure_ascii=False)
 
                 if exists:
                     # UPDATE
@@ -231,26 +253,39 @@ class CompanyWideService:
             organization: 'R&A' or 'tonggibon'
 
         Returns:
-            Feature 데이터 리스트
+            Feature 데이터 리스트 (features_json을 파싱하여 반환)
         """
         try:
+            import json
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT *
+                SELECT year, headcount, features_json
                 FROM company_wide_features
                 WHERE organization = ?
                 ORDER BY year
             """, (organization,))
 
-            columns = [desc[0] for desc in cursor.description]
             rows = cursor.fetchall()
             conn.close()
 
             result = []
-            for row in rows:
-                data = dict(zip(columns, row))
+            for year, headcount, features_json_str in rows:
+                # 기본 데이터
+                data = {
+                    'year': year,
+                    'headcount': headcount
+                }
+
+                # features_json 파싱하여 추가
+                if features_json_str:
+                    features = json.loads(features_json_str)
+                    # '정원'과 'headcount'는 제외 (중복 방지)
+                    for key, value in features.items():
+                        if key not in ['정원', 'headcount']:
+                            data[key] = value
+
                 result.append(data)
 
             return result

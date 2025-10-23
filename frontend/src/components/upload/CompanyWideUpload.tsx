@@ -67,6 +67,7 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
   const [storedData, setStoredData] = useState<StoredDataRow[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [dynamicColumns, setDynamicColumns] = useState<string[]>([]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -175,7 +176,19 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
       }
 
       const result = await response.json();
-      setStoredData(result.data || []);
+      const data = result.data || [];
+      setStoredData(data);
+
+      // 동적 컬럼 추출 (year, headcount 제외)
+      if (data.length > 0) {
+        const allKeys = Object.keys(data[0]);
+        const featureColumns = allKeys.filter(
+          key => !['year', 'headcount'].includes(key)
+        );
+        setDynamicColumns(featureColumns);
+      } else {
+        setDynamicColumns([]);
+      }
     } catch (err) {
       console.error('Error fetching stored data:', err);
     } finally {
@@ -261,7 +274,7 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
             <AlertDescription className="text-sm space-y-1">
               <p>• 형식: Excel (.xlsx)</p>
               <p>• 시트: master</p>
-              <p>• 필수 컬럼: 16개 (외부환경 지표 10개, 내부지표 5개, 정원)</p>
+              <p>• 필수 컬럼: year (연도), 정원 - 나머지 컬럼은 자유롭게 추가 가능</p>
               <p>• 데이터: 2021년부터 최신년도까지</p>
             </AlertDescription>
           </Alert>
@@ -371,20 +384,9 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky left-0 bg-white z-10">연도</TableHead>
-                    <TableHead>글로벌 EV시장성장률</TableHead>
-                    <TableHead>글로벌 자동차 시장성장률</TableHead>
-                    <TableHead>국내 자동차 수출액 증가율</TableHead>
-                    <TableHead>국내 자동차부품 수출액 증가율</TableHead>
-                    <TableHead>GDP성장률</TableHead>
-                    <TableHead>소비자물가상승률</TableHead>
-                    <TableHead>환율변화율(원화기준)</TableHead>
-                    <TableHead>글로벌물류비지수</TableHead>
-                    <TableHead>국제유가</TableHead>
-                    <TableHead>인건비 증감률</TableHead>
-                    <TableHead>{organization === 'R&A' ? '매출액 증감률' : '매출액 증가율'}</TableHead>
-                    <TableHead>{organization === 'R&A' ? '영업이익 증감률' : '영업이익 증가율'}</TableHead>
-                    <TableHead>{organization === 'R&A' ? '가동률 증감률' : '연구개발비용 증감률'}</TableHead>
-                    <TableHead>{organization === 'R&A' ? '가동일수 증감률' : '연구개발정부보조금 증감률'}</TableHead>
+                    {dynamicColumns.map((col) => (
+                      <TableHead key={col}>{col}</TableHead>
+                    ))}
                     <TableHead>정원</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -392,20 +394,13 @@ export const CompanyWideUpload: React.FC<CompanyWideUploadProps> = ({
                   {storedData.map((row, idx) => (
                     <TableRow key={idx}>
                       <TableCell className="sticky left-0 bg-white font-medium">{row.year}</TableCell>
-                      <TableCell>{row.ev_growth_gl?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.v_growth_gl?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.v_export_kr?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.vp_export_kr?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.gdp_growth_kr?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.cpi_kr?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.exchange_rate_change_krw?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.scm_index_gl?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.oil_gl?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.labor_cost?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.revenue?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.profit?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.operating_rate?.toFixed(2) ?? '-'}</TableCell>
-                      <TableCell>{row.operating_date?.toFixed(2) ?? '-'}</TableCell>
+                      {dynamicColumns.map((col) => {
+                        const value = row[col];
+                        const displayValue = value != null
+                          ? (typeof value === 'number' ? value.toFixed(2) : value)
+                          : '-';
+                        return <TableCell key={col}>{displayValue}</TableCell>;
+                      })}
                       <TableCell>{row.headcount ?? '-'}</TableCell>
                     </TableRow>
                   ))}

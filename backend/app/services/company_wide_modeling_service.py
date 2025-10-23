@@ -97,22 +97,42 @@ class CompanyWideModelingService:
             raise ValueError(f"Invalid organization: {organization}")
 
         try:
+            import json
             conn = sqlite3.connect(DB_PATH)
 
             query = """
-                SELECT *
+                SELECT year, headcount, features_json
                 FROM company_wide_features
                 WHERE organization = ?
                 ORDER BY year
             """
 
-            df = pd.read_sql_query(query, conn, params=(organization,))
+            cursor = conn.cursor()
+            cursor.execute(query, (organization,))
+            rows = cursor.fetchall()
             conn.close()
 
-            if len(df) == 0:
+            if len(rows) == 0:
                 raise ValueError(f"No data found for organization: {organization}")
 
-            logging.info(f"✅ Loaded {len(df)} rows for {organization}")
+            # features_json에서 feature 추출하여 DataFrame 생성
+            data_list = []
+            for year, headcount, features_json_str in rows:
+                row_data = {'year': year, 'headcount': headcount}
+
+                # features_json 파싱
+                if features_json_str:
+                    features = json.loads(features_json_str)
+                    # JSON에서 '정원'과 'headcount' 제외 (중복 방지)
+                    for key, value in features.items():
+                        if key not in ['정원', 'headcount']:
+                            row_data[key] = value
+
+                data_list.append(row_data)
+
+            df = pd.DataFrame(data_list)
+
+            logging.info(f"✅ Loaded {len(df)} rows for {organization}, {len(df.columns)-2} features from JSON")
             return df
 
         except Exception as e:

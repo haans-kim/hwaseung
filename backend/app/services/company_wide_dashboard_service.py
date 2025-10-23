@@ -135,33 +135,59 @@ class CompanyWideDashboardService:
             result_base = pd.read_sql_query(query_base, conn, params=(organization,))
             headcount_base = result_base.iloc[0]['headcount'] if len(result_base) > 0 else None
 
-            # 다음 년도 features 가져오기
+            # 다음 년도 features 가져오기 (없으면 현재 년도 features 사용)
             query_next = f"""
-                SELECT *
+                SELECT year, headcount, features_json
                 FROM company_wide_features
                 WHERE organization = ? AND year = {next_year}
                 LIMIT 1
             """
-            data_next = pd.read_sql_query(query_next, conn, params=(organization,))
+            result_next = pd.read_sql_query(query_next, conn, params=(organization,))
+
+            # 다음 년도 데이터가 없으면 현재 년도 features 사용
+            if len(result_next) == 0:
+                query_next = f"""
+                    SELECT year, headcount, features_json
+                    FROM company_wide_features
+                    WHERE organization = ? AND year = {current_year}
+                    LIMIT 1
+                """
+                result_next = pd.read_sql_query(query_next, conn, params=(organization,))
+                logging.warning(f"⚠️ No {next_year} features, using {current_year} features for prediction")
 
             # 그 다음 년도 features 가져오기 (있을 경우)
             query_following = f"""
-                SELECT *
+                SELECT year, headcount, features_json
                 FROM company_wide_features
                 WHERE organization = ? AND year = {following_year}
                 LIMIT 1
             """
-            data_following = pd.read_sql_query(query_following, conn, params=(organization,))
+            result_following = pd.read_sql_query(query_following, conn, params=(organization,))
             conn.close()
 
-            # 컬럼 제거 함수
+            # features_json을 파싱하여 DataFrame 생성
+            def parse_features_json_to_df(result_df):
+                if len(result_df) == 0:
+                    return pd.DataFrame()
+
+                import json
+                row = result_df.iloc[0]
+                features_json_str = row.get('features_json', None)
+
+                if not features_json_str:
+                    return pd.DataFrame()
+
+                features = json.loads(features_json_str)
+                # '정원'과 'headcount' 제외
+                feature_dict = {k: v for k, v in features.items() if k not in ['정원', 'headcount']}
+                return pd.DataFrame([feature_dict])
+
+            data_next = parse_features_json_to_df(result_next)
+            data_following = parse_features_json_to_df(result_following)
+
+            # 컬럼 제거 함수 (이제는 이미 정제된 데이터이므로 그대로 사용)
             def prepare_prediction_data(df):
-                df = df.copy()
-                cols_to_drop = ['id', 'organization', 'year', 'headcount', 'created_at', 'updated_at']
-                for col in cols_to_drop:
-                    if col in df.columns:
-                        df = df.drop(columns=[col])
-                return df
+                return df.copy()
 
             # 다음 년도 예측
             prediction_next = None
