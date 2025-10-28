@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <div id="result"></div>
+
+    <script>
+        // 현재 호스트 기반 API URL
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        const apiUrl = `${protocol}//${hostname}:8000`;
+
+        document.getElementById('result').innerHTML = `
+            <p><strong>Current Location:</strong> ${window.location.href}</p>
+            <p><strong>API URL:</strong> ${apiUrl}</p>
+            <p><strong>Testing API...</strong></p>
+        `;
+
+        // API 테스트
+        fetch(`${apiUrl}/health`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML += `
+                    <p style="color: green;"><strong>✓ Health Check Success:</strong> ${JSON.stringify(data)}</p>
+                `;
+
+                // Features API 테스트
+                return fetch(`${apiUrl}/api/company-wide/features?organization=R%26A`);
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML += `
+                    <p style="color: green;"><strong>✓ Features API Success:</strong> ${data.count} rows found</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML += `
+                    <p style="color: red;"><strong>✗ Error:</strong> ${error.message}</p>
+                `;
+            });
+    </script>
+</body>
+</html>
