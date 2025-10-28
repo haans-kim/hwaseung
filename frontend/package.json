@@ -2,6 +2,8 @@
   "name": "hwaseung",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
+  "homepage": "./",
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",
@@ -23,6 +25,8 @@
     "chartjs-plugin-datalabels": "^2.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "electron-is-dev": "^2.0.0",
+    "express": "^4.18.2",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
@@ -39,7 +43,11 @@
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron": "tsc -p electron/tsconfig.json && electron .",
+    "electron:dev": "tsc -p electron/tsconfig.json && set ELECTRON_IS_DEV=1 && electron .",
+    "electron:build": "npm run build && tsc -p electron/tsconfig.json && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
   "eslintConfig": {
     "extends": [
@@ -60,9 +68,53 @@
     ]
   },
   "devDependencies": {
+    "@types/express": "^4.17.17",
     "@types/sql.js": "^1.4.9",
     "autoprefixer": "^10.4.21",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
     "postcss": "^8.5.6",
     "react-app-rewired": "^2.2.1"
+  },
+  "build": {
+    "appId": "com.hwaseung.dashboard",
+    "productName": "Hwaseung Dashboard",
+    "directories": {
+      "buildResources": "public"
+    },
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "python-runtime",
+        "to": "python-runtime",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": ["**/*", "!venv/**", "!__pycache__/**", "!*.pyc", "!.env"]
+      },
+      {
+        "from": "../hwaseung_RnD.db",
+        "to": "hwaseung_RnD.db"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/favicon.ico"
+    },
+    "portable": {
+      "artifactName": "Hwaseung-Dashboard-${version}-portable.exe"
+    }
   }
 }
