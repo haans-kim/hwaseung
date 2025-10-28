@@ -122,8 +122,8 @@ class CompanyWideDashboardService:
             next_year = current_year + 1
             following_year = next_year + 1
 
-            print(f"📅 Latest year with headcount: {current_year}")
-            print(f"📅 Predicting for: {next_year}")
+            print(f"Latest year with headcount: {current_year}")
+            print(f"Predicting for: {next_year}")
 
             # 기준 년도 headcount 가져오기
             query_base = f"""
@@ -234,7 +234,7 @@ class CompanyWideDashboardService:
 
                 if result and result[0] is not None:
                     r2_score = result[0]
-                    logging.info(f"✅ Loaded R² from DB for {organization}: {r2_score:.4f}")
+                    logging.info(f"Loaded R² from DB for {organization}: {r2_score:.4f}")
                 else:
                     # DB에 없으면 현재 메모리의 metrics 시도
                     try:

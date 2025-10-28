@@ -201,6 +201,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Claude Code
+#  Claude Code settings and local configuration
+.claude/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
@@ -245,4 +249,11 @@ frontend/.env.test.local
 frontend/.env.production.local
 
 # Vercel
-.vercel 
+.vercel
+
+# Database files
+# - 프로젝트 루트의 hwaseung_RnD.db는 Git에서 추적 (실제 데이터)
+# - backend에서는 db_config.py가 자동으로 경로 찾음
+backend/data/*.db
+*.db-journal
+*.db-wal

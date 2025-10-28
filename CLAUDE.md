@@ -36,10 +36,23 @@ npm test      # Run tests
 ### Other Commands
 ```bash
 make stop         # Stop all services
+make setup-links  # Setup database symlinks (run after git clone)
 make logs         # View backend logs
 make check-ports  # Check port status
 make clean        # Reset development environment
 ```
+
+### Database Setup (Important!)
+프로젝트를 처음 클론하거나 새 환경에서 시작할 때:
+```bash
+./setup-dev-links.sh  # 또는 make setup-links
+```
+
+이 스크립트는 다음 심볼릭 링크를 생성합니다:
+- `backend/hwaseung_RnD.db` → `hwaseung_RnD.db`
+- `frontend/public/hwaseung_RnD.db` → `hwaseung_RnD.db`
+
+**중요**: Git은 이 심볼릭 링크들을 추적하지 않습니다 (`.gitignore`에 포함). Mac에서 Windows로, 또는 Windows에서 Mac으로 이동할 때 반드시 이 스크립트를 실행해야 합니다.
 
 ### Docker Commands
 ```bash
@@ -114,16 +127,7 @@ docker-compose logs -f  # View logs
 
 ## Deployment
 
-### Frontend (Vercel)
-- Auto-deploys from Git repository
-- Root directory: `/frontend`
-- Build command: `npm run build`
-- Output directory: `build`
-
-### Backend Options
-- Railway (recommended) - Supports Python and persistent storage
-- Render - Good for FastAPI apps
-- Docker deployment supported via included Dockerfiles
+이 프로젝트는 현재 로컬 개발용으로만 사용됩니다.
 
 ## Testing Approach
 - Frontend: React Testing Library (`npm test`)

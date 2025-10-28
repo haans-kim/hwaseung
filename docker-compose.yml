@@ -7,11 +7,8 @@ services:
       dockerfile: ./frontend/Dockerfile
     ports:
       - "3000:3000"
-    # environment 변수 제거 - api.ts의 동적 감지 로직이 더 유연함
-    # 브라우저에서 현재 호스트의 8000 포트로 자동 연결
-    volumes:
-      # DB 파일을 Frontend의 public 폴더에 마운트 (브라우저에서 접근 가능)
-      - ./hwaseung_RnD.db:/app/build/hwaseung_RnD.db:ro
+    # Frontend는 backend API를 통해서만 데이터 접근
+    # DB 파일 직접 마운트 불필요
     depends_on:
       - backend
     networks:
@@ -24,10 +21,11 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - NETWORK_MODE=external
+      - DB_PATH=/app/hwaseung_RnD.db
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/data:/app/data
-      - ./hwaseung_RnD.db:/app/hwaseung_RnD.db
+      - ./hwaseung_RnD.db:/app/hwaseung_RnD.db:ro
     networks:
       - app-network
 

@@ -59,18 +59,18 @@ async def get_headcount_analysis():
         for row in cursor.fetchall():
             fte_data.append({
                 '팀명': row[0],
-                'FTE_전체': float(row[1]),
-                'FTE_책임': float(row[2]),
-                'FTE_선임': float(row[3]),
-                'FTE_사원': float(row[4]),
-                '인원수_전체': int(row[5]),
-                '인원수_책임': int(row[6]),
-                '인원수_선임': int(row[7]),
-                '인원수_사원': int(row[8]),
-                'FTE_per_인원_전체': float(row[9]),
-                'FTE_per_인원_책임': float(row[10]),
-                'FTE_per_인원_선임': float(row[11]),
-                'FTE_per_인원_사원': float(row[12])
+                'FTE_전체': float(row[1]) if row[1] is not None else 0.0,
+                'FTE_책임': float(row[2]) if row[2] is not None else 0.0,
+                'FTE_선임': float(row[3]) if row[3] is not None else 0.0,
+                'FTE_사원': float(row[4]) if row[4] is not None else 0.0,
+                '인원수_전체': int(row[5]) if row[5] is not None else 0,
+                '인원수_책임': int(row[6]) if row[6] is not None else 0,
+                '인원수_선임': int(row[7]) if row[7] is not None else 0,
+                '인원수_사원': int(row[8]) if row[8] is not None else 0,
+                'FTE_per_인원_전체': float(row[9]) if row[9] is not None else 0.0,
+                'FTE_per_인원_책임': float(row[10]) if row[10] is not None else 0.0,
+                'FTE_per_인원_선임': float(row[11]) if row[11] is not None else 0.0,
+                'FTE_per_인원_사원': float(row[12]) if row[12] is not None else 0.0
             })
 
         conn.close()

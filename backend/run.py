@@ -23,7 +23,7 @@ if __name__ == "__main__":
         if port_idx + 1 < len(sys.argv):
             port = int(sys.argv[port_idx + 1])
 
-    print(f"🚀 Starting server on {host}:{port}")
+    print(f"Starting server on {host}:{port}")
 
     uvicorn.run(
         "app.main:app",
