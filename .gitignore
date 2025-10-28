@@ -248,6 +248,13 @@ frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
 
+# Electron build artifacts
+frontend/dist-electron/
+frontend/release/
+frontend/python-runtime/
+frontend/electron/*.js
+frontend/electron/*.js.map
+
 # Vercel
 .vercel
 

@@ -85,7 +85,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       webSecurity: false, // localhost 허용
     },
-    title: 'Hwaseung Dashboard',
+    title: 'SambioWage',
     show: true,
   });
 
@@ -131,7 +131,7 @@ function startBackend() {
 
     // Backend 스크립트 경로
     const backendScript = app.isPackaged
-      ? path.join(process.resourcesPath, 'backend', 'run.py')
+      ? path.join(process.resourcesPath, 'app', 'backend', 'run.py')
       : path.join(appDataDir, 'backend', 'run.py');
 
     // Backend 디렉토리
@@ -231,7 +231,7 @@ function startFrontend() {
 
     const appDataDir = getAppDataDir();
     const buildPath = app.isPackaged
-      ? path.join(process.resourcesPath, 'app', 'build')
+      ? path.join(process.resourcesPath, 'app', 'frontend', 'build')
       : path.join(appDataDir, 'frontend', 'build');
 
     log('Frontend build path:', buildPath);
@@ -254,9 +254,9 @@ function startFrontend() {
       res.sendFile(path.join(buildPath, 'index.html'));
     });
 
-    // 서버 시작 - 포트 3001 사용
-    frontendServer = expressApp.listen(3001, '127.0.0.1', () => {
-      log('Frontend server started on http://127.0.0.1:3001');
+    // 서버 시작
+    frontendServer = expressApp.listen(3000, () => {
+      log('Frontend server started on http://localhost:3000');
     });
 
     frontendServer.on('error', (error: any) => {
@@ -283,9 +283,9 @@ async function waitForServers() {
 
   // BrowserWindow에 로드
   if (mainWindow && !mainWindow.isDestroyed()) {
-    log('Loading URL: http://localhost:3001');
+    log('Loading URL: http://localhost:3000');
     try {
-      await mainWindow.loadURL('http://localhost:3001');
+      await mainWindow.loadURL('http://localhost:3000');
       log('✓ URL loaded successfully');
       return;
     } catch (error: any) {
@@ -295,7 +295,7 @@ async function waitForServers() {
       log('Retrying URL load in 5 seconds...');
       await new Promise(resolve => setTimeout(resolve, 5000));
       try {
-        await mainWindow.loadURL('http://localhost:3001');
+        await mainWindow.loadURL('http://localhost:3000');
         log('✓ URL loaded successfully on retry');
         return;
       } catch (retryError: any) {
