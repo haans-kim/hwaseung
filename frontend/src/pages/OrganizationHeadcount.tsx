@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/card';
 import { ChevronRight, Home } from 'lucide-react';
-import initSqlJs from 'sql.js';
 import { FTEStatistics } from '../components/FTEStatistics';
+import { API_BASE_URL } from '../lib/api';
 
 interface OrganizationNode {
   회사: string;
@@ -83,41 +83,32 @@ const OrganizationHeadcount: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
 
-  // 데이터베이스에서 데이터 로드
+  // API에서 데이터 로드
   useEffect(() => {
-    const loadDatabase = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
 
-        // sql.js 초기화
-        const SQL = await initSqlJs({
-          locateFile: (file: string) => `https://sql.js.org/dist/${file}`
-        });
+        // Backend API에서 조직 및 FTE 데이터 가져오기
+        const response = await fetch(`${API_BASE_URL}/api/organization/headcount-analysis`);
 
-        // 데이터베이스 파일 로드
-        const response = await fetch(`/hwaseung_RnD.db?t=${Date.now()}`);
-        const buffer = await response.arrayBuffer();
-        const db = new SQL.Database(new Uint8Array(buffer));
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
 
-        // 조직 데이터 조회
-        const orgResult = db.exec(`
-          SELECT 회사, 본부, 담당_사업단_센터, 실, 팀
-          FROM organization
-          WHERE 팀 IS NOT NULL AND 팀 != ''
-        `);
+        const data = await response.json();
 
-        if (orgResult.length > 0) {
-          const values = orgResult[0].values;
-
-          const orgData: OrganizationNode[] = values.map((row: any[]) => ({
-            회사: row[0],
-            본부: row[1],
-            담당_사업단_센터: row[2],
-            실: row[3],
-            팀: row[4]
+        // 조직 데이터 설정
+        if (data.organization && data.organization.length > 0) {
+          const orgData: OrganizationNode[] = data.organization.map((org: any) => ({
+            회사: org.회사,
+            본부: org.본부,
+            담당_사업단_센터: org.담당_사업단_센터,
+            실: org.실,
+            팀: org.팀
           }));
 
-          console.log('✅ Organization data loaded:', orgData.length, 'rows');
+          console.log('✅ Organization data loaded from API:', orgData.length, 'rows');
           setOrganizationData(orgData);
 
           // 회사 목록 추출
@@ -127,57 +118,55 @@ const OrganizationHeadcount: React.FC = () => {
           console.log('✅ Companies:', uniqueCompanies);
           setCompanies(uniqueCompanies);
         } else {
-          console.warn('⚠️ No organization data found');
+          console.warn('⚠️ No organization data found in API response');
         }
 
-        // FTE 데이터 조회
-        const fteResult = db.exec(`
-          SELECT
-            팀명, 회사,
-            FTE_전체, FTE_책임, FTE_선임, FTE_사원,
-            인원수_전체, 인원수_책임, 인원수_선임, 인원수_사원,
-            FTE_per_인원_전체, FTE_per_인원_책임, FTE_per_인원_선임, FTE_per_인원_사원
-          FROM fte
-        `);
+        // FTE 데이터 설정
+        if (data.fte && data.fte.length > 0) {
+          // 조직 데이터로부터 팀명->회사 매핑 생성
+          const teamToCompanyMap = new Map<string, string>();
+          if (data.organization && data.organization.length > 0) {
+            data.organization.forEach((org: any) => {
+              if (org.팀 && org.회사) {
+                teamToCompanyMap.set(org.팀, org.회사);
+              }
+            });
+          }
 
-        if (fteResult.length > 0) {
-          const fteValues = fteResult[0].values;
-
-          const fteDataArray: FTEData[] = fteValues.map((row: any[]) => ({
-            팀명: row[0],
-            회사: row[1],
-            FTE_전체: row[2] || 0,
-            FTE_책임: row[3] || 0,
-            FTE_선임: row[4] || 0,
-            FTE_사원: row[5] || 0,
-            인원수_전체: row[6] || 0,
-            인원수_책임: row[7] || 0,
-            인원수_선임: row[8] || 0,
-            인원수_사원: row[9] || 0,
-            FTE_per_인원_전체: row[10] || 0,
-            FTE_per_인원_책임: row[11] || 0,
-            FTE_per_인원_선임: row[12] || 0,
-            FTE_per_인원_사원: row[13] || 0
+          const fteDataArray: FTEData[] = data.fte.map((fte: any) => ({
+            팀명: fte.팀명,
+            회사: teamToCompanyMap.get(fte.팀명) || '', // 조직 데이터에서 회사 정보 찾기
+            FTE_전체: fte.FTE_전체 || 0,
+            FTE_책임: fte.FTE_책임 || 0,
+            FTE_선임: fte.FTE_선임 || 0,
+            FTE_사원: fte.FTE_사원 || 0,
+            인원수_전체: fte.인원수_전체 || 0,
+            인원수_책임: fte.인원수_책임 || 0,
+            인원수_선임: fte.인원수_선임 || 0,
+            인원수_사원: fte.인원수_사원 || 0,
+            FTE_per_인원_전체: fte.FTE_per_인원_전체 || 0,
+            FTE_per_인원_책임: fte.FTE_per_인원_책임 || 0,
+            FTE_per_인원_선임: fte.FTE_per_인원_선임 || 0,
+            FTE_per_인원_사원: fte.FTE_per_인원_사원 || 0
           }));
 
-          console.log('✅ FTE data loaded:', fteDataArray.length, 'rows');
+          console.log('✅ FTE data loaded from API:', fteDataArray.length, 'rows');
           console.log('Sample FTE data:', fteDataArray[0]);
+          console.log('Team to company mapping:', teamToCompanyMap.size, 'entries');
           setFTEData(fteDataArray);
         } else {
-          console.warn('⚠️ No FTE data found');
+          console.warn('⚠️ No FTE data found in API response');
         }
 
-        // 데이터베이스 연결 종료
-        db.close();
         setLoading(false);
       } catch (error) {
-        console.error('❌ Failed to load database:', error);
+        console.error('❌ Failed to load data from API:', error);
         console.error('Error details:', error instanceof Error ? error.message : String(error));
         setLoading(false);
       }
     };
 
-    loadDatabase();
+    loadData();
   }, []);
 
   // 회사 선택시 본부 목록 업데이트

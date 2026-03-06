@@ -24,10 +24,11 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - NETWORK_MODE=external
+      - DB_PATH=/app/hwaseung_RnD.db
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/data:/app/data
-      - ./hwaseung_RnD.db:/app/hwaseung_RnD.db
+      - ./hwaseung_RnD.db:/app/hwaseung_RnD.db:ro
     networks:
       - app-network
 
