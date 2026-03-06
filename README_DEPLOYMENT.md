@@ -41,7 +41,7 @@ Railway 대시보드에서 다음 환경 변수 추가:
 ```
 ENVIRONMENT=production
 PORT=8000
-CORS_ORIGINS=https://your-frontend.vercel.app,http://localhost:3000
+CORS_ORIGINS=https://your-frontend.vercel.app,http://localhost:2000
 ```
 
 ### 4. 영구 스토리지 설정

@@ -12,7 +12,7 @@ VSCode가 300GB 메모리를 사용하며 죽는 문제를 해결하기 위한 �
 - 데이터 증강 시 원본 + 증강본 모두 메모리 보관
 
 ### 2. Organization별 중복 저장
-- R&A, tonggibon 각각 별도로 모델 + 실험 + 데이터 저장
+- R*A, tonggibon 각각 별도로 모델 + 실험 + 데이터 저장
 - 각 organization마다 메모리 사용량 2배 증가
 
 ## 적용된 해결책
@@ -110,14 +110,14 @@ def train_specific_model(self, model_name: str):
 # Setup → Compare → Train 시 자동 정리
 curl -X POST http://localhost:8000/api/company-wide/modeling/train \
   -H "Content-Type: application/json" \
-  -d '{"organization": "R&A", "model_name": "lr"}'
+  -d '{"organization": "R*A", "model_name": "lr"}'
 ```
 
 #### 방법 2: 수동 정리
 작업 완료 후 명시적으로 정리:
 ```bash
 # 특정 organization 정리
-curl -X DELETE "http://localhost:8000/api/company-wide/modeling/clear?organization=R&A"
+curl -X DELETE "http://localhost:8000/api/company-wide/modeling/clear?organization=R*A"
 
 # 전체 정리
 curl -X DELETE "http://localhost:8000/api/company-wide/modeling/clear"
@@ -129,13 +129,13 @@ curl -X DELETE "http://localhost:8000/api/company-wide/modeling/clear"
 from app.services.company_wide_modeling_service import company_wide_modeling_service
 
 # 모델 학습
-company_wide_modeling_service.train_model('R&A', 'lr')
+company_wide_modeling_service.train_model('R*A', 'lr')
 
 # 메모리 정리 (자동 실행되지만 필요시 수동 호출 가능)
-company_wide_modeling_service.cleanup_after_training('R&A')
+company_wide_modeling_service.cleanup_after_training('R*A')
 
 # 작업 완료 후 전체 정리
-company_wide_modeling_service.clear_models('R&A')
+company_wide_modeling_service.clear_models('R*A')
 ```
 
 ## 테스트 스크립트 수정 권장사항
@@ -184,7 +184,7 @@ curl -X DELETE "http://localhost:8000/api/company-wide/modeling/clear"
 ```python
 # 큰 증강 크기 대신 적당한 크기 사용
 SetupRequest(
-    organization="R&A",
+    organization="R*A",
     use_augmentation=True,
     target_size=100  # 200 대신 100으로 줄임
 )

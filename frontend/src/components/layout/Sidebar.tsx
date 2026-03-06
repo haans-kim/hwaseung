@@ -22,7 +22,7 @@ const navigation: NavItem[] = [
     name: '전사 적정인력 산정/예측',
     isGroup: true,
     children: [
-      { name: 'R&A', href: '/dashboard/rna' },
+      { name: 'R*A', href: '/dashboard/rna' },
       { name: '통합기술본부', href: '/dashboard/tonggibon' }
     ]
   },

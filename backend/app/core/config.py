@@ -8,10 +8,10 @@ class Settings(BaseSettings):
     
     # CORS 설정
     ALLOWED_HOSTS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:3001", 
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
+        "http://localhost:2000",
+        "http://localhost:2001",
+        "http://127.0.0.1:2000",
+        "http://127.0.0.1:2001",
         "*"  # 개발 환경에서 모든 도메인 허용
     ]
     

@@ -906,7 +906,7 @@ class TeamService:
                         if team_name not in valid_teams:
                             continue
 
-                        company = row.get('HQ', '화승')
+                        company = row.get('HQ', '')
 
                         # 기존 feature_definitions 삭제
                         cursor.execute("DELETE FROM team_feature_definitions WHERE team = ?", (team_name,))

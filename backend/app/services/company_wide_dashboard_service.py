@@ -1,5 +1,5 @@
 """
-전사 적정인력 산정 Dashboard 서비스 (R&A, tonggibon)
+전사 적정인력 산정 Dashboard 서비스 (R*A, tonggibon)
 """
 import pandas as pd
 import numpy as np
@@ -38,7 +38,7 @@ class CompanyWideDashboardService:
 
         # organization별 내부 지표 라벨
         self.organization_labels = {
-            'R&A': {
+            'R*A': {
                 'revenue': '매출액 증감률',
                 'profit': '영업이익 증감률',
                 'operating_rate': '가동률 증감률',
@@ -85,7 +85,7 @@ class CompanyWideDashboardService:
         - 예: 2024년이 최신 → 2025년 예측, 2025년이 최신 → 2026년 예측
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
 
         Returns:
             예측 결과
@@ -292,7 +292,7 @@ class CompanyWideDashboardService:
         Permutation Importance 계산
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
             top_n: 상위 N개 feature
 
         Returns:
@@ -381,7 +381,7 @@ class CompanyWideDashboardService:
         변수 조정 시뮬레이션
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
             variables: 조정할 변수 딕셔너리
 
         Returns:
@@ -449,7 +449,7 @@ class CompanyWideDashboardService:
         트렌드 데이터 (과거 + 예측)
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
 
         Returns:
             트렌드 데이터

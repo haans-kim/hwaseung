@@ -5,13 +5,13 @@ from datetime import datetime
 
 DB_PATH = '/Users/hanskim/Projects/Hwaseung/hwaseung_RnD.db'
 ORG_FILE = '/Users/hanskim/Projects/Hwaseung/data/화승 조직도 정리_250925.xlsx'
-FTE_RA_FILE = '/Users/hanskim/Projects/Hwaseung/data/FTE계산_R&A_250924.xlsx'
+FTE_RA_FILE = '/Users/hanskim/Projects/Hwaseung/data/FTE계산_R*A_250924.xlsx'
 FTE_CORP_FILE = '/Users/hanskim/Projects/Hwaseung/data/FTE계산_통합기술본부_250924.xlsx'
 
 def update_organization_table(conn):
     """
     조직도 데이터 업데이트
-    - R&A 시트: 30개 팀
+    - R*A 시트: 30개 팀
     - 통합기술본부 시트: 20개 팀
     - 총 50개 행 (중복 8개 팀 포함)
     """
@@ -24,10 +24,10 @@ def update_organization_table(conn):
     conn.commit()
     print("기존 organization 데이터 삭제 완료")
 
-    org_ra = pd.read_excel(ORG_FILE, sheet_name='R&A')
+    org_ra = pd.read_excel(ORG_FILE, sheet_name='R*A')
     org_corp = pd.read_excel(ORG_FILE, sheet_name='통합기술본부')
 
-    print(f"\nR&A 시트: {len(org_ra)}개 팀")
+    print(f"\nR*A 시트: {len(org_ra)}개 팀")
     print(f"통합기술본부 시트: {len(org_corp)}개 팀")
 
     now = datetime.now().isoformat()
@@ -152,7 +152,7 @@ def parse_fte_data(file_path, company_name):
 def update_fte_table(conn):
     """
     FTE 데이터 업데이트
-    - R&A: 31개 팀
+    - R*A: 31개 팀
     - 화승 Corp.: 20개 팀
     - 중복 8개 팀은 회사별로 별도 행으로 저장
     """
@@ -165,10 +165,10 @@ def update_fte_table(conn):
     conn.commit()
     print("기존 FTE 데이터 삭제 완료")
 
-    fte_ra = parse_fte_data(FTE_RA_FILE, '화승 R&A')
+    fte_ra = parse_fte_data(FTE_RA_FILE, '화승 R*A')
     fte_corp = parse_fte_data(FTE_CORP_FILE, '화승 Corp.')
 
-    print(f"\nR&A FTE: {len(fte_ra)}개 팀")
+    print(f"\nR*A FTE: {len(fte_ra)}개 팀")
     print(f"Corp FTE: {len(fte_corp)}개 팀")
 
     now = datetime.now().isoformat()

@@ -1,5 +1,5 @@
 """
-전사 적정인력 산정 모델링 서비스 (R&A, tonggibon)
+전사 적정인력 산정 모델링 서비스 (R*A, tonggibon)
 PyCaret 기반 회귀 모델링
 """
 import pandas as pd
@@ -32,37 +32,37 @@ from app.services.augmentation_service import augmentation_service
 DB_PATH = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), '../../hwaseung_RnD.db'))
 
 class CompanyWideModelingService:
-    """전사 적정인력 산정 모델링 (R&A, tonggibon)"""
+    """전사 적정인력 산정 모델링 (R*A, tonggibon)"""
 
     def __init__(self):
         # Organization별 모델 및 실험 관리
         self.models = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
         self.experiments = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
         self.is_setup_complete = {
-            'R&A': False,
+            'R*A': False,
             'tonggibon': False
         }
         self.feature_names = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
         self.model_results = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
         # 증강된 데이터 저장 (선택적)
         self.augmented_data = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
         self.augmentation_info = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
 
@@ -88,12 +88,12 @@ class CompanyWideModelingService:
         DB에서 organization별 데이터 로드
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
 
         Returns:
             DataFrame with features and target (headcount)
         """
-        if organization not in ['R&A', 'tonggibon']:
+        if organization not in ['R*A', 'tonggibon']:
             raise ValueError(f"Invalid organization: {organization}")
 
         try:
@@ -144,7 +144,7 @@ class CompanyWideModelingService:
         모델링을 위한 데이터 준비 (메모리 안전)
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
 
         Returns:
             준비된 DataFrame과 정보 딕셔너리
@@ -220,7 +220,7 @@ class CompanyWideModelingService:
         데이터 증강
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
             target_size: 목표 데이터 크기 (기본 200)
             method: 증강 방법 ('auto', 'noise', 'mixup')
 
@@ -260,7 +260,7 @@ class CompanyWideModelingService:
         데이터 증강 후 저장 (setup 전 선택적으로 실행)
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
             target_size: 목표 데이터 크기
             method: 증강 방법
 
@@ -293,7 +293,7 @@ class CompanyWideModelingService:
         증강된 데이터가 있으면 사용, 없으면 원본 데이터 사용
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
             session_id: 재현성을 위한 시드값
 
         Returns:
@@ -331,7 +331,7 @@ class CompanyWideModelingService:
 
         # Session ID 설정 (organization별 고정값)
         if session_id is None:
-            session_id = 42 if organization == 'R&A' else 43
+            session_id = 42 if organization == 'R*A' else 43
 
         # 출력 억제
         old_stdout = sys.stdout
@@ -411,7 +411,7 @@ class CompanyWideModelingService:
         모델 비교
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
             n_select: 선택할 최상위 모델 수
 
         Returns:
@@ -513,7 +513,7 @@ class CompanyWideModelingService:
         특정 모델 학습
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
             model_name: 모델 이름 (예: 'rf', 'gbr', 'lr')
 
         Returns:
@@ -715,7 +715,7 @@ class CompanyWideModelingService:
             message = f'Models cleared for {organization}'
         else:
             # 모든 organization 메모리 해제
-            for org in ['R&A', 'tonggibon']:
+            for org in ['R*A', 'tonggibon']:
                 if self.models.get(org) is not None:
                     del self.models[org]
                 if self.experiments.get(org) is not None:
@@ -730,13 +730,13 @@ class CompanyWideModelingService:
                     del self.augmentation_info[org]
 
             # 초기화
-            self.models = {'R&A': None, 'tonggibon': None}
-            self.experiments = {'R&A': None, 'tonggibon': None}
-            self.is_setup_complete = {'R&A': False, 'tonggibon': False}
-            self.model_results = {'R&A': None, 'tonggibon': None}
-            self.feature_names = {'R&A': None, 'tonggibon': None}
-            self.augmented_data = {'R&A': None, 'tonggibon': None}
-            self.augmentation_info = {'R&A': None, 'tonggibon': None}
+            self.models = {'R*A': None, 'tonggibon': None}
+            self.experiments = {'R*A': None, 'tonggibon': None}
+            self.is_setup_complete = {'R*A': False, 'tonggibon': False}
+            self.model_results = {'R*A': None, 'tonggibon': None}
+            self.feature_names = {'R*A': None, 'tonggibon': None}
+            self.augmented_data = {'R*A': None, 'tonggibon': None}
+            self.augmentation_info = {'R*A': None, 'tonggibon': None}
             message = 'All models cleared'
 
         # 가비지 컬렉션 강제 실행

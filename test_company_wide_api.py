@@ -125,7 +125,7 @@ def test_trend(org):
     return result
 
 def main():
-    org = sys.argv[1] if len(sys.argv) > 1 else "R&A"
+    org = sys.argv[1] if len(sys.argv) > 1 else "R*A"
 
     print(f"\n{'#'*60}")
     print(f"# Company-Wide Modeling API Test: {org}")

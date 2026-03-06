@@ -9,16 +9,16 @@ start:
 start-fixed:
 	@echo "🚀 고정 포트로 서비스 시작 (로컬 개발)..."
 	@cd backend && source venv/bin/activate && python run.py &
-	@cd frontend && PORT=3000 npm start
+	@cd frontend && PORT=2000 npm start
 
 # 프로덕션 모드 (외부 접속 가능)
 start-production:
 	@echo "🌐 프로덕션 모드로 시작 (외부 접속 가능)..."
 	@cd backend && source venv/bin/activate && NETWORK_MODE=external python run.py --host 0.0.0.0 --port 8000 &
-	@cd frontend && npm run build && npx serve -s build -l 3000 &
+	@cd frontend && npm run build && npx serve -s build -l 2000 &
 	@sleep 2
 	@echo "✅ 서비스 실행 중:"
-	@echo "   Frontend: http://$(shell ipconfig getifaddr en0 2>/dev/null || echo localhost):3000"
+	@echo "   Frontend: http://$(shell ipconfig getifaddr en0 2>/dev/null || echo localhost):2000"
 	@echo "   Backend:  http://$(shell ipconfig getifaddr en0 2>/dev/null || echo localhost):8000"
 	@echo ""
 	@echo "💡 외부에서 접속하려면 위 IP 주소를 사용하세요"
@@ -27,7 +27,7 @@ start-production:
 start-force:
 	@echo "⚠️  기존 프로세스 종료 중..."
 	@lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:2000 | xargs kill -9 2>/dev/null || true
 	@sleep 1
 	@make start-fixed
 
@@ -37,7 +37,7 @@ restart:
 	@make stop
 	@sleep 3
 	@echo "🔍 포트 상태 재확인..."
-	@lsof -ti:3000 2>/dev/null | xargs kill -9 2>/dev/null || true
+	@lsof -ti:2000 2>/dev/null | xargs kill -9 2>/dev/null || true
 	@lsof -ti:8000 2>/dev/null | xargs kill -9 2>/dev/null || true
 	@sleep 1
 	@make start-fixed
@@ -57,11 +57,11 @@ stop:
 	@pkill -9 -f "node.*frontend" 2>/dev/null || true
 	# 포트 기반 종료 (남아있는 것들 처리)
 	@lsof -ti:8000 2>/dev/null | xargs kill -9 2>/dev/null || true
-	@lsof -ti:3000 2>/dev/null | xargs kill -9 2>/dev/null || true
+	@lsof -ti:2000 2>/dev/null | xargs kill -9 2>/dev/null || true
 	@sleep 1
 	# 확인
 	@if lsof -ti:8000 >/dev/null 2>&1; then echo "⚠️  포트 8000이 아직 사용 중입니다"; else echo "✅ 포트 8000 해제됨"; fi
-	@if lsof -ti:3000 >/dev/null 2>&1; then echo "⚠️  포트 3000이 아직 사용 중입니다"; else echo "✅ 포트 3000 해제됨"; fi
+	@if lsof -ti:2000 >/dev/null 2>&1; then echo "⚠️  포트 2000이 아직 사용 중입니다"; else echo "✅ 포트 2000 해제됨"; fi
 	@echo "✅ 모든 서비스 중지 완료"
 
 # 의존성 설치
@@ -78,8 +78,8 @@ logs:
 # 포트 상태 확인
 check-ports:
 	@echo "🔍 포트 사용 현황 확인..."
-	@echo "--- 포트 3000 (Frontend) ---"
-	@lsof -i:3000 2>/dev/null || echo "✅ 포트 3000 사용 안함"
+	@echo "--- 포트 2000 (Frontend) ---"
+	@lsof -i:2000 2>/dev/null || echo "✅ 포트 2000 사용 안함"
 	@echo ""
 	@echo "--- 포트 8000 (Backend) ---"
 	@lsof -i:8000 2>/dev/null || echo "✅ 포트 8000 사용 안함"
@@ -94,10 +94,10 @@ kill-all:
 	@killall -9 Python 2>/dev/null || true
 	@killall -9 python3 2>/dev/null || true
 	@lsof -ti:8000 2>/dev/null | xargs kill -9 2>/dev/null || true
-	@lsof -ti:3000 2>/dev/null | xargs kill -9 2>/dev/null || true
+	@lsof -ti:2000 2>/dev/null | xargs kill -9 2>/dev/null || true
 	@echo "✅ 강제 정리 완료"
 	@echo "포트 8000:" && lsof -i:8000 || echo "  ✅ 사용 가능"
-	@echo "포트 3000:" && lsof -i:3000 || echo "  ✅ 사용 가능"
+	@echo "포트 2000:" && lsof -i:2000 || echo "  ✅ 사용 가능"
 
 # 개발 환경 리셋
 clean:
@@ -118,7 +118,7 @@ build-frontend:
 # 빌드된 프론트엔드 실행
 serve-frontend:
 	@echo "🌐 빌드된 프론트엔드 실행..."
-	@cd frontend && npx serve -s build -l 3000
+	@cd frontend && npx serve -s build -l 2000
 
 # 도움말
 help:

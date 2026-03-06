@@ -11,9 +11,9 @@ print("=" * 80)
 # 모든 시트 읽기
 xl = pd.ExcelFile(file_path)
 
-# 1. 전사 레벨 시트 분석 (R&A 전사, 통기본 전사)
+# 1. 전사 레벨 시트 분석 (R*A 전사, 통기본 전사)
 print("\n### 1. 전사 레벨 회귀분석 시트 ###")
-for sheet_name in ['R&A 전사', '통기본 전사']:
+for sheet_name in ['R*A 전사', '통기본 전사']:
     print(f"\n## {sheet_name} ##")
     df = pd.read_excel(file_path, sheet_name=sheet_name)
 
@@ -102,10 +102,10 @@ for sheet_name in team_sheets:
 # 3. 회귀분석 모델 정보 추출
 print("\n### 3. 회귀분석 모델 요약 ###")
 
-# R&A 전사 시트에서 회귀분석 결과 추출
-df_rna = pd.read_excel(file_path, sheet_name='R&A 전사')
+# R*A 전사 시트에서 회귀분석 결과 추출
+df_rna = pd.read_excel(file_path, sheet_name='R*A 전사')
 
-print("\n## 전사 모델 (R&A) ##")
+print("\n## 전사 모델 (R*A) ##")
 # 회귀분석 통계량 찾기
 stats_area = df_rna.iloc[:, 10:19]  # 요약 출력 영역
 for idx, row in df_rna.iterrows():

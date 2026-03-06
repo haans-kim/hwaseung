@@ -20,7 +20,7 @@ BACKEND_PORT=$(find_port 8000)
 
 # 프론트엔드 포트 찾기  
 echo "🔍 프론트엔드 포트 확인 중..."
-FRONTEND_PORT=$(find_port 3000)
+FRONTEND_PORT=$(find_port 2000)
 
 # 백엔드 시작
 echo "📦 백엔드 서버 시작 (포트: $BACKEND_PORT)..."

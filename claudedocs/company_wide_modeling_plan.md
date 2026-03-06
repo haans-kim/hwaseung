@@ -1,9 +1,9 @@
-# R&A와 통합기술본부 적정인력 산정 시스템 구현 계획
+# R*A와 통합기술본부 적정인력 산정 시스템 구현 계획
 
 ## 📋 프로젝트 개요
 
 ### 목표
-- R&A와 통합기술본부(tonggibon) 각각에 대한 적정인력 산정 모델 구축
+- R*A와 통합기술본부(tonggibon) 각각에 대한 적정인력 산정 모델 구축
 - 2025년 데이터를 기반으로 2026년 적정인력 예측
 - 기존 전사 적정인력 Dashboard와 동일한 기능 제공
 
@@ -21,7 +21,7 @@
 
 #### 입력 데이터 (company_wide_features 테이블)
 ```sql
-- organization: 'R&A' or 'tonggibon'
+- organization: 'R*A' or 'tonggibon'
 - year: 연도 (모델링 시 제외)
 - headcount: 정원 (TARGET 변수)
 
@@ -37,7 +37,7 @@
 - oil_gl: 국제유가
 - labor_cost: 인건비 증감률
 
--- R&A 전용 Feature (4개)
+-- R*A 전용 Feature (4개)
 - revenue: 매출액 증감률
 - profit: 영업이익 증감률
 - operating_rate: 가동률 증감률
@@ -54,7 +54,7 @@
 
 #### 1. Organization별 독립 모델
 - **모델 파일**:
-  - `company_wide_model_R&A_latest.pkl`
+  - `company_wide_model_R*A_latest.pkl`
   - `company_wide_model_tonggibon_latest.pkl`
 - **PyCaret 세션**: 각 organization별로 독립적인 세션 관리
 - **모델 메타데이터**: DB에 저장 (organization, model_type, metrics, created_at)
@@ -84,11 +84,11 @@ class CompanyWideModelingService:
     def __init__(self):
         # Organization별 모델 관리
         self.models = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
         self.experiments = {
-            'R&A': None,
+            'R*A': None,
             'tonggibon': None
         }
 
@@ -142,17 +142,17 @@ class CompanyWideModelingService:
 #### 1.2. API 엔드포인트 (/api/company-wide/modeling)
 ```python
 POST /setup
-- Body: { "organization": "R&A" or "tonggibon" }
+- Body: { "organization": "R*A" or "tonggibon" }
 - 동작: 데이터 준비 + 증강 + PyCaret setup
 - 응답: { "message", "data_info", "augmented_size" }
 
 POST /compare
-- Body: { "organization": "R&A" or "tonggibon" }
+- Body: { "organization": "R*A" or "tonggibon" }
 - 동작: 모델 비교
 - 응답: { "models": [...], "best_model", "comparison_df" }
 
 POST /train
-- Body: { "organization": "R&A" or "tonggibon", "model_name": "rf" }
+- Body: { "organization": "R*A" or "tonggibon", "model_name": "rf" }
 - 동작: 특정 모델 학습
 - 응답: { "message", "model_type", "metrics" }
 
@@ -224,7 +224,7 @@ GET /importance
 
 POST /simulate
 - Body: {
-    "organization": "R&A",
+    "organization": "R*A",
     "variables": {
       "oil_gl": -13.7,
       "exchange_rate_change_krw": 4.2,
@@ -253,7 +253,7 @@ GET /trend
 #### 3.1. 모델링 페이지 (CompanyWideModeling.tsx)
 ```typescript
 // 레이아웃
-- Organization 선택 탭 (R&A / tonggibon)
+- Organization 선택 탭 (R*A / tonggibon)
 - 데이터 현황 카드
   - 원본 데이터 수
   - 증강 데이터 수
@@ -303,7 +303,7 @@ GET /trend
 
 #### 1. 모델 학습 단계
 ```
-1. 데이터 업로드 페이지 → R&A 또는 tonggibon 데이터 업로드
+1. 데이터 업로드 페이지 → R*A 또는 tonggibon 데이터 업로드
 2. 모델링 페이지 이동 → organization 선택
 3. Setup 클릭 → 데이터 증강 (200개)
 4. Compare 클릭 → 모델 비교 (R2 기준 정렬)
@@ -375,7 +375,7 @@ GET /trend
 ## ✅ 검증 항목
 
 ### 모델링
-- [ ] R&A와 tonggibon 각각 독립적으로 모델 학습 가능
+- [ ] R*A와 tonggibon 각각 독립적으로 모델 학습 가능
 - [ ] 데이터 증강이 200개로 정확히 동작
 - [ ] 연도 컬럼이 Feature에서 제외됨
 - [ ] 모델이 organization별로 저장됨

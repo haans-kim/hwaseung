@@ -15,7 +15,7 @@
 | 환경 | Frontend URL | Backend URL | 설정 파일 |
 |------|-------------|-------------|-----------|
 | 개발 | http://localhost:3001 | http://localhost:8000 | `.env.development` |
-| 프로덕션 | http://dashboard.insightgroup.biz:3000 | http://dashboard.insightgroup.biz:8000 | `.env.production` |
+| 프로덕션 | http://dashboard.insightgroup.biz:2000 | http://dashboard.insightgroup.biz:8000 | `.env.production` |
 
 ### 환경 파일 구조
 ```
@@ -94,7 +94,7 @@ npm run build  # build/ 폴더에 최적화된 파일 생성
 ### 2. 빌드된 파일 실행
 ```bash
 # serve 패키지로 실행
-npx serve -s build -l 3000
+npx serve -s build -l 2000
 
 # 또는 다른 포트 지정
 npx serve -s build -l 5000
@@ -187,7 +187,7 @@ make serve-frontend   # 빌드된 프론트엔드 실행
    - A 레코드: `dashboard.insightgroup.biz` → 맥미니 IP
 
 2. **방화벽 설정**
-   - 포트 3000 (프론트엔드)
+   - 포트 2000 (프론트엔드)
    - 포트 8000 (백엔드)
 
 3. **네트워크 확인**
@@ -196,7 +196,7 @@ make serve-frontend   # 빌드된 프론트엔드 실행
    ifconfig | grep "inet " | grep -v 127.0.0.1
 
    # 포트 열림 확인
-   lsof -i:3000
+   lsof -i:2000
    lsof -i:8000
    ```
 
@@ -325,7 +325,7 @@ React 앱에서 환경 변수 로딩 순서:
 - [ ] `.env.production`에 올바른 API URL 설정
 - [ ] 백엔드가 외부 접속 가능하도록 설정 (`--host 0.0.0.0`)
 - [ ] DNS 설정 완료
-- [ ] 방화벽 포트 오픈 (3000, 8000)
+- [ ] 방화벽 포트 오픈 (2000, 8000)
 - [ ] 프론트엔드 빌드 완료 (`npm run build`)
 - [ ] 로그 모니터링 설정
 
@@ -335,7 +335,7 @@ React 앱에서 환경 변수 로딩 순서:
 ```bash
 # nohup 사용
 nohup python run.py --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
-nohup npx serve -s build -l 3000 > frontend.log 2>&1 &
+nohup npx serve -s build -l 2000 > frontend.log 2>&1 &
 
 # tmux/screen 사용 (권장)
 tmux new -s backend
@@ -343,7 +343,7 @@ python run.py --host 0.0.0.0 --port 8000
 # Ctrl+B, D로 분리
 
 tmux new -s frontend
-npx serve -s build -l 3000
+npx serve -s build -l 2000
 # Ctrl+B, D로 분리
 ```
 
@@ -365,7 +365,7 @@ npm install -g pm2
 pm2 start backend/run.py --name backend --interpreter python3 -- --host 0.0.0.0 --port 8000
 
 # 프론트엔드 실행
-pm2 serve frontend/build 3000 --name frontend
+pm2 serve frontend/build 2000 --name frontend
 
 # 상태 확인
 pm2 status

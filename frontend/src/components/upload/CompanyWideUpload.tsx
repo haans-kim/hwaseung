@@ -14,7 +14,7 @@ import {
 import { API_BASE_URL } from '../../lib/api';
 
 interface CompanyWideUploadProps {
-  organization: 'R&A' | 'tonggibon';
+  organization: 'R*A' | 'tonggibon';
   title: string;
   description: string;
 }

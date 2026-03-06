@@ -23,7 +23,7 @@ npm install
 npm start
 ```
 
-애플리케이션이 http://localhost:3000 에서 실행됩니다.
+애플리케이션이 http://localhost:2000 에서 실행됩니다.
 
 ### 3. 빌드
 ```bash

@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS fte;
 -- Create simplified fte table matching template structure
 CREATE TABLE fte (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company TEXT NOT NULL,           -- 계열사 (Corp., R&A)
+    company TEXT NOT NULL,           -- 계열사 (Corp., R*A)
     team TEXT NOT NULL,              -- 부서 (팀명)
     position TEXT NOT NULL,          -- 사용자직위 (전체, 선임, 책임, 사원)
     avg_fte REAL,                    -- 평균FTE

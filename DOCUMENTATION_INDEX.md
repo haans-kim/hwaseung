@@ -7,7 +7,7 @@
 #### 1. **IMPLEMENTATION_COMPLETE.md** ⭐ (NEW)
 **최신 구현 완료 보고서**
 - 메모리 안전 모드 적용 완료
-- 전사 적정인력 산정 시스템 (R&A/tonggibon)
+- 전사 적정인력 산정 시스템 (R*A/tonggibon)
 - API 8개 엔드포인트
 - 프론트엔드 Dashboard 2개
 - 테스트 결과 및 사용 방법
@@ -15,7 +15,7 @@
 #### 2. **company_wide_modeling_plan.md** 📋
 **전사 적정인력 산정 시스템 구현 계획**
 - 위치: `claudedocs/company_wide_modeling_plan.md`
-- R&A와 tonggibon 적정인력 산정 시스템 설계
+- R*A와 tonggibon 적정인력 산정 시스템 설계
 - Phase별 구현 단계
 - 데이터 구조 및 API 명세
 - 검증 항목
@@ -233,7 +233,7 @@
 - ✅ **TEST_RESULTS.md** 생성
 - ✅ **TESTING_INSTRUCTIONS.md** 생성
 - ✅ 메모리 안전 모드 적용 완료
-- ✅ R&A/tonggibon 시스템 구현 완료
+- ✅ R*A/tonggibon 시스템 구현 완료
 
 ---
 

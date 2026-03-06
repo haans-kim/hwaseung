@@ -14,7 +14,7 @@
   - ✅ 데이터 크기 제한 (최대 1만 행)
   - **메모리 감소**: 8.6GB → 54MB (160배 안전)
 
-- **company_wide_modeling_service.py** (R&A/tonggibon)
+- **company_wide_modeling_service.py** (R*A/tonggibon)
   - ✅ 동일한 메모리 안전 장치 적용
   - ✅ Organization별 독립 모델 관리
   - ✅ 데이터 증강 (4-5행 → 200행)
@@ -38,7 +38,7 @@
 - ✅ `/api/company-wide/dashboard/trend` - 트렌드
 
 #### 3. 프론트엔드
-- ✅ **DashboardRNA.tsx** (943줄) - R&A 전용 대시보드
+- ✅ **DashboardRNA.tsx** (943줄) - R*A 전용 대시보드
 - ✅ **DashboardTonggibon.tsx** (943줄) - tonggibon 전용 대시보드
 - ✅ **CompanyWideUpload.tsx** - 데이터 업로드
 - ✅ Chart.js 통합
@@ -67,7 +67,7 @@
 ## 📊 데이터 구조
 
 ### company_wide_features 테이블
-- **organization**: 'R&A' or 'tonggibon'
+- **organization**: 'R*A' or 'tonggibon'
 - **year**: 연도 (모델링 시 제외)
 - **headcount**: 정원 (TARGET)
 
@@ -89,25 +89,25 @@ make start-fixed
 # Frontend: http://localhost:3001
 ```
 
-### 2. R&A 모델링
+### 2. R*A 모델링
 ```bash
 # API 테스트
 curl -X POST http://localhost:8000/api/company-wide/modeling/setup \
   -H "Content-Type: application/json" \
-  -d '{"organization": "R&A", "use_augmentation": true, "target_size": 200}'
+  -d '{"organization": "R*A", "use_augmentation": true, "target_size": 200}'
 
 curl -X POST http://localhost:8000/api/company-wide/modeling/compare \
   -H "Content-Type: application/json" \
-  -d '{"organization": "R&A", "n_select": 3}'
+  -d '{"organization": "R*A", "n_select": 3}'
 
 curl -X POST http://localhost:8000/api/company-wide/modeling/train \
   -H "Content-Type: application/json" \
-  -d '{"organization": "R&A", "model_name": "lr"}'
+  -d '{"organization": "R*A", "model_name": "lr"}'
 ```
 
 ### 3. 프론트엔드 접속
 ```
-R&A Dashboard: http://localhost:3001/dashboard/rna
+R*A Dashboard: http://localhost:3001/dashboard/rna
 tonggibon Dashboard: http://localhost:3001/dashboard/tonggibon
 ```
 
@@ -193,7 +193,7 @@ After (수정 후):
 - **효과**: 모델 학습 가능 (R2 > 0.99)
 
 ### 3. Organization 독립성
-- **R&A와 tonggibon 완전 독립**
+- **R*A와 tonggibon 완전 독립**
   - 별도 모델 파일
   - 별도 PyCaret 세션
   - 별도 Dashboard
@@ -208,7 +208,7 @@ backend/
 │   │   └── company_wide_dashboard.py   # Dashboard API
 │   └── services/
 │       ├── modeling_service.py          # 기본 모델링 (메모리 안전)
-│       ├── company_wide_modeling_service.py  # R&A/tonggibon 모델링
+│       ├── company_wide_modeling_service.py  # R*A/tonggibon 모델링
 │       └── company_wide_dashboard_service.py # Dashboard 기능
 ├── models/                              # 학습된 모델 저장
 └── data/                                # 데이터 파일
@@ -216,7 +216,7 @@ backend/
 frontend/
 └── src/
     ├── pages/
-    │   ├── DashboardRNA.tsx            # R&A Dashboard
+    │   ├── DashboardRNA.tsx            # R*A Dashboard
     │   └── DashboardTonggibon.tsx      # tonggibon Dashboard
     └── components/
         └── upload/
@@ -260,8 +260,8 @@ frontend/
 
 ### 즉시 사용 가능
 1. 브라우저에서 http://localhost:3001 접속
-2. "Data Upload" → R&A 또는 tonggibon 데이터 업로드
-3. Dashboard 메뉴에서 R&A 또는 tonggibon 선택
+2. "Data Upload" → R*A 또는 tonggibon 데이터 업로드
+3. Dashboard 메뉴에서 R*A 또는 tonggibon 선택
 4. 2026년 예측 및 시뮬레이션 활용
 
 ### 추가 개선 (선택사항)
@@ -275,7 +275,7 @@ frontend/
 **전사 적정인력 산정 시스템이 완전히 구현되었습니다!**
 
 - ✅ 메모리 안전 (시스템 리부팅 해결)
-- ✅ R&A와 tonggibon 독립 모델
+- ✅ R*A와 tonggibon 독립 모델
 - ✅ 데이터 증강 (4-5행 → 200행)
 - ✅ 2026년 예측 Dashboard
 - ✅ Feature importance 분석

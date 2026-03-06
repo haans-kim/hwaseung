@@ -39,7 +39,7 @@ ChartJS.register(
   Filler
 );
 
-const ORGANIZATION = 'R&A';
+const ORGANIZATION = 'R*A';
 
 interface PredictionData {
   year: number;
@@ -241,7 +241,7 @@ const DashboardRNA: React.FC = () => {
       {/* 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">R&A 적정인력 산정</h1>
+          <h1 className="text-3xl font-bold">R*A 적정인력 산정</h1>
           <p className="text-muted-foreground">{prediction?.year || '다음'}년 적정인력 예측 및 시나리오 분석</p>
         </div>
         <Button onClick={loadAllData} variant="outline">
@@ -468,7 +468,7 @@ const DashboardRNA: React.FC = () => {
           <AlertTitle>모델이 학습되지 않았습니다</AlertTitle>
           <AlertDescription>
             <div className="mt-2">
-              <p>R&A 적정인력 예측을 위해 먼저 모델을 학습해주세요.</p>
+              <p>R*A 적정인력 예측을 위해 먼저 모델을 학습해주세요.</p>
               <Button
                 className="mt-2"
                 onClick={() => window.location.href = '/company-wide-modeling'}

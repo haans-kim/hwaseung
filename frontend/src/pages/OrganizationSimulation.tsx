@@ -31,7 +31,7 @@ interface TeamMetric {
 
 const OrganizationSimulation: React.FC = () => {
   const [organizationData, setOrganizationData] = useState<OrganizationData[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<string | null>('화승 R&A');
+  const [selectedCompany, setSelectedCompany] = useState<string | null>('R*A');
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
@@ -82,7 +82,7 @@ const OrganizationSimulation: React.FC = () => {
           if (orgData.length > 0) {
             const uniqueDepartments = Array.from(new Set(
               orgData
-                .filter((org: any) => org.회사 === '화승 R&A')
+                .filter((org: any) => org.회사 === 'R*A')
                 .map((org: any) => org.본부)
             )) as string[];
             setDepartments(uniqueDepartments);
@@ -342,24 +342,24 @@ const OrganizationSimulation: React.FC = () => {
           <h3 className="font-medium text-gray-700 mb-3 text-center">회사</h3>
           <div className="space-y-2">
             <button
-              onClick={() => setSelectedCompany('화승 R&A')}
+              onClick={() => setSelectedCompany('R*A')}
               className={`w-full px-3 py-2 text-left rounded text-sm ${
-                selectedCompany === '화승 R&A'
+                selectedCompany === 'R*A'
                   ? 'bg-blue-100 text-blue-800 border border-blue-300'
                   : 'hover:bg-gray-50 border border-gray-200'
               }`}
             >
-              화승 R&A
+              R*A
             </button>
             <button
-              onClick={() => setSelectedCompany('화승 Corp.')}
+              onClick={() => setSelectedCompany('Corp.')}
               className={`w-full px-3 py-2 text-left rounded text-sm ${
-                selectedCompany === '화승 Corp.'
+                selectedCompany === 'Corp.'
                   ? 'bg-blue-100 text-blue-800 border border-blue-300'
                   : 'hover:bg-gray-50 border border-gray-200'
               }`}
             >
-              화승 Corp.
+              Corp.
             </button>
           </div>
         </Card>

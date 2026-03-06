@@ -1,5 +1,5 @@
 """
-전사 적정인력 산정 Dashboard API (R&A, tonggibon)
+전사 적정인력 산정 Dashboard API (R*A, tonggibon)
 """
 from fastapi import APIRouter, HTTPException, Query, Body
 from fastapi.responses import JSONResponse
@@ -20,21 +20,21 @@ class SimulateRequest(BaseModel):
 
 @router.get("/prediction")
 async def get_prediction(
-    organization: str = Query(..., description="Organization: 'R&A' or 'tonggibon'")
+    organization: str = Query(..., description="Organization: 'R*A' or 'tonggibon'")
 ) -> Dict[str, Any]:
     """
     2026년 적정인력 예측
 
     Args:
-        organization: 'R&A' or 'tonggibon'
+        organization: 'R*A' or 'tonggibon'
 
     Returns:
         예측 결과
     """
-    if organization not in ['R&A', 'tonggibon']:
+    if organization not in ['R*A', 'tonggibon']:
         raise HTTPException(
             status_code=400,
-            detail="organization must be 'R&A' or 'tonggibon'"
+            detail="organization must be 'R*A' or 'tonggibon'"
         )
 
     try:
@@ -46,23 +46,23 @@ async def get_prediction(
 
 @router.get("/importance")
 async def get_feature_importance(
-    organization: str = Query(..., description="Organization: 'R&A' or 'tonggibon'"),
+    organization: str = Query(..., description="Organization: 'R*A' or 'tonggibon'"),
     top_n: int = Query(10, description="Number of top features to return")
 ) -> Dict[str, Any]:
     """
     Feature Importance (Permutation)
 
     Args:
-        organization: 'R&A' or 'tonggibon'
+        organization: 'R*A' or 'tonggibon'
         top_n: 상위 N개 feature
 
     Returns:
         Feature importance 리스트
     """
-    if organization not in ['R&A', 'tonggibon']:
+    if organization not in ['R*A', 'tonggibon']:
         raise HTTPException(
             status_code=400,
-            detail="organization must be 'R&A' or 'tonggibon'"
+            detail="organization must be 'R*A' or 'tonggibon'"
         )
 
     try:
@@ -82,16 +82,16 @@ async def simulate_scenario(request: SimulateRequest) -> Dict[str, Any]:
     변수 조정 시뮬레이션
 
     Args:
-        organization: 'R&A' or 'tonggibon'
+        organization: 'R*A' or 'tonggibon'
         variables: 조정할 변수 딕셔너리
 
     Returns:
         시뮬레이션 결과
     """
-    if request.organization not in ['R&A', 'tonggibon']:
+    if request.organization not in ['R*A', 'tonggibon']:
         raise HTTPException(
             status_code=400,
-            detail="organization must be 'R&A' or 'tonggibon'"
+            detail="organization must be 'R*A' or 'tonggibon'"
         )
 
     try:
@@ -106,21 +106,21 @@ async def simulate_scenario(request: SimulateRequest) -> Dict[str, Any]:
 
 @router.get("/trend")
 async def get_trend_data(
-    organization: str = Query(..., description="Organization: 'R&A' or 'tonggibon'")
+    organization: str = Query(..., description="Organization: 'R*A' or 'tonggibon'")
 ) -> Dict[str, Any]:
     """
     트렌드 데이터 (과거 + 예측)
 
     Args:
-        organization: 'R&A' or 'tonggibon'
+        organization: 'R*A' or 'tonggibon'
 
     Returns:
         트렌드 데이터
     """
-    if organization not in ['R&A', 'tonggibon']:
+    if organization not in ['R*A', 'tonggibon']:
         raise HTTPException(
             status_code=400,
-            detail="organization must be 'R&A' or 'tonggibon'"
+            detail="organization must be 'R*A' or 'tonggibon'"
         )
 
     try:
@@ -132,21 +132,21 @@ async def get_trend_data(
 
 @router.get("/variable-ranges")
 async def get_variable_ranges(
-    organization: str = Query(..., description="Organization: 'R&A' or 'tonggibon'")
+    organization: str = Query(..., description="Organization: 'R*A' or 'tonggibon'")
 ) -> Dict[str, Any]:
     """
     변수별 조정 범위
 
     Args:
-        organization: 'R&A' or 'tonggibon'
+        organization: 'R*A' or 'tonggibon'
 
     Returns:
         변수 범위 딕셔너리
     """
-    if organization not in ['R&A', 'tonggibon']:
+    if organization not in ['R*A', 'tonggibon']:
         raise HTTPException(
             status_code=400,
-            detail="organization must be 'R&A' or 'tonggibon'"
+            detail="organization must be 'R*A' or 'tonggibon'"
         )
 
     try:

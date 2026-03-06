@@ -1,5 +1,5 @@
 """
-전사 인력 산정 API 엔드포인트 (R&A, tonggibon)
+전사 인력 산정 API 엔드포인트 (R*A, tonggibon)
 """
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -18,28 +18,28 @@ router = APIRouter(
 )
 
 class UploadRequest(BaseModel):
-    organization: str  # 'R&A' or 'tonggibon'
+    organization: str  # 'R*A' or 'tonggibon'
 
 @router.post("/upload")
 async def upload_company_wide_data(
     file: UploadFile = File(...),
-    organization: str = Query(..., description="Organization: 'R&A' or 'tonggibon'")
+    organization: str = Query(..., description="Organization: 'R*A' or 'tonggibon'")
 ) -> Dict[str, Any]:
     """
     전사 인력 산정용 데이터 업로드
 
     Args:
-        file: Excel 파일 (1-1. R&A.xlsx 또는 1-2. 통기본.xlsx)
-        organization: 'R&A' or 'tonggibon'
+        file: Excel 파일 (1-1. R*A.xlsx 또는 1-2. 통기본.xlsx)
+        organization: 'R*A' or 'tonggibon'
 
     Returns:
         업로드 결과
     """
     # 조직 검증
-    if organization not in ['R&A', 'tonggibon']:
+    if organization not in ['R*A', 'tonggibon']:
         raise HTTPException(
             status_code=400,
-            detail="organization must be 'R&A' or 'tonggibon'"
+            detail="organization must be 'R*A' or 'tonggibon'"
         )
 
     # 파일 형식 검증
@@ -107,7 +107,7 @@ async def upload_company_wide_data(
 
 @router.get("/features")
 async def get_company_wide_features(
-    organization: str = Query(None, description="Filter by organization: 'R&A' or 'tonggibon'")
+    organization: str = Query(None, description="Filter by organization: 'R*A' or 'tonggibon'")
 ) -> Dict[str, Any]:
     """
     전사 인력 Feature 데이터 조회
@@ -120,10 +120,10 @@ async def get_company_wide_features(
     """
     try:
         if organization:
-            if organization not in ['R&A', 'tonggibon']:
+            if organization not in ['R*A', 'tonggibon']:
                 raise HTTPException(
                     status_code=400,
-                    detail="organization must be 'R&A' or 'tonggibon'"
+                    detail="organization must be 'R*A' or 'tonggibon'"
                 )
 
             data = company_wide_service.get_features_by_organization(organization)
@@ -136,9 +136,9 @@ async def get_company_wide_features(
             # 모든 조직 데이터
             all_data = company_wide_service.get_all_features()
             return {
-                "R&A": {
-                    "count": len(all_data['R&A']),
-                    "data": all_data['R&A']
+                "R*A": {
+                    "count": len(all_data['R*A']),
+                    "data": all_data['R*A']
                 },
                 "tonggibon": {
                     "count": len(all_data['tonggibon']),
@@ -153,21 +153,21 @@ async def get_company_wide_features(
 
 @router.delete("/features")
 async def delete_company_wide_features(
-    organization: str = Query(..., description="Organization to delete: 'R&A' or 'tonggibon'")
+    organization: str = Query(..., description="Organization to delete: 'R*A' or 'tonggibon'")
 ) -> Dict[str, Any]:
     """
     특정 조직의 전사 인력 데이터 삭제
 
     Args:
-        organization: 'R&A' or 'tonggibon'
+        organization: 'R*A' or 'tonggibon'
 
     Returns:
         삭제 결과
     """
-    if organization not in ['R&A', 'tonggibon']:
+    if organization not in ['R*A', 'tonggibon']:
         raise HTTPException(
             status_code=400,
-            detail="organization must be 'R&A' or 'tonggibon'"
+            detail="organization must be 'R*A' or 'tonggibon'"
         )
 
     try:
@@ -208,10 +208,10 @@ async def get_upload_status() -> Dict[str, Any]:
         all_data = company_wide_service.get_all_features()
 
         return {
-            "R&A": {
-                "has_data": len(all_data['R&A']) > 0,
-                "row_count": len(all_data['R&A']),
-                "years": [row['year'] for row in all_data['R&A']] if all_data['R&A'] else []
+            "R*A": {
+                "has_data": len(all_data['R*A']) > 0,
+                "row_count": len(all_data['R*A']),
+                "years": [row['year'] for row in all_data['R*A']] if all_data['R*A'] else []
             },
             "tonggibon": {
                 "has_data": len(all_data['tonggibon']) > 0,

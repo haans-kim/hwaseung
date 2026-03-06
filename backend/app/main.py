@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Hwaseung API",
-    description="화승 인원 최적화 대시보드 API",
+    description="인원 최적화 대시보드 API",
     version="1.0.0"
 )
 

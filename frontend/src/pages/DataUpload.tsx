@@ -14,7 +14,7 @@ export const DataUpload: React.FC = () => {
   const tabs = [
     {
       id: 'rna' as TabType,
-      label: '전사-R&A',
+      label: '전사-R*A',
       icon: Building2,
     },
     {
@@ -78,9 +78,9 @@ export const DataUpload: React.FC = () => {
       <div className="mt-6">
         {activeTab === 'rna' && (
           <CompanyWideUpload
-            organization="R&A"
-            title="전사 인력 산정 데이터 (R&A)"
-            description="R&A 조직의 전사 수준 적정인력 예측을 위한 데이터를 업로드하세요"
+            organization="R*A"
+            title="전사 인력 산정 데이터 (R*A)"
+            description="R*A 조직의 전사 수준 적정인력 예측을 위한 데이터를 업로드하세요"
           />
         )}
 

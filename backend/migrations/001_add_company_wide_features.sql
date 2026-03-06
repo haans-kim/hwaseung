@@ -1,10 +1,10 @@
--- Migration: Add company_wide_features table for R&A and tonggibon
+-- Migration: Add company_wide_features table for R*A and tonggibon
 -- Created: 2025-10-10
 -- Purpose: Store company-wide headcount prediction features separated by organization
 
 CREATE TABLE IF NOT EXISTS company_wide_features (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    organization TEXT NOT NULL,  -- 'R&A' or 'tonggibon'
+    organization TEXT NOT NULL,  -- 'R*A' or 'tonggibon'
     year INTEGER NOT NULL,
 
     -- External Environment Indicators (10 features)
@@ -40,9 +40,9 @@ CREATE INDEX IF NOT EXISTS idx_company_year ON company_wide_features(year);
 CREATE INDEX IF NOT EXISTS idx_company_org_year ON company_wide_features(organization, year);
 
 -- Insert sample data for testing (optional)
--- R&A sample data
+-- R*A sample data
 -- INSERT INTO company_wide_features (organization, year, ev_growth_gl, v_growth_gl, headcount)
--- VALUES ('R&A', 2021, 1.04, 0.026, 320);
+-- VALUES ('R*A', 2021, 1.04, 0.026, 320);
 
 -- tonggibon sample data
 -- INSERT INTO company_wide_features (organization, year, ev_growth_gl, v_growth_gl, headcount)

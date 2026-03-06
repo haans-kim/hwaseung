@@ -82,7 +82,7 @@ backend/
 
 ```env
 # CORS 설정
-ALLOWED_HOSTS=["http://localhost:3000"]
+ALLOWED_HOSTS=["http://localhost:2000"]
 
 # 파일 업로드
 MAX_FILE_SIZE=10485760  # 10MB

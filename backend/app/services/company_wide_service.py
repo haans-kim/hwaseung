@@ -29,7 +29,7 @@ COMMON_COLUMNS = {
     '정원': 'headcount'
 }
 
-# R&A 전용 내부 지표
+# R*A 전용 내부 지표
 RNA_COLUMNS = {
     '매출액 증감률': 'revenue',
     '영업이익 증감률': 'profit',
@@ -48,7 +48,7 @@ TONGGIBON_COLUMNS = {
 def get_column_mapping(organization: str) -> dict:
     """조직에 따른 컬럼 매핑 반환"""
     mapping = COMMON_COLUMNS.copy()
-    if organization == 'R&A':
+    if organization == 'R*A':
         mapping.update(RNA_COLUMNS)
     elif organization == 'tonggibon':
         mapping.update(TONGGIBON_COLUMNS)
@@ -63,7 +63,7 @@ class CompanyWideService:
 
         Args:
             file_path: Excel 파일 경로
-            organization: 조직 구분 ('R&A' or 'tonggibon')
+            organization: 조직 구분 ('R*A' or 'tonggibon')
 
         Returns:
             검증 결과 딕셔너리
@@ -250,7 +250,7 @@ class CompanyWideService:
         조직별 Feature 데이터 조회
 
         Args:
-            organization: 'R&A' or 'tonggibon'
+            organization: 'R*A' or 'tonggibon'
 
         Returns:
             Feature 데이터 리스트 (features_json을 파싱하여 반환)
@@ -299,10 +299,10 @@ class CompanyWideService:
         모든 조직의 Feature 데이터 조회
 
         Returns:
-            {'R&A': [...], 'tonggibon': [...]}
+            {'R*A': [...], 'tonggibon': [...]}
         """
         return {
-            'R&A': self.get_features_by_organization('R&A'),
+            'R*A': self.get_features_by_organization('R*A'),
             'tonggibon': self.get_features_by_organization('tonggibon')
         }
 

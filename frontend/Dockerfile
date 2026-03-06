@@ -27,6 +27,6 @@ COPY --from=build /app/build /usr/share/nginx/html
 # Add nginx config (from frontend directory since context is project root)
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 2000
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -12,7 +12,7 @@ Hwaseung - 화승 인원 최적화 대시보드. 머신러닝 기반 인원 분�
 # Install dependencies and start both frontend and backend
 make install
 make start        # Smart port detection
-make start-fixed  # Fixed ports (3000 frontend, 8000 backend)
+make start-fixed  # Fixed ports (2000 frontend, 8000 backend)
 make restart      # Clean restart
 ```
 
@@ -28,7 +28,7 @@ python run.py  # Runs on localhost:8000
 ```bash
 cd frontend
 npm install
-npm start     # Runs on localhost:3000
+npm start     # Runs on localhost:2000
 npm run build # Production build
 npm test      # Run tests
 ```

@@ -41,7 +41,7 @@ case $choice in
             echo "Docker 실행 중..."
             docker-compose up -d
             echo "✅ 배포 완료!"
-            echo "Frontend: http://localhost:3000"
+            echo "Frontend: http://localhost:2000"
             echo "Backend: http://localhost:8000"
         else
             echo "❌ Docker가 설치되어 있지 않습니다."

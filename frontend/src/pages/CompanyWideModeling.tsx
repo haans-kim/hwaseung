@@ -125,13 +125,13 @@ const CompanyWideModeling: React.FC = () => {
       setLoading({ ...loading, augmentation: true });
       setError(null);
 
-      // R&A와 tonggibon 동시 증강
+      // R*A와 tonggibon 동시 증강
       const [rnaRes, tongRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/company-wide/modeling/augment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            organization: 'R&A',
+            organization: 'R*A',
             target_size: 200,
             method: 'auto'
           })
@@ -173,18 +173,18 @@ const CompanyWideModeling: React.FC = () => {
       setLoading({ ...loading, setup: true });
       setError(null);
 
-      // 🔧 FIX: R&A와 tonggibon을 순차적으로 Setup (PyCaret 전역 상태 충돌 방지)
-      // R&A 먼저 Setup
+      // 🔧 FIX: R*A와 tonggibon을 순차적으로 Setup (PyCaret 전역 상태 충돌 방지)
+      // R*A 먼저 Setup
       const rnaRes = await fetch(`${API_BASE_URL}/api/company-wide/modeling/setup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          organization: 'R&A'
+          organization: 'R*A'
         })
       });
 
       if (!rnaRes.ok) {
-        throw new Error('R&A PyCaret 환경 설정 실패');
+        throw new Error('R*A PyCaret 환경 설정 실패');
       }
 
       const rnaData = await rnaRes.json();
@@ -222,19 +222,19 @@ const CompanyWideModeling: React.FC = () => {
       setLoading({ ...loading, comparison: true });
       setError(null);
 
-      // 🔧 FIX: R&A와 tonggibon을 순차적으로 Compare (PyCaret 전역 상태 충돌 방지)
-      // R&A 먼저 Compare
+      // 🔧 FIX: R*A와 tonggibon을 순차적으로 Compare (PyCaret 전역 상태 충돌 방지)
+      // R*A 먼저 Compare
       const rnaRes = await fetch(`${API_BASE_URL}/api/company-wide/modeling/compare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          organization: 'R&A',
+          organization: 'R*A',
           n_select: 3
         })
       });
 
       if (!rnaRes.ok) {
-        throw new Error('R&A 모델 비교 실패');
+        throw new Error('R*A 모델 비교 실패');
       }
 
       const rnaData = await rnaRes.json();
@@ -289,7 +289,7 @@ const CompanyWideModeling: React.FC = () => {
     }
   };
 
-  // 3단계: R&A 모델 학습
+  // 3단계: R*A 모델 학습
   const handleRnaTrain = async () => {
     try {
       setLoading({ ...loading, rnaTrain: true });
@@ -299,13 +299,13 @@ const CompanyWideModeling: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          organization: 'R&A',
+          organization: 'R*A',
           model_name: rnaSelectedModel
         })
       });
 
       if (!response.ok) {
-        throw new Error('R&A 모델 학습 실패');
+        throw new Error('R*A 모델 학습 실패');
       }
 
       const data = await response.json();
@@ -406,7 +406,7 @@ const CompanyWideModeling: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">전사 적정인력 산정 모델링</h1>
-          <p className="text-muted-foreground">R&A와 통합기술본부의 2026년 적정인력 예측 모델 학습</p>
+          <p className="text-muted-foreground">R*A와 통합기술본부의 2026년 적정인력 예측 모델 학습</p>
         </div>
         <Button
           variant="outline"
@@ -446,10 +446,10 @@ const CompanyWideModeling: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            {/* R&A 현황 */}
+            {/* R*A 현황 */}
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold">R&A</h4>
+                <h4 className="font-semibold">R*A</h4>
                 {rnaStatus?.is_augmented && <CheckCircle2 className="h-5 w-5 text-green-500" />}
               </div>
               {rnaStatus && (
@@ -514,10 +514,10 @@ const CompanyWideModeling: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            {/* R&A Setup */}
+            {/* R*A Setup */}
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold">R&A</h4>
+                <h4 className="font-semibold">R*A</h4>
                 {rnaStatus?.environment_setup && <CheckCircle2 className="h-5 w-5 text-green-500" />}
               </div>
               {rnaStatus && (
@@ -602,10 +602,10 @@ const CompanyWideModeling: React.FC = () => {
           {/* 비교 결과 */}
           {(rnaComparison || tongComparison) && (
             <div className="grid grid-cols-2 gap-4 mt-4">
-              {/* R&A 결과 */}
+              {/* R*A 결과 */}
               {rnaComparison && (
                 <div className="border rounded-lg p-4">
-                  <h4 className="font-semibold mb-3">R&A 모델 비교 결과</h4>
+                  <h4 className="font-semibold mb-3">R*A 모델 비교 결과</h4>
                   <div className="space-y-2">
                     {rnaComparison.comparison_data.slice(0, 3).map((model, idx) => (
                       <div key={idx} className="flex justify-between items-center text-sm p-2 bg-muted rounded">
@@ -649,11 +649,11 @@ const CompanyWideModeling: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            {/* R&A 학습 */}
+            {/* R*A 학습 */}
             <div className="border rounded-lg p-4 space-y-3">
               <h4 className="font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                R&A
+                R*A
               </h4>
 
               {rnaComparison && (
@@ -696,7 +696,7 @@ const CompanyWideModeling: React.FC = () => {
                 ) : (
                   <>
                     <Target className="mr-2 h-4 w-4" />
-                    R&A 모델 학습
+                    R*A 모델 학습
                   </>
                 )}
               </Button>
@@ -788,13 +788,13 @@ const CompanyWideModeling: React.FC = () => {
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertTitle>모델링 완료!</AlertTitle>
           <AlertDescription>
-            <p className="mb-2">R&A와 통합기술본부의 모델 학습이 완료되었습니다.</p>
+            <p className="mb-2">R*A와 통합기술본부의 모델 학습이 완료되었습니다.</p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => window.location.href = '/dashboard/rna'}
               >
-                R&A Dashboard 보기
+                R*A Dashboard 보기
               </Button>
               <Button
                 variant="outline"
